@@ -1,0 +1,19 @@
+本项目开发使用python3版本
+至少需要安装以下依赖包
+selenium 
+scrapy
+bs4
+lxml
+requests
+pandas
+numpy
+matplotlib
+flask
+kcweb
+pymysql
+pymongo
+redis
+pillow
+pyquery
+playsound
+win32con,win32api   参考pip install -i https://mirrors.aliyun.com/pypi/simple/ pypiwin32
