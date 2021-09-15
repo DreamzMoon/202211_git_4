@@ -1,3 +1,3 @@
 print('hello world')
-print('new add info')
+print('new git add info')
 print('web commit')
