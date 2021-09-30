@@ -18,7 +18,7 @@ def get_conn(ssh_conf,mysql_conf):
     利用ssh通道连接数据库
     :param ssh_conf: 服务器配置
     :param mysql_conf: 数据库配置
-    :return:
+    :return:  数据库的连接器
     '''
     server = SSHTunnelForwarder(
         (ssh_conf["host"], ssh_conf["port"]),
