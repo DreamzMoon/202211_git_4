@@ -7,13 +7,11 @@ lxml
 requests
 pandas
 numpy
+pandas
 matplotlib
 flask
-kcweb
 pymysql
 pymongo
 redis
 pillow
-pyquery
-playsound
-win32con,win32api   参考pip install -i https://mirrors.aliyun.com/pypi/simple/ pypiwin32
+sshtunnel
