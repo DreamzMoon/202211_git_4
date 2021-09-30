@@ -34,6 +34,7 @@ def get_conn(ssh_conf,mysql_conf):
                                 passwd=mysql_conf["password"],
                                 db=mysql_conf["db"],
                                 charset="utf8")
+
     return client
 
 if __name__ == "__main__":
