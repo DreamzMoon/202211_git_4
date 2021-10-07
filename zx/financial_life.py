@@ -6,6 +6,7 @@ from lxml import etree
 
 tag = '理财生活'
 base_url = 'https://www.cardbaobao.com'
+prefix_url = 'https:'
 img_base_path = r'C:\Users\V\Desktop\test_img/financial_life/'
 collect_page = 10
 
@@ -39,7 +40,7 @@ def get_two_page_detail(url_list):
         response = get_requests(url, mode='other')
         soup = BeautifulSoup(response, 'html.parser')
         data['title'] = soup.select('h1.detail_title')[0].get_text()
-        article_soup = soup.select('div.text p')[0]
+        article_soup = soup.select('div.text')[0]
         if article_soup.select('img'):
             img_soup_list = article_soup.select('img')
             article = str(article_soup)
@@ -57,7 +58,7 @@ def get_two_page_detail(url_list):
     return data_list
 
 def download_img(url):
-    img_url = base_url + url
+    img_url = prefix_url + url
     img_name = url.split('/')[-1]
     our_img_url = img_base_path + img_name
     img_file = get_requests(img_url, 'img')

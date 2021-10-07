@@ -67,8 +67,6 @@ def download_img(url):
 
 if __name__ == '__main__':
     for i in range(1, collect_page + 1):
-        if i == 2:
-            continue
         response = get_requests('http://www.51kaxun.com/news/search.php?id=1&p=%s' % i)
         two_url_list = get_one_page(response)
         data_list = get_two_page_detail(two_url_list)
