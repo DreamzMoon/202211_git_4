@@ -38,6 +38,7 @@ def get_conn(ssh_conf,mysql_conf):
     return client
 
 if __name__ == "__main__":
+    logger.info("start")
     conn = get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
     with conn.cursor() as cursor:
         sql = "select * from lh_user where phone = 13559436425"
