@@ -1,14 +1,15 @@
 from qiniu import Auth, put_file, BucketManager
+from config import logger
 import hashlib
 
 class QiniuAccess(object):
     # AccessKey
-    ak = 'GPwA1lAYLztfx1zzhRNZO_dxKCcemjXpjQmXo1qh'
+    ak = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'
     # SecretKey
-    sk = 'fj64vQ-XyQarJXauRbwDyny8eccuwx0Pi2pniuxA'
+    sk = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'
     # 上传空间
-    bucket = 'zixuntest'
-    url = 'r0lmfrpuv.hn-bkt.clouddn.com/'
+    bucket = 'xiansuonews'
+    url = 'http://static.xiansuoapp.com/'
 
     # 生成上传凭证
     def qiniu_token(self, key):
@@ -33,8 +34,12 @@ class QiniuAccess(object):
         file_name_split = file_name.split('.')
         key = self.md5(file_name_split[0]) + '.' +file_name_split[1]
         ret, info = bm.fetch(img_url, self.bucket, key)
-        img_key = self.url + ret.get('key')
-        return img_key
+        try:
+            img_key = self.url + ret.get('key')
+            return img_key
+        except Exception as e:
+            logger.error(f'图片上传异常，异常原因：{e}--上传结果：{ret},异常URL：{img_url}')
+            return False
 
     def upload_img(self, file_path, file_name):
         '''
