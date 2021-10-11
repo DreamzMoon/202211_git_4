@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from common import *
 
 # 积分活动或优惠资讯
