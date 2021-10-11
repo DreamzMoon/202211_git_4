@@ -15,6 +15,7 @@ class CardNews(object):
                     data = {
                         'type_id': '14',
                         'title': '',
+                        'author': '',
                         'describes': '',
                         'tags': access_dict['tag'],
                         'visits_virtual': random.randint(300, 900),
@@ -25,11 +26,22 @@ class CardNews(object):
                     data['describes'] = re.sub('\s+', '', describes)
                     article_url = li.xpath('.//a/@href')[0]
                     data['title'] = li.xpath('.//a/text()')[0]
+                    logger.info('title: %s' % data['title'])
                     article_response = get_requests(article_url, mode='other')
                     if not article_response:
                         logger.error(f'网络异常，请求文章数据错误,异常文章URL：{article_url}')
                         continue
                     soup = BeautifulSoup(article_response, 'html.parser')
+                    author_soup = soup.select('div.yhym p.right01_date')
+                    if author_soup:
+                        try:
+                            authors = author_soup[0].get_text()
+                            author = authors.split('：')[2][:4]
+                            data['author'] = author
+                        except:
+                            pass
+                    else:
+                        pass
                     article_soup = soup.select('div.yhym div.right01_nr')[0]
                     result_list = judge_and_replace_img(article_soup, prefix_url)
                     if not result_list[0]:
@@ -45,5 +57,6 @@ class CardNews(object):
             save_data(access_dict, data_list)
         except Exception as e:
             logger.error(f'{access_dict["tag"]}采集异常，异常信息：{e}')
+            logger.exception(traceback.format_exc())
 
 
