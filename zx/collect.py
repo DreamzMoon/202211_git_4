@@ -43,7 +43,7 @@ class ZiXunCollect(object):
         FinancialLife().financial(self.access_dict, tag_url)
 
     def main(self):
-        logger.info(f'开始采集{self.access_dict["tag"]}数据')
+        logger.info(u'开始采集%s数据' % self.access_dict["tag"])
         if self.access_dict["tag"] == '卡新闻':
             self.card_news()
         elif self.access_dict["tag"] == '积分活动' or self.access_dict["tag"] == '优惠资讯':

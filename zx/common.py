@@ -24,7 +24,7 @@ def get_requests(url, mode='other'):
             elif mode == 'json':
                 return json.loads(response.text)
         except Exception as e:
-            logger.error(f'URL：{url}请求失败，重新请求')
+            logger.error(u'URL：%s请求失败，重新请求' % url)
             time.sleep(3)
     return False
 
@@ -90,7 +90,7 @@ def check_advertising(data, soup, prefix_url):
                 img_list.append(result_list[1])
             article_list.append(str(result_list[0]))
         article = ''.join(article_list)
-        return article, img_list, data
+        return article, img_list
     except Exception as e:
         logger.error('检查错误,错误原因：%s' % e)
         return False
@@ -111,7 +111,7 @@ def submit_img(url, prefix_url=""):
 
 # 通知数据
 def save_data(access_dict, data_list):
-    logger.info(f'{access_dict["tag"]}进行数据通知')
+    logger.info(u'%s进行数据通知' % access_dict["tag"])
     headers = {
         'access-key': access_dict['access_key']
     }
@@ -121,7 +121,7 @@ def save_data(access_dict, data_list):
                 requests.post(access_dict['api_url'], headers=headers, data=data)
                 break
         except Exception as e:
-            logger.error(f'{access_dict["title"]}通知失败,失败原因：%s' % e)
-    logger.info(f'{access_dict["tag"]}通知完成')
+            logger.error(u'%s 通知失败,失败原因：%s' % (access_dict["title"], e))
+    logger.info(u'%s通知完成' % access_dict["tag"])
 
 

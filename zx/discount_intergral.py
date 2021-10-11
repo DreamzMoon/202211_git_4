@@ -29,14 +29,14 @@ class DiscountOrInterfral(object):
                     data['describes'] = info['intro']
                     article_response = get_requests(article_url, mode='other')
                     if not article_response:
-                        logger.error(f'网络异常，请求文章数据错误,异常文章URL：{article_url}')
+                        logger.error(u'网络异常，请求文章数据错误,异常文章URL：%s' % article_url)
                         continue
                     soup = BeautifulSoup(article_response, 'lxml')
                     article_soup = soup.select('div.cont p')
                     # ============ 判断是否有广告水印 ============
-                    result_list = check_advertising(article_soup, prefix_url)
+                    result_list = check_advertising(data, article_soup, prefix_url)
                     if not result_list[0]:
-                        logger.error(f'异常文章url: {article_url}')
+                        logger.error(u'异常文章url: %s' % article_url)
                         continue
                     # 内容首图,如果失败使用文章第一张,
                     try:
@@ -47,9 +47,9 @@ class DiscountOrInterfral(object):
                             data['image'] = result_list[1]
                     data['body_text'] = result_list[0]
                     data_list.append(data)
-            logger.info(f'采集{access_dict["tag"]}结束, 条数：{len(data_list)}')
+            logger.info(u'采集%s结束, 条数：{len(data_list)}' % access_dict["tag"])
             # 数据入库
             save_data(access_dict, data_list)
         except Exception as e:
-            logger.error(f'{access_dict["tag"]}采集异常，异常信息：{e}')
+            logger.error(u'%s采集异常，异常信息：%s' % (access_dict["tag"], e))
             logger.exception(traceback.format_exc())
