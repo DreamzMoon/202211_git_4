@@ -41,3 +41,26 @@ lianghao_mysql_conf = {
 #默认配置
 ssh_conf = {}
 mysql_conf = {}
+
+# 资讯采集apiaccess-key
+zx_api_access_key= 'R4NoCsK4qMwvUisGW5o0odCr7GA2D9Yn'
+# 资讯采集api通知地址
+zx_api_url = 'http://xsnews.com/open/content/python'
+# 发布栏目id
+card_news_category_ids = 55 # 卡新闻
+intergral_category_ids = 56 # 积分活动
+discount_category_ids = 'xx' # 优惠资讯
+financil_activity_category_ids = 'xx' # 理财生活
+# 资讯采集页数
+zx_collect_page = 2
+# 关键字
+zx_pass_word_list = ['我爱卡', '微信搜索', '公众号', '动态横版二维码', '来源']
+
+# 七牛云AccessKey
+qn_access_key = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'
+# 七牛云SecretKey
+qn_secre_key = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'
+# 七牛云上传空间
+qn_bucket = 'xiansuonews'
+# 七牛云域名
+qn_url = 'http://static.xiansuoapp.com/'

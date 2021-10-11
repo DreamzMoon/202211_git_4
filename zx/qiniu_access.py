@@ -1,15 +1,15 @@
 from qiniu import Auth, put_file, BucketManager
-from config import logger
+from config import *
 import hashlib
 
 class QiniuAccess(object):
     # AccessKey
-    ak = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'
+    ak = qn_access_key
     # SecretKey
-    sk = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'
+    sk = qn_secre_key
     # 上传空间
-    bucket = 'xiansuonews'
-    url = 'http://static.xiansuoapp.com/'
+    bucket = qn_bucket
+    url = qn_url
 
     # 生成上传凭证
     def qiniu_token(self, key):

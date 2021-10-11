@@ -1,75 +1,49 @@
-import requests
-import re
-from bs4 import BeautifulSoup
-from lxml import etree
+from common import *
 
+# 卡新闻
+class CardNews(object):
+    def card_news(self, access_dict, tag_url):
+        # 图片前缀url
+        prefix_url = 'http://www.51kaxun.com'
+        # 数据保存
+        data_list = []
+        try:
+            for page in range(1, zx_collect_page + 1):
+                response = get_requests(tag_url % page, mode='xpath')
+                li_xpath_list = response.xpath('//ul[@id="news_list"]/li')
+                for li in li_xpath_list:
+                    data = {
+                        'type_id': '14',
+                        'title': '',
+                        'describes': '',
+                        'tags': access_dict['tag'],
+                        'visits_virtual': random.randint(300, 900),
+                        'category_ids': access_dict['category_ids'],
+                        'body_text': '',
+                    }
+                    describes = li.xpath('./p/text()')[0]
+                    data['describes'] = re.sub('\s+', '', describes)
+                    article_url = li.xpath('.//a/@href')[0]
+                    data['title'] = li.xpath('.//a/text()')[0]
+                    article_response = get_requests(article_url, mode='other')
+                    if not article_response:
+                        logger.error(f'网络异常，请求文章数据错误,异常文章URL：{article_url}')
+                        continue
+                    soup = BeautifulSoup(article_response, 'html.parser')
+                    article_soup = soup.select('div.yhym div.right01_nr')[0]
+                    result_list = judge_and_replace_img(article_soup, prefix_url)
+                    if not result_list[0]:
+                        logger.error(f'异常文章url: {article_url}')
+                        continue
+                    # 如果文章有图片
+                    if result_list[1]:
+                        data['image'] = result_list[1]
+                    data['body_text'] = result_list[0]
+                    data_list.append(data)
+            logger.info(f'采集{access_dict["tag"]}结束, 条数：{len(data_list)}')
+            # 数据入库
+            save_data(access_dict, data_list)
+        except Exception as e:
+            logger.error(f'{access_dict["tag"]}采集异常，异常信息：{e}')
 
-tag = '"卡"新闻'
-base_url = 'http://www.51kaxun.com'
-img_base_path = r'C:\Users\V\Desktop\test_img/cardnews/'
-collect_page = 10
-
-def get_requests(url, mode='xpath'):
-    html = requests.get(url, timeout=20)
-    if mode == 'img':
-        return html.content
-    elif mode == 'xpath':
-        response = etree.HTML(html.text)
-        return response
-    elif mode == 'other':
-        return html.text
-
-def get_one_page(response):
-    two_url_list = []
-    li_xpath_list = response.xpath('//ul[@id="news_list"]/li')
-    for li in li_xpath_list:
-        url = li.xpath('.//a/@href')[0]
-        two_url_list.append(url)
-    return two_url_list
-
-def get_two_page_detail(url_list):
-    # 数据存储
-    data_list = []
-    for index, url in enumerate(url_list):
-        data = {
-            'tag': tag,
-            'title': '',
-            'article': '',
-        }
-        response = get_requests(url, mode='other')
-        data['title'] =  re.findall('"nr01_tit">(.*?)</h1', response)[0]
-        soup = BeautifulSoup(response, 'html.parser')
-        article_soup = soup.select('div.yhym div.right01_nr')[0]
-        if article_soup.select('img'):
-            img_soup_list = article_soup.select('img')
-            article = str(article_soup)
-            for img_soup in img_soup_list:
-                img_url = img_soup.get('src')
-                our_img_url = download_img(img_url)
-                article = article.replace(img_url, our_img_url)
-                print(our_img_url)
-        else:
-            article = str(article_soup)
-        data['article'] = article
-        print('第%s个： %s' % (index,data))
-        print('-' * 40)
-        data_list.append(data)
-    return data_list
-
-def download_img(url):
-    img_url = base_url + url
-    img_name = url.split('/')[-1]
-    our_img_url = img_base_path + img_name
-    img_file = get_requests(img_url, 'img')
-    with open(our_img_url, 'wb') as f:
-        f.write(img_file)
-    return our_img_url
-
-if __name__ == '__main__':
-    for i in range(1, collect_page + 1):
-        response = get_requests('http://www.51kaxun.com/news/search.php?id=1&p=%s' % i)
-        two_url_list = get_one_page(response)
-        data_list = get_two_page_detail(two_url_list)
-        print(len(data_list))
-        print('-' * 40)
 
