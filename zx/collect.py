@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../")
+
 from config import *
 from cardnews import CardNews
 from discount_intergral import DiscountOrInterfral
