@@ -25,8 +25,10 @@ class DiscountOrInterfral(object):
                         'body_text': '',
                     }
                     data['title'] = info['title']
+                    logger.info(info['title'])
                     article_url = info['purl']
                     data['describes'] = info['intro']
+                    data['author'] = info['author']
                     article_response = get_requests(article_url, mode='other')
                     if not article_response:
                         logger.error(u'网络异常，请求文章数据错误,异常文章URL：%s' % article_url)

@@ -75,6 +75,7 @@ def check_advertising(data, soup, prefix_url):
                     if '来源' in p_soup.get_text():
                         data['author'] = data['author'] + '/' + p_soup.get_text().split('：')[1]
                 except:
+                    print(traceback.format_exc())
                     logger.error('来源获取错误')
                 if p_soup.text.find(word) > -1:
                     flag = 1
