@@ -52,7 +52,7 @@ intergral_category_ids = 56 # 积分活动
 discount_category_ids = 'xx' # 优惠资讯
 financil_activity_category_ids = 'xx' # 理财生活
 # 资讯采集页数
-zx_collect_page = 2
+zx_collect_page = 1
 # 关键字
 zx_pass_word_list = ['我爱卡', '微信搜索', '公众号', '动态横版二维码', '来源']
 

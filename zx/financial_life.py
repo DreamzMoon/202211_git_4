@@ -32,6 +32,7 @@ class FinancialLife(object):
                         return
                     soup = BeautifulSoup(article_response, 'html.parser')
                     data['title'] = soup.select('h1.detail_title')[0].get_text()
+                    logger.info(data['title'])
                     article_soup = soup.select('div.text')[0]
                     article = judge_and_replace_img(article_soup, prefix_url)
                     if not article:
@@ -44,3 +45,4 @@ class FinancialLife(object):
             save_data(access_dict, data_list)
         except Exception as e:
             logger.error(f'{access_dict["tag"]}采集异常，异常信息：{e}')
+            logger.exception(traceback.format_exc())
