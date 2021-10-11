@@ -15,7 +15,7 @@ class CardNews(object):
                 li_xpath_list = response.xpath('//ul[@id="news_list"]/li')
                 for li in li_xpath_list:
                     data = {
-                        'type_id': '14',
+                        'type_id': zx_type_id,
                         'title': '',
                         'author': '',
                         'describes': '',

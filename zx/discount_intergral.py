@@ -16,7 +16,7 @@ class DiscountOrInterfral(object):
                 response = get_requests(tag_url % page, mode='json')
                 for info in response['data']['list']:
                     data = {
-                        'type_id': '14',
+                        'type_id': zx_type_id,
                         'title': '',
                         'describes': '',
                         'tags': access_dict["tag"],

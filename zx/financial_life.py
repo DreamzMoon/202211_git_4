@@ -16,7 +16,7 @@ class FinancialLife(object):
                 div_xpath_list = response.xpath('//div[@class="zixun_text"]')
                 for div in div_xpath_list:
                     data = {
-                        'type_id': '14',
+                        'type_id': zx_type_id,
                         'title': '',
                         'describes': '',
                         'tags': access_dict["tag"],
