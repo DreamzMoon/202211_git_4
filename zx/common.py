@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../")
+
 from bs4 import BeautifulSoup
 from lxml import etree
 from qiniu_access import QiniuAccess
