@@ -54,12 +54,17 @@ class ZiXunCollect(object):
             logger.info('标签输入错误')
 
 if __name__ == '__main__':
-    tag_list = ['卡新闻', '积分活动', '优惠资讯', '理财生活']
-    t_list = []
-    for tag in tag_list:
+    if ENV == 'pro':
+        tag_list = ['卡新闻', '积分活动', '优惠资讯', '理财生活']
+        t_list = []
+        for tag in tag_list:
+            collect = ZiXunCollect(tag)
+            t = Thread(target=collect.main)
+            t_list.append(t)
+        for t in t_list:
+            t.start()
+    else:
+        tag = '积分活动'
         collect = ZiXunCollect(tag)
-        t = Thread(target=collect.main)
-        t_list.append(t)
-    for t in t_list:
-        t.start()
+        collect.main()
 
