@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from bs4 import BeautifulSoup
 from lxml import etree
 from qiniu_access import QiniuAccess
 from config import *
+from bs4 import BeautifulSoup
 import requests, re, json, traceback, os, sys, time, hashlib, random
 
 
