@@ -4,9 +4,9 @@ import sys,os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from config import *
-from zx.cardnews import CardNews
-from zx.discount_intergral import DiscountOrInterfral
-from zx.financial_life import FinancialLife
+from cardnews import CardNews
+from discount_intergral import DiscountOrInterfral
+from financial_life import FinancialLife
 from threading import Thread
 
 # 资讯采集
