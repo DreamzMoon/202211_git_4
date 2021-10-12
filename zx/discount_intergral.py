@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
+<<<<<<< HEAD
 
 from zx.common import *
+=======
+from common import *
+>>>>>>> d103be2f8118c52e359005b1976727d81974a943
 
 # 积分活动或优惠资讯
 class DiscountOrInterfral(object):
