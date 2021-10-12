@@ -1,4 +1,6 @@
-from common import *
+# -*- coding: utf-8 -*-
+
+from zx.common import *
 
 # 卡新闻
 class CardNews(object):
@@ -13,7 +15,7 @@ class CardNews(object):
                 li_xpath_list = response.xpath('//ul[@id="news_list"]/li')
                 for li in li_xpath_list:
                     data = {
-                        'type_id': '14',
+                        'type_id': zx_type_id,
                         'title': '',
                         'author': '',
                         'describes': '',
@@ -29,7 +31,7 @@ class CardNews(object):
                     logger.info('title: %s' % data['title'])
                     article_response = get_requests(article_url, mode='other')
                     if not article_response:
-                        logger.error(f'网络异常，请求文章数据错误,异常文章URL：{article_url}')
+                        logger.error(u'网络异常，请求文章数据错误,异常文章URL：%s' % article_url)
                         continue
                     soup = BeautifulSoup(article_response, 'html.parser')
                     author_soup = soup.select('div.yhym p.right01_date')
@@ -45,18 +47,18 @@ class CardNews(object):
                     article_soup = soup.select('div.yhym div.right01_nr')[0]
                     result_list = judge_and_replace_img(article_soup, prefix_url)
                     if not result_list[0]:
-                        logger.error(f'异常文章url: {article_url}')
+                        logger.error(u'异常文章url: %s' % article_url)
                         continue
                     # 如果文章有图片
                     if result_list[1]:
                         data['image'] = result_list[1]
                     data['body_text'] = result_list[0]
                     data_list.append(data)
-            logger.info(f'采集{access_dict["tag"]}结束, 条数：{len(data_list)}')
+            logger.info(u'采集%s结束, 条数：{len(data_list)}' % access_dict["tag"])
             # 数据入库
             save_data(access_dict, data_list)
         except Exception as e:
-            logger.error(f'{access_dict["tag"]}采集异常，异常信息：{e}')
+            logger.error(u'%s采集异常，异常信息：%s' % (access_dict["tag"], e))
             logger.exception(traceback.format_exc())
 
 

@@ -14,9 +14,23 @@ logger = logging.getLogger(__name__)
 from env import *
 
 if ENV == "test":
-    pass
+    # 资讯测试
+    zx_api_url = 'http://xsnews.com/open/content/python'
+    zx_api_access_key = 'R4NoCsK4qMwvUisGW5o0odCr7GA2D9Yn' # access-key
+    zx_type_id = 14
+    card_news_category_ids = 55  # 卡新闻栏目id
+    intergral_category_ids = 56  # 积分活动栏目id
+    discount_category_ids = 'xx'  # 优惠资讯栏目id--测试未给栏目
+    financil_activity_category_ids = 'xx'  # 理财生活栏目id--测试未给栏目
 elif ENV == "pro":
-    pass
+    # 资讯正式
+    zx_api_url = 'http://xs.lkkjjt.com/open/content/python'  # api_url
+    zx_api_access_key = '2M4FqX5Z7IaQX1Q88c7cM73uspX4qGVk'  # apiaccess-key
+    zx_type_id = 15
+    card_news_category_ids = 86  # 卡新闻栏目id
+    intergral_category_ids = 87  # 积分活动栏目id
+    discount_category_ids = 88  # 优惠资讯栏目id--测试未给栏目
+    financil_activity_category_ids = 89  # 理财生活栏目id--测试未给栏目
 else:
     pass
 
@@ -42,25 +56,12 @@ lianghao_mysql_conf = {
 ssh_conf = {}
 mysql_conf = {}
 
-# 资讯采集apiaccess-key
-zx_api_access_key= 'R4NoCsK4qMwvUisGW5o0odCr7GA2D9Yn'
-# 资讯采集api通知地址
-zx_api_url = 'http://xsnews.com/open/content/python'
-# 发布栏目id
-card_news_category_ids = 55 # 卡新闻
-intergral_category_ids = 56 # 积分活动
-discount_category_ids = 'xx' # 优惠资讯
-financil_activity_category_ids = 'xx' # 理财生活
+qn_access_key = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'  # 七牛云AccessKey
+qn_secre_key = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'  # 七牛云SecretKey
+qn_bucket = 'xiansuonews'  # 七牛云上传空间
+qn_url = 'http://static.xiansuoapp.com/'  # 七牛云域名
 # 资讯采集页数
 zx_collect_page = 1
 # 关键字
 zx_pass_word_list = ['我爱卡', '微信搜索', '公众号', '动态横版二维码', '来源']
 
-# 七牛云AccessKey
-qn_access_key = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'
-# 七牛云SecretKey
-qn_secre_key = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'
-# 七牛云上传空间
-qn_bucket = 'xiansuonews'
-# 七牛云域名
-qn_url = 'http://static.xiansuoapp.com/'

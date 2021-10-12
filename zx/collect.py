@@ -1,10 +1,12 @@
-import sys
-sys.path.append("../")
+# -*- coding: utf-8 -*-
+
+import sys,os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from config import *
-from cardnews import CardNews
-from discount_intergral import DiscountOrInterfral
-from financial_life import FinancialLife
+from zx.cardnews import CardNews
+from zx.discount_intergral import DiscountOrInterfral
+from zx.financial_life import FinancialLife
 from threading import Thread
 
 # 资讯采集
@@ -41,7 +43,7 @@ class ZiXunCollect(object):
         FinancialLife().financial(self.access_dict, tag_url)
 
     def main(self):
-        logger.info(f'开始采集{self.access_dict["tag"]}数据')
+        logger.info(u'开始采集%s数据' % self.access_dict["tag"])
         if self.access_dict["tag"] == '卡新闻':
             self.card_news()
         elif self.access_dict["tag"] == '积分活动' or self.access_dict["tag"] == '优惠资讯':
@@ -52,7 +54,17 @@ class ZiXunCollect(object):
             logger.info('标签输入错误')
 
 if __name__ == '__main__':
-    tag = '积分活动'
-    collect = ZiXunCollect(tag)
-    collect.main()
+    if ENV == 'pro':
+        tag_list = ['卡新闻', '积分活动', '优惠资讯', '理财生活']
+        t_list = []
+        for tag in tag_list:
+            collect = ZiXunCollect(tag)
+            t = Thread(target=collect.main)
+            t_list.append(t)
+        for t in t_list:
+            t.start()
+    else:
+        tag = '积分活动'
+        collect = ZiXunCollect(tag)
+        collect.main()
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from bs4 import BeautifulSoup
 from lxml import etree
 from qiniu_access import QiniuAccess
@@ -19,7 +21,7 @@ def get_requests(url, mode='other'):
             elif mode == 'json':
                 return json.loads(response.text)
         except Exception as e:
-            logger.error(f'URL：{url}请求失败，重新请求')
+            logger.error(u'URL：%s请求失败，重新请求' % url)
             time.sleep(3)
     return False
 
@@ -35,11 +37,9 @@ def judge_and_replace_img(soup, prefix_url, pass_word_list=zx_pass_word_list):
                 if img_soup.get('alt'):
                     for word in pass_word_list:
                         if word in img_soup.get('alt'):
-                            print('存在关键字图片')
                             flag = 1
                             break
                 if flag == 1:
-                    print('跳过含gif图片')
                     continue
                 img_url = img_soup.get('src')
                 sub_img_url = submit_img(img_url, prefix_url)
@@ -51,7 +51,7 @@ def judge_and_replace_img(soup, prefix_url, pass_word_list=zx_pass_word_list):
             if img_replace_list:
                 return article, img_replace_list[0]
             else:
-                return article, None
+                return '', None
         else:
             return article, None
     except Exception as e:
@@ -60,7 +60,7 @@ def judge_and_replace_img(soup, prefix_url, pass_word_list=zx_pass_word_list):
         return False
 
 # 广告水印检查
-def check_advertising(soup, prefix_url):
+def check_advertising(data, soup, prefix_url):
     # 广告关键词
     try:
         article_list = []
@@ -68,6 +68,12 @@ def check_advertising(soup, prefix_url):
         for p_soup in soup:
             flag = 0
             for word in zx_pass_word_list:
+                try:
+                    if '来源' in p_soup.get_text():
+                        data['author'] = data['author'] + '/' + p_soup.get_text().split('：')[1]
+                except:
+                    print(traceback.format_exc())
+                    logger.error('来源获取错误')
                 if p_soup.text.find(word) > -1:
                     flag = 1
                     break
@@ -80,11 +86,11 @@ def check_advertising(soup, prefix_url):
                 continue
             if result_list[1]:
                 img_list.append(result_list[1])
-            # 内容首图,如果失败使用文章第一张,
             article_list.append(str(result_list[0]))
         article = ''.join(article_list)
         return article, img_list
-    except:
+    except Exception as e:
+        logger.error('检查错误,错误原因：%s' % e)
         return False
 
 # 图片上传
@@ -98,16 +104,22 @@ def submit_img(url, prefix_url=""):
         return sub_img_url
     except Exception as e:
         logger.error('图片上传异常，异常信息：%s' % e)
+        logger.exception(traceback.format_exc())
         return False
 
 # 通知数据
 def save_data(access_dict, data_list):
-    logger.info(f'{access_dict["tag"]}进行数据通知')
+    logger.info(u'%s进行数据通知' % access_dict["tag"])
     headers = {
         'access-key': access_dict['access_key']
     }
     for data in data_list:
-        requests.post(access_dict['api_url'], headers=headers, data=data)
-    logger.info(f'{access_dict["tag"]}通知成功')
+        try:
+            for i in range(3):
+                requests.post(access_dict['api_url'], headers=headers, data=data)
+                break
+        except Exception as e:
+            logger.error(u'%s 通知失败,失败原因：%s' % (access_dict["title"], e))
+    logger.info(u'%s通知完成' % access_dict["tag"])
 
 
