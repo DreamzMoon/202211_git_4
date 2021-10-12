@@ -56,6 +56,7 @@ lianghao_mysql_conf = {
 ssh_conf = {}
 mysql_conf = {}
 
+# 七牛云
 qn_access_key = '1-72BchKgU9rHSfMS4WzT9RIeecYWlPUewwPEJ_2'  # 七牛云AccessKey
 qn_secre_key = '2fauZ0LZJoCZR--rtHEQeUu-Y8w4GbJEuhCKgohz'  # 七牛云SecretKey
 qn_bucket = 'xiansuonews'  # 七牛云上传空间

@@ -28,7 +28,7 @@ class CardNews(object):
                     data['describes'] = re.sub('\s+', '', describes)
                     article_url = li.xpath('.//a/@href')[0]
                     data['title'] = li.xpath('.//a/text()')[0]
-                    logger.info('title: %s' % data['title'])
+                    logger.debug('title: %s' % data['title'])
                     article_response = get_requests(article_url, mode='other')
                     if not article_response:
                         logger.error(u'网络异常，请求文章数据错误,异常文章URL：%s' % article_url)

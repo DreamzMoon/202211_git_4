@@ -34,7 +34,7 @@ class FinancialLife(object):
                         return
                     soup = BeautifulSoup(article_response, 'html.parser')
                     data['title'] = soup.select('h1.detail_title')[0].get_text()
-                    logger.info(data['title'])
+                    logger.debug('title: %s' % data['title'])
                     article_soup = soup.select('div.text')[0]
                     result_list = judge_and_replace_img(article_soup, prefix_url)
                     if not result_list[0]:

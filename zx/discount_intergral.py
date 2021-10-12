@@ -25,8 +25,7 @@ class DiscountOrInterfral(object):
                         'body_text': '',
                     }
                     data['title'] = info['title']
-
-                    logger.info(info['title'])
+                    logger.debug('title: %s' % data['title'])
                     article_url = info['purl']
                     data['describes'] = info['intro']
                     data['author'] = info['author']
@@ -38,11 +37,9 @@ class DiscountOrInterfral(object):
                     soup = BeautifulSoup(article_response, 'lxml')
                     article_soup = soup.select('div.cont p')
                     # ============ 判断是否有广告水印 ============
-
                     result_list = check_advertising(data, article_soup, prefix_url)
                     if not result_list[0]:
                         logger.error(u'异常文章url: %s' % article_url)
-
                         continue
                     # 内容首图,如果失败使用文章第一张,
                     try:
@@ -53,7 +50,6 @@ class DiscountOrInterfral(object):
                             data['image'] = result_list[1]
                     data['body_text'] = result_list[0]
                     data_list.append(data)
-
             logger.info(u'采集%s结束, 条数：{len(data_list)}' % access_dict["tag"])
             # 数据入库
             save_data(access_dict, data_list)
