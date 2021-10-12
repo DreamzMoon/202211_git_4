@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys, os, time
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from config import *
@@ -54,6 +54,7 @@ class ZiXunCollect(object):
             logger.info('标签输入错误')
 
 if __name__ == '__main__':
+    time_start = time.clock()
     if ENV == 'pro':
         tag_list = ['卡新闻', '积分活动', '优惠资讯', '理财生活']
         t_list = []
@@ -63,8 +64,11 @@ if __name__ == '__main__':
             t_list.append(t)
         for t in t_list:
             t.start()
+            t.join()
     else:
         tag = '积分活动'
         collect = ZiXunCollect(tag)
         collect.main()
+    time_end = time.clock()
+    print(u'Running time: %s Seconds' % (time_end-time_start))
 
