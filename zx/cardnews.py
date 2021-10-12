@@ -54,7 +54,7 @@ class CardNews(object):
                         data['image'] = result_list[1]
                     data['body_text'] = result_list[0]
                     data_list.append(data)
-            logger.info(u'采集%s结束, 条数：{len(data_list)}' % access_dict["tag"])
+            logger.info(u'采集%s结束, 条数：%s' % (access_dict["tag"], len(data_list)))
             # 数据入库
             save_data(access_dict, data_list)
         except Exception as e:

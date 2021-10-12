@@ -116,7 +116,7 @@ def save_data(access_dict, data_list):
     for data in data_list:
         try:
             for i in range(3):
-                response = requests.post(access_dict['api_url'], headers=headers, data=data)
+                response = requests.post(access_dict['api_url'], headers=headers, data=data).text
                 logger.info(u"%s通知结果：%s" % (data['title'], response))
                 break
         except Exception as e:
