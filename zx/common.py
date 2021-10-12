@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.append("../")
+
+from bs4 import BeautifulSoup
 from lxml import etree
 from qiniu_access import QiniuAccess
 from config import *
-from bs4 import BeautifulSoup
-import requests, re, json, traceback, os, sys, time, hashlib, random
+import requests, re, json, traceback, os, time, hashlib, random
 
 
 # 获取请求数据
