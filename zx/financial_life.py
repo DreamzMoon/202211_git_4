@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from common import *
+from zx.common import *
 
 # 理财生活
 class FinancialLife(object):

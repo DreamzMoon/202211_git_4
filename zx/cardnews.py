@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from common import *
+from zx.common import *
 
 # 卡新闻
 class CardNews(object):

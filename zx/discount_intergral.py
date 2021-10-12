@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from common import *
+from zx.common import *
 
 # 积分活动或优惠资讯
 class DiscountOrInterfral(object):
