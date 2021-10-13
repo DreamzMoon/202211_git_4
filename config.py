@@ -49,7 +49,16 @@ lianghao_mysql_conf = {
   "user": 'lh_read',
   "password": 'fBaVM4MMS8Myx9g6',
   "db": 'lh_pretty_client',
-  "charset": "utf8",
+  "charset": "utf8"
+}
+
+expect3_mysql_conf = {
+    "host":"pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com",
+    "port":3306,
+    "user":"expect3",
+    "password":"beXhrrATb1PmJ541",
+    "db":"expect3",
+    "charset": "utf8"
 }
 
 #默认配置

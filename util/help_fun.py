@@ -39,10 +39,11 @@ def get_conn(ssh_conf,mysql_conf):
 
 if __name__ == "__main__":
     logger.info("start")
-    conn = get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+    conn = get_conn(lianghao_ssh_conf,expect3_mysql_conf)
     with conn.cursor() as cursor:
-        sql = "select * from lh_user where phone = 13559436425"
+        # sql = "select * from lh_user where phone = 13559436425"
+        sql = 'show tables'
         cursor.execute(sql)
         data = cursor.fetchone()
-        logger.info(data)
+        logger.info("data:%s" %data)
     conn.close()
