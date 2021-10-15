@@ -61,6 +61,16 @@ expect3_mysql_conf = {
     "charset": "utf8"
 }
 
+
+qw3_mysql_conf = {
+    "host":"47.98.131.135",
+    "port":43306,
+    "user":"root",
+    "password":"luke@20193306",
+    "db":"expect_dev",
+    "charset": "utf8"
+}
+
 #默认配置
 ssh_conf = {}
 mysql_conf = {}
