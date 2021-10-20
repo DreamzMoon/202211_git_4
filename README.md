@@ -15,3 +15,9 @@ pymongo
 redis
 pillow
 sshtunnel
+
+
+######服务端使用的框架######
+flask
+
+
