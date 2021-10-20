@@ -21,9 +21,11 @@ get post put delete 四个请求常用的方法
 @demobp.route("/getdemo",methods=["get"])
 def getdemo():
     try:
+        logger.info("get请求来了")
         #获取参数可以用 如果参数用user_id request.args.get("user_id").strip()
         user_id = request.args.get("user_id")
         if user_id:
+            logger.info("准备返回用户数据")
             return {"code": "0000", "status": "success", "msg": "get获取用户id成功，user_id:%s" %user_id}
         else:
             return {"code":"0000","status":"success","msg":"get请求成功了"}
