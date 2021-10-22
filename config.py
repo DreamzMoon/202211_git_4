@@ -52,6 +52,15 @@ lianghao_mysql_conf = {
   "charset": "utf8"
 }
 
+lianghao_rw_mysql_conf = {
+  "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
+  "port": 3306,
+  "user": 'lh_analyze',
+  "password": 'Z4qEu8FHaphqMd6i',
+  "db": 'lh_analyze',
+  "charset": "utf8"
+}
+
 expect3_mysql_conf = {
     "host":"pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com",
     "port":3306,
