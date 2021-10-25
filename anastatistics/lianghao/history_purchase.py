@@ -16,7 +16,7 @@ sys.path.append(".")
 sys.path.append("../")
 sys.path.append("../../")
 sys.path.append("../../../")
-from config import *
+# from config import *
 from dataanalysis.config import *
 from util.help_fun import *
 import json
