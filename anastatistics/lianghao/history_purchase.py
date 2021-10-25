@@ -24,7 +24,6 @@ from datetime import timedelta,date
 
 conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
 sql = '''select phone,sum(total_price) total_money,sum(count) total_count,count(*) order_count from lh_order where del_flag = 0 and `status`=1 and phone !="" and phone is not null and DATE_FORMAT(pay_time,"%Y%m%d")  != CURRENT_DATE group by phone order by total_money desc'''
-
 datas = pd.read_sql(sql, conn_read)
 logger.info(datas)
 logger.info("-------")
@@ -52,6 +51,7 @@ with conn_crm.cursor() as cursor:
             pass
 
 datas["statistic_time"] = [date.today()+timedelta(days=-1)]*len(datas)
+datas = datas.drop(columns=['id'])
 conn_crm.close()
 
 # 通过sqlclchemy创建的连接无需关闭
