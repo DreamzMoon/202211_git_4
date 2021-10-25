@@ -7,8 +7,8 @@
 # @File : history_hold_value.py
 
 '''
-历史个人靓号持有的估值 按天按人统计 统计今天的
-每天00:30:00 跑
+历史个人靓号持有的估值 按天按人统计 统计今天的 这个要实时的更新
+每一个小时跑一次统计一条数据
 '''
 import os
 import sys
@@ -322,16 +322,36 @@ try:
     conn_crm.close()
 
     datas.fillna("",inplace=True)
-    datas["statistic_time"] = [(date.today()).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
+    datas["statistic_time"] = [(datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
     #删除unionid为空
     last_datas = datas.drop(datas[datas["unionid"]==""].index)
 
+    # 因为要实时调用 所以要走查询更新 或者查询插入操作
+    conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    last_datas = last_datas.values.tolist()
+    logger.info(last_datas)
 
-    # 通过sqlclchemy创建的连接无需关闭
-    logger.info("准备写入的数据")
-    logger.info(datas)
-    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
-    datas.to_sql("lh_history_hold_value",con=conn_rw,if_exists="append",index=False)
-    logger.info("写入成功")
+
+    # 批量插入
+    with conn_rw.cursor() as cursor:
+        select_sql = '''select * from lh_history_hold_value where statistic_time = %s'''
+        cursor.execute(select_sql,datas[0,"statistic_time"])
+        history_datas = cursor.fetchall()
+        if not history_datas:
+            insert_sql = '''insert into lh_history_pur (phone,lh_user_id,total_money,totaL_count,order_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+            cursor.executemany(insert_sql,last_datas)
+            conn_rw.commit()
+        #批量更新 或者直接删除在更新
+        else:
+            pass
+
+    conn_rw.close()
+
+    # # 通过sqlclchemy创建的连接无需关闭
+    # logger.info("准备写入的数据")
+    # logger.info(datas)
+    # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    # datas.to_sql("lh_history_hold_value",con=conn_rw,if_exists="append",index=False)
+    # logger.info("写入成功")
 except:
     logger.exception(traceback.format_exception())
