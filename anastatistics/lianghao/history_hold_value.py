@@ -20,7 +20,7 @@ from util.help_fun import *
 import json
 import datetime
 from datetime import timedelta,date
-
+import traceback
 
 conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
 sql = '''
@@ -289,45 +289,48 @@ ORDER BY
 	total_money DESC
 '''
 
-datas = pd.read_sql(sql, conn_read)
-logger.info(datas)
-logger.info("-------")
-conn_read.close()
+try:
+    datas = pd.read_sql(sql, conn_read)
+    logger.info(datas)
+    logger.info("-------")
+    conn_read.close()
 
-#准备进入数据拼接获取用户信息 获取crm拼接 数据要一条一条查不然有出入 数据匹配不对
-crm_mysql_conf["db"] = "luke_sincerechat"
-conn_crm = direct_get_conn(crm_mysql_conf)
-logger.info(conn_crm)
-if not conn_crm:
-    exit()
+    #准备进入数据拼接获取用户信息 获取crm拼接 数据要一条一条查不然有出入 数据匹配不对
+    crm_mysql_conf["db"] = "luke_sincerechat"
+    conn_crm = direct_get_conn(crm_mysql_conf)
+    logger.info(conn_crm)
+    if not conn_crm:
+        exit()
 
-with conn_crm.cursor() as cursor:
-    for i in range(datas.shape[0]):
-        logger.info("i:%s" %i)
-        sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
-        phone = datas.loc[i,"phone"]
-        logger.info("phone:%s" %phone)
-        cursor.execute(sql,(phone))
-        data = cursor.fetchone()
-        logger.info(data)
-        if data:
-            datas.loc[i,["unionid","name","nickname"]] = data.values()
-            logger.info(datas)
-        else:
-            pass
-
-
-conn_crm.close()
-
-datas.fillna("",inplace=True)
-datas["statistic_time"] = [(date.today()+timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
-#删除unionid为空
-last_datas = datas.drop(datas[datas["unionid"]==""].index)
+    with conn_crm.cursor() as cursor:
+        for i in range(datas.shape[0]):
+            logger.info("i:%s" %i)
+            sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
+            phone = datas.loc[i,"phone"]
+            logger.info("phone:%s" %phone)
+            cursor.execute(sql,(phone))
+            data = cursor.fetchone()
+            logger.info(data)
+            if data:
+                datas.loc[i,["unionid","name","nickname"]] = data.values()
+                logger.info(datas)
+            else:
+                pass
 
 
-# 通过sqlclchemy创建的连接无需关闭
-logger.info("准备写入的数据")
-logger.info(datas)
-conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
-datas.to_sql("lh_history_hold_value",con=conn_rw,if_exists="append",index=False)
-logger.info("写入成功")
+    conn_crm.close()
+
+    datas.fillna("",inplace=True)
+    datas["statistic_time"] = [(date.today()+timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
+    #删除unionid为空
+    last_datas = datas.drop(datas[datas["unionid"]==""].index)
+
+
+    # 通过sqlclchemy创建的连接无需关闭
+    logger.info("准备写入的数据")
+    logger.info(datas)
+    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    datas.to_sql("lh_history_hold_value",con=conn_rw,if_exists="append",index=False)
+    logger.info("写入成功")
+except:
+    logger.exception(traceback.format_exception())
