@@ -7,7 +7,7 @@
 # @File : history_hold_value.py
 
 '''
-历史个人靓号持有的估值 按天按人统计
+历史个人靓号持有的估值 按天按人统计 统计今天的
 每天00:30:00 跑
 '''
 
@@ -321,7 +321,7 @@ try:
     conn_crm.close()
 
     datas.fillna("",inplace=True)
-    datas["statistic_time"] = [(date.today()+timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
+    datas["statistic_time"] = [(date.today()).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
     #删除unionid为空
     last_datas = datas.drop(datas[datas["unionid"]==""].index)
 
