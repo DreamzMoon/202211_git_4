@@ -329,13 +329,14 @@ try:
     # 因为要实时调用 所以要走查询更新 或者查询插入操作
     conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
     last_datas = last_datas.values.tolist()
-    logger.info(last_datas)
+    logger.info(last_datas[0])
+
 
 
     # 批量插入
     with conn_rw.cursor() as cursor:
 
-        insert_sql = '''insert into lh_history_hold_value (phone,lh_user_id,total_money,hold_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s)'''
+        insert_sql = '''insert into lh_history_hold_value (lh_user_id,phone,total_money,hold_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s)'''
         cursor.executemany(insert_sql,last_datas)
         conn_rw.commit()
 
