@@ -335,7 +335,7 @@ try:
     # 批量插入
     with conn_rw.cursor() as cursor:
 
-        insert_sql = '''insert into lh_history_hold_value (phone,lh_user_id,total_money,hold_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+        insert_sql = '''insert into lh_history_hold_value (phone,lh_user_id,total_money,hold_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s)'''
         cursor.executemany(insert_sql,last_datas)
         conn_rw.commit()
 
