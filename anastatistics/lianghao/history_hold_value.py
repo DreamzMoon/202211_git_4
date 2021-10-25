@@ -334,16 +334,11 @@ try:
 
     # 批量插入
     with conn_rw.cursor() as cursor:
-        select_sql = '''select * from lh_history_hold_value where statistic_time = %s'''
-        cursor.execute(select_sql,datas[0,"statistic_time"])
-        history_datas = cursor.fetchall()
-        if not history_datas:
-            insert_sql = '''insert into lh_history_pur (phone,lh_user_id,total_money,totaL_count,order_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-            cursor.executemany(insert_sql,last_datas)
-            conn_rw.commit()
-        #批量更新 或者直接删除在更新
-        else:
-            pass
+
+        insert_sql = '''insert into lh_history_pur (phone,lh_user_id,total_money,totaL_count,order_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+        cursor.executemany(insert_sql,last_datas)
+        conn_rw.commit()
+
 
     conn_rw.close()
 
