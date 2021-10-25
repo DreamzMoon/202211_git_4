@@ -10,12 +10,11 @@
 历史个人靓号持有的估值 按天按人统计 统计今天的
 每天00:30:00 跑
 '''
-
+import os
 import sys
-sys.path.append(".")
-sys.path.append("../")
-sys.path.append("../../")
-sys.path.append("../../../")
+
+father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+sys.path.append(sys.path[0].split(father_dir)[0])
 # from config import *
 from dataanalysis.config import *
 from util.help_fun import *
