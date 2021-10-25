@@ -2,10 +2,8 @@
 '''
 总费用统计、官方订单统计、转让订单统计
 '''
-import sys
-sys.path.append(".")
-sys.path.append("../")
-sys.path.append("../../")
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from config import *
 from util.help_fun import *
 
