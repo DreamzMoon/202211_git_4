@@ -42,4 +42,45 @@ CREATE TABLE `lh_transfer_total_price` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='转让费用统计';
 ###################################################################################
 
+####################################### 建表后更新数据 #######################################
+# 总订单
+conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+with conn_read.cursor() as cursor:
+    select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
+    cursor.execute(select_sql)
+    select_data = cursor.fetchall()
+    logger.info('查询成功')
+    logger.info(select_data)
+conn_read.close()
 
+conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+with conn_rw.cursor() as cursor:
+    insert_sql = "insert into lh_total_price_test(`statistic_time`, `order_count`, `total_count`, `sell_fee`, `buyer_fee`, `total_price`) values (%s, %s, %s, %s, %s, %s)"
+    # insert_sql = 'insert into lh_total_price_test values %s'
+    cursor.executemany(insert_sql, select_data)
+    logger.info('插入成功')
+conn_rw.commit()
+conn_rw.close()
+
+# 官方费用统计
+conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+with conn_read.cursor() as cursor:
+    select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
+    cursor.execute(select_sql)
+    select_data = cursor.fetchall()
+    logger.info('查询成功')
+    logger.info(select_data)
+conn_read.close()
+
+conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+with conn_rw.cursor() as cursor:
+    insert_sql = "insert into lh_official_total_price_test(`statistic_time`, `order_count`, `total_count`, `sell_fee`, `buyer_fee`, `total_price`) values (%s, %s, %s, %s, %s, %s)"
+    # insert_sql = 'insert into lh_total_price_test values %s'
+    cursor.executemany(insert_sql, select_data)
+    logger.info('插入成功')
+conn_rw.commit()
+conn_rw.close()
+
+
+
+###########################################################################################
