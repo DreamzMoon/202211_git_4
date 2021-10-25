@@ -15,9 +15,7 @@ import sys
 sys.path.append(".")
 sys.path.append("../")
 sys.path.append("../../")
-sys.path.append("../../../")
-sys.path.append(os.pardir)
-# from config import *
+from config import *
 from dataanalysis.config import *
 from util.help_fun import *
 import json
