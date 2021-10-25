@@ -1,0 +1,39 @@
+#建表
+CREATE TABLE `lh_recycle` (
+  `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
+  `recycle_count` decimal(15,0) DEFAULT NULL COMMENT '回收数量',
+  `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
+  `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+#回收靓号统计 全部统计
+insert into lh_analyze.lh_recycle (statistic_time,recycle_count)
+select DATE_FORMAT(create_time,"%Y%m%d") statistic_time,count(*) recycle_count from (
+select * from lh_transfer_log_0 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_1 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_2 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_3 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_4 where del_flag = 0 and type=3  union all
+select * from lh_transfer_log_5 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_6 where del_flag = 0 and type=3 union all
+select * from lh_transfer_log_7 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_8 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_9 where del_flag = 0 and type=3 ) t GROUP BY statistic_time
+HAVING statistic_time != CURRENT_DATE
+order by statistic_time desc
+
+
+#统计昨天的
+select DATE_FORMAT(create_time,"%Y%m%d") statistic_time,count(*) recycle_count from (
+select * from lh_transfer_log_0 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_1 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_2 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_3 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_4 where del_flag = 0 and type=3  union all
+select * from lh_transfer_log_5 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_6 where del_flag = 0 and type=3 union all
+select * from lh_transfer_log_7 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_8 where del_flag = 0 and type=3   union all
+select * from lh_transfer_log_9 where del_flag = 0 and type=3 ) t GROUP BY statistic_time
+HAVING statistic_time = DATE_ADD(CURRENT_DATE,INTERVAL -1 day)
+order by statistic_time desc
