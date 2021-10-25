@@ -10,11 +10,15 @@
 个人历史采购和采购数量按人统计按天分组
 每天凌晨统计数据 00:10:00开始跑
 '''
+import time
 import os
 import sys
-sys.path.append(os.getcwd().split("anastatistics")[0]+"/")
-# print(sys.path)
 
+father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+print(father_dir)
+sys.path.append(os.getcwd().split(father_dir)[0]+"/")
+print(sys.path)
+time.sleep(20)
 # sys.path.append(__file__)
 #
 # sys.path.append("../")
