@@ -7,6 +7,7 @@
 # @File : config.py
 
 #设置日志等级
+import pymysql
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
 logger = logging.getLogger(__name__)
@@ -79,6 +80,18 @@ qw3_mysql_conf = {
     "db":"expect_dev",
     "charset": "utf8"
 }
+
+crm_mysql_conf = {
+    "host":"118.31.53.162",
+    "port":3308,
+    "user":"copy",
+    "password":"459915476",
+    "db":"luke_crm",
+    "charset":"utf8",
+    "cursorclass": pymysql.cursors.DictCursor
+}
+
+
 
 #默认配置
 ssh_conf = {}

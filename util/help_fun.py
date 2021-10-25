@@ -84,6 +84,13 @@ def direct_get_conn(sql_conf):
     except:
         return None
 
+def get_connection():
+    try:
+        conn = pymysql.connect(**mysql_conf)
+        return conn
+    except:
+        return None
+
 def pd_conn(sql_conf):
     '''
     :param sql_conf: 数据库连接
@@ -131,13 +138,23 @@ if __name__ == "__main__":
 
 
     #通道pandas 如果是跳板机 可以先生成conn连接器
-    conn = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-    data = pd.read_sql("select * from lh_user order by create_time desc limit 20", conn)
-    logger.info(data)
+    # conn = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+    # data = pd.read_sql("select * from lh_user order by create_time desc limit 20", conn)
+    # logger.info(data)
 
     # sqlalchemy pandas
     # conn = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_mysql_conf)
     # data = pd.read_sql("select * from lh_user order by create_time desc limit 20", conn)
     # logger.info(data)
 
+    #直连
+    logger.info(crm_mysql_conf)
+    conn = direct_get_conn(crm_mysql_conf)
+    # conn = get_connection()
+    logger.info(conn)
+    cursor = conn.cursor()
+    sql = '''show tables'''
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    logger.info(data)
 

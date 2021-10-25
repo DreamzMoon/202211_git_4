@@ -32,7 +32,7 @@ conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
 testdata = pd.read_sql("select * from user limit 2",conn_rw)
 logger.info(testdata)
 logger.info(conn_rw)
-testdata.to_sql("lh_fee_test",con=conn_rw,if_exists="append",index=False)
+testdata.to_sql("lh_fee_test",con=conn_rw,if_exists="replace",index=False)
 # conn_rw.close()
 logger.info("写入成功")
 
