@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, time
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+sys.path.append(sys.path[0].split(father_dir)[0])
 
 from config import *
 from cardnews import CardNews

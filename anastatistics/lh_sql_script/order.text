@@ -80,7 +80,19 @@ with conn_rw.cursor() as cursor:
     logger.info('插入成功')
 conn_rw.commit()
 conn_rw.close()
-
-
-
 ###########################################################################################
+select
+    date_format(create_time, '%Y-%m-%d') statistic_time,
+    count(*) order_count,
+    sum(count) total_count,
+    sum(sell_fee) sell_fee,
+    sum(fee) buyer_fee,
+    sum(total_price) total_price
+from
+    lh_order
+where
+    `status` = 1
+and
+    del_flag = 0
+and
+    date_format(create_time, '%Y-%m-%d') = curdate()

@@ -3,7 +3,8 @@
 总费用统计、官方订单统计、转让订单统计
 '''
 import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+sys.path.append(sys.path[0].split(father_dir)[0])
 from config import *
 from util.help_fun import *
 
