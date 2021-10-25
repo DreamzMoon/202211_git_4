@@ -13,12 +13,12 @@
 import time
 import os
 import sys
-
+print("sys.path:%s" %sys.path)
 father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
-print(father_dir)
+print("father_dir:%s" %father_dir)
 sys.path.append(os.getcwd().split(father_dir)[0]+"/")
-print(sys.path)
-time.sleep(20)
+print("sys.path:%s" %sys.path)
+time.sleep(10)
 # sys.path.append(__file__)
 #
 # sys.path.append("../")
