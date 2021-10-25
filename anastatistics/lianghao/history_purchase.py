@@ -10,12 +10,13 @@
 个人历史采购和采购数量按人统计按天分组
 每天凌晨统计数据 00:10:00开始跑
 '''
-
+import os
 import sys
 sys.path.append(".")
 sys.path.append("../")
 sys.path.append("../../")
 sys.path.append("../../../")
+sys.path.append(os.pardir)
 # from config import *
 from dataanalysis.config import *
 from util.help_fun import *
