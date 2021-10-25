@@ -12,12 +12,17 @@
 '''
 import os
 import sys
-sys.path.append(".")
-sys.path.append("../")
-sys.path.append("../../")
-sys.path.append("../../../")
-# from config import *
-from dataanalysis.config import *
+sys.path.append(os.getcwd().split("anastatistics")[0]+"/")
+# print(sys.path)
+
+# sys.path.append(__file__)
+#
+# sys.path.append("../")
+# sys.path.append("../../")
+# sys.path.append("../../../")
+from config import *
+# print(sys.path)
+# from dataanalysis.config import *
 from util.help_fun import *
 import json
 import datetime
