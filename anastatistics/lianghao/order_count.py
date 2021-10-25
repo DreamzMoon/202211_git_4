@@ -64,3 +64,8 @@ def count_order_data():
 
 
 count_order_data()
+
+
+# table_list = ['lh_total_price', 'lh_official_total_price', 'lh_transfer_total_price']
+# for table in table_list:
+#     init_table(table)
