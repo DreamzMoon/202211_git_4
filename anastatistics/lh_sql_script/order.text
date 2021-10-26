@@ -2,6 +2,7 @@
 # 总费用统计
 CREATE TABLE `lh_total_price` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `statistic_time` date NULL DEFAULT NULL COMMENT '每日统计时间',
   `sell_fee` decimal(15,2) DEFAULT NULL COMMENT '售卖手续费',
   `buyer_fee` decimal(15,2) DEFAULT NULL COMMENT '买方手续费',
   `total_price` decimal(10,2) DEFAULT NULL COMMENT '成交总金额',
@@ -16,7 +17,7 @@ CREATE TABLE `lh_total_price` (
 # 官方费用统计
 CREATE TABLE `lh_official_total_price` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-	`statistic_time` timestamp NULL DEFAULT NULL COMMENT '每日统计时间',
+	`statistic_time` date NULL DEFAULT NULL COMMENT '每日统计时间',
 	`order_count` bigint(10) DEFAULT NULL COMMENT '成交订单总数',
 	`total_count` bigint(10) DEFAULT NULL COMMENT '成交总数量',
   `sell_fee` decimal(15,2) DEFAULT NULL COMMENT '卖方手续费',
@@ -30,7 +31,7 @@ CREATE TABLE `lh_official_total_price` (
 # 转让费用统计
 CREATE TABLE `lh_transfer_total_price` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-	`statistic_time` timestamp NULL DEFAULT NULL COMMENT '每日统计时间',
+	`statistic_time` date NULL DEFAULT NULL COMMENT '每日统计时间',
 	`order_count` bigint(10) DEFAULT NULL COMMENT '成交订单总数',
 	`total_count` bigint(10) DEFAULT NULL COMMENT '成交总数量',
   `sell_fee` decimal(15,2) DEFAULT NULL COMMENT '卖方手续费',
@@ -44,7 +45,7 @@ CREATE TABLE `lh_transfer_total_price` (
 # 分用户重复下单统计
 CREATE TABLE `lh_repeat_order_count` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-	`statistic_time` timestamp NULL DEFAULT NULL COMMENT '统计时间',
+	`statistic_time` date NULL DEFAULT NULL COMMENT '统计时间',
 	`create_order_time` date NULL DEFAULT NULL COMMENT '订单创建时间',
 	`user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户id',
 	`unionid` bigint NOT NULL COMMENT 'unionid',

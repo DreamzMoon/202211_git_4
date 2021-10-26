@@ -1,0 +1,149 @@
+####################################### 建 表 #######################################
+CREATE TABLE `lh_thaw_count` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `statistic_time` date NULL DEFAULT NULL COMMENT '统计时间',
+  `thaw_count` bigint(10) DEFAULT NULL COMMENT '解冻数量',
+  `add_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
+  `upd_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='解冻数量统计';
+####################################################################################
+####################################### 数据初始化SQL语句 #######################################
+select statistic_time, sum(thaw_count) thaw_count from
+        (
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_0
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_1
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_2
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_3
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_4
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_5
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_6
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_7
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_8
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_9
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_a
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_b
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_c
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_d
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_e
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+            union all
+            (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_f
+            where del_flag = 0 and thaw_time < curdate()
+            group by statistic_time)
+        ) t1
+        group by statistic_time
+        having statistic_time is not null
+        and statistic_time != '0000-00-00'
+###############################################################################################
+####################################### 数据更新SQL语句 #######################################
+select statistic_time, sum(thaw_count) thaw_count from
+(
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_0
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_1
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_2
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_3
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_4
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_5
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_6
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_7
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_8
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_9
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_a
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_b
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_c
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_d
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_e
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+    union all
+    (select date_format(thaw_time, '%Y-%m-%d') as statistic_time, count(*) as thaw_count from lh_pretty_hold_f
+    where del_flag = 0 and thaw_time < curdate() and thaw_time >= date_sub(curdate(), interval 1 day)
+    group by statistic_time)
+) t1
+group by statistic_time
