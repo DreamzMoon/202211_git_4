@@ -14,7 +14,14 @@ CREATE TABLE `lh_user` (
   `vertify_status` tinyint(1) DEFAULT NULL COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
   `address` text COMMENT '身份证地址',
   `birth` date DEFAULT NULL COMMENT '出生日期',
-  `nationality` varchar(10) DEFAULT NULL COMMENT '族'
+  `nationality` varchar(10) DEFAULT NULL COMMENT '族',
+  `vip_grade` tinyint(2) DEFAULT NULL COMMENT '等级 1普通会员 2vip会员 3至尊VIP',
+  `vip_starttime` datetime DEFAULT NULL COMMENT 'vip开始时间',
+  `vip_endtime` datetime DEFAULT NULL COMMENT 'vip结束时间',
+  `serpro_grade` tinyint(2) DEFAULT NULL COMMENT '服务商等级：1初级 2中级 3高级 4机构服务商',
+  `serpro_status` tinyint(2) DEFAULT NULL COMMENT '服务视状态：1正常  0已注销',
+  `serpro_starttime` datetime DEFAULT NULL COMMENT '服务商的开通时间',
+  `user_type` tinyint(1) DEFAULT '0' COMMENT '0:正常用户 1：开发用户 2：运营 3：测试'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 

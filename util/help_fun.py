@@ -148,13 +148,19 @@ if __name__ == "__main__":
     # logger.info(data)
 
     #直连
-    logger.info(crm_mysql_conf)
-    conn = direct_get_conn(crm_mysql_conf)
-    # conn = get_connection()
-    logger.info(conn)
-    cursor = conn.cursor()
-    sql = '''show tables'''
-    cursor.execute(sql)
-    data = cursor.fetchall()
+    # logger.info(crm_mysql_conf)
+    # conn = direct_get_conn(crm_mysql_conf)
+    # # conn = get_connection()
+    # logger.info(conn)
+    # cursor = conn.cursor()
+    # sql = '''show tables'''
+    # cursor.execute(sql)
+    # data = cursor.fetchall()
+    # logger.info(data)
+
+    #crm
+    conn_engine = pd_conn(crm_mysql_conf)
+    sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
+    data = pd.read_sql(sql,conn_engine)
     logger.info(data)
 
