@@ -51,7 +51,7 @@ crm_mysql_conf["db"] = "luke_crm"
 conn_crm = direct_get_conn(crm_mysql_conf)
 auth_datas = ""
 with conn_crm.cursor() as cursor:
-    sql = '''select unionid,types auto_type,status vertify_status,address,birth,nationality from authentication '''
+    sql = '''select unionid,types auto_type,status vertify_status,address,birth,nationality from authentication'''
     cursor.execute(sql)
     auth_datas = pd.DataFrame(cursor.fetchall())
 
@@ -73,6 +73,8 @@ last_datas = last_datas.merge(serpro_datas,how="left",on="unionid")
 
 
 conn_crm.close()
+
+logger.info("长、宽:",last_datas.shape)
 
 #准备入库
 conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
