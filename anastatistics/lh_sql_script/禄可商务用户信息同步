@@ -1,0 +1,58 @@
+######################################## 建表 ######################################
+CREATE TABLE `bus_user_test` (
+  `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
+  `parentid` bigint(20) DEFAULT '0' COMMENT '父id',
+  `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '姓名',
+  `nickname` varchar(128) CHARACTER SET utf8 COLLATE utf8_german2_ci DEFAULT '' COMMENT '昵称',
+  `sex` tinyint(1) DEFAULT '0' COMMENT '性别：0未知 1男  2女',
+  `phone` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '手机号',
+  `identity` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '身份证号',
+  `auto_type` tinyint(1) DEFAULT '1' COMMENT '1 人工审核  2自动审核',
+  `vertify_status` tinyint(1) DEFAULT '0' COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
+  `address` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '身份证地址',
+  `birth` date DEFAULT NULL COMMENT '生日',
+  `nationality` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '民族',
+  `capacity` tinyint(2) DEFAULT '20' COMMENT '身份：1运营中心/公司 2网店主 3带货者 20无身份(普通用户)',
+  `exclusive` tinyint(1) DEFAULT '1' COMMENT '网店主类型：1专营店 2自营店',
+  `bus_status` tinyint(1) DEFAULT '1' COMMENT '状态：1正常  2冻结 3已购买系统待进货',
+  `provider_garde` tinyint(1) DEFAULT NULL COMMENT '服务商等级：1初级 2中级 3高级 4机构服务商',
+  `provider_status` tinyint(1) DEFAULT '1' COMMENT '服务商状态：1正常  0已注销',
+  `provider_starttime` datetime DEFAULT NULL COMMENT '服务商开通时间',
+  `vip_grade` int(11) DEFAULT NULL COMMENT '等级 1普通会员 2vip会员 3至尊VIP',
+  `vip_starttime` datetime DEFAULT NULL COMMENT 'vip开通时间',
+  `vip_endtime` datetime DEFAULT NULL COMMENT 'vip结束时间',
+  `addtime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '注册时间',
+  `udptime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '修改时间',
+  `invtime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '被邀请时间',
+  `extime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '审核时间',
+  `user_type` tinyint(1) DEFAULT '0' COMMENT '账号类型:0:正常用户 1：开发用户 2：运营 3：测试'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+#######################################################################################
+############################################# sql语句 ##########################################
+# luke_bus user
+select
+    unionid, punionid parentid, phone, u_nickname nickname, capacity, `exclusive`, `status` bus_status, from_unixtime(addtime,'%Y-%m-%d %H:%i:%s') addtime, from_unixtime(udptime,'%Y-%m-%d %H:%i:%s') udptime, from_unixtime(invtime,'%Y-%m-%d %H:%i:%s') invtime
+from
+    `user`
+where
+    phone is not null
+and
+    phone != ''
+
+# luke_crm authentication
+select
+    unionid, identity, types auto_type, `status` vertify_status, sex, name, address, birth, nationality, from_unixtime(extime,'%Y-%m-%d %H:%i:%s') extime
+from
+    luke_crm.authentication
+
+# luke_crm user_serpro
+select
+    unionid, grade provider_garde, `status` provider_status, from_unixtime(starttime,'%Y-%m-%d %H:%i:%s') provider_starttime
+from
+    luke_crm.user_serpro
+
+# luke_crm user_vip
+select
+    unionid, grade vip_grade, from_unixtime(starttime,'%Y-%m-%d %H:%i:%s')  vip_starttime, from_unixtime(endtime,'%Y-%m-%d %H:%i:%s')  vip_endtime
+from
+    luke_crm.user_vip
