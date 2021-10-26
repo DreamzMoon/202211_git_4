@@ -167,7 +167,9 @@ def thaw_count_data(mode='update'):
         count_data = pd.read_sql(thaw_count_sql, conn_lh_read)
         conn_lh_read.close()
         logger.info('解冻靓号统计查询结束')
-
+        logger.info('=' * 20 + '查询结果' + '=' * 20)
+        logger.info(count_data)
+        logger.info('=' * 30)
         logger.info("准备写入")
         # 通过sqlclchemy创建的连接无需关闭
         conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)

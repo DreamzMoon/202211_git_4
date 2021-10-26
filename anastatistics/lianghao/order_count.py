@@ -52,6 +52,13 @@ def count_order_data():
         transfer_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type in (1, 4) and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
         logger.info("转让费用查询成功")
         conn_read.close()
+
+        logger.info('=' * 20 + '查询结果' + '=' * 20)
+        logger.info('total_data:', total_data)
+        logger.info('official_total_data:', official_total_data)
+        logger.info('transfer_total_data:', transfer_total_data)
+        logger.info('=' * 30)
+
         logger.info("准备写入")
 
         # 通过sqlclchemy创建的连接无需关闭

@@ -123,11 +123,18 @@ def repeat_order_data(mode='update'):
             crm_data = cursor.fetchall()
         conn_crm.close()
 
-        logger.info("准备写入")
+
+
         crm_data = pd.DataFrame(crm_data)
         repeat_data["statistic_time"] = (date.today()).strftime("%Y-%m-%d")
         fina_data = repeat_data.merge(crm_data, how='left', on='phone')
         logger.info(fina_data.shape)
+
+        logger.info('=' * 20 + '查询结果' + '=' * 20)
+        logger.info(fina_data.head())
+        logger.info('=' * 30)
+
+        logger.info("准备写入")
         # 通过sqlclchemy创建的连接无需关闭
         conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
         logger.info(conn_rw)
