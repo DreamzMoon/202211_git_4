@@ -54,6 +54,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and create_time <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -68,6 +69,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -82,6 +84,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -96,6 +99,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -110,6 +114,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -124,6 +129,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -137,7 +143,8 @@ FROM
 				lh_pretty_hold_6 
 			WHERE
 				del_flag = 0 
-				AND `status` IN ( 0, 2, 1 ) 
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -152,6 +159,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -166,6 +174,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -180,6 +189,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -194,6 +204,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -208,6 +219,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -222,6 +234,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -236,6 +249,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -250,6 +264,7 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id UNION ALL
@@ -264,13 +279,14 @@ FROM
 			WHERE
 				del_flag = 0 
 				AND `status` IN ( 0, 2, 1 ) 
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			GROUP BY
 				hold_phone,
 				pretty_type_id 
 			) a
 			LEFT JOIN lh_config_guide ON a.pretty_type_id = lh_config_guide.pretty_type_id 
 		WHERE
-			lh_config_guide.date <= CURRENT_DATE 
+			lh_config_guide.date <= date_add(CURRENT_DATE(),INTERVAL -1 day)
 			AND lh_config_guide.del_flag = 0 
 		GROUP BY
 			a.hold_phone,
@@ -317,7 +333,7 @@ try:
 
     ok_datas.fillna("", inplace=True)
     # ok_datas["statistic_time"] = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")
-    ok_datas["statistic_time"] = (datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+    ok_datas["statistic_time"] = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")
     # 删除unionid为空
     last_datas = ok_datas.drop(ok_datas[ok_datas["unionid"] == ""].index)
 

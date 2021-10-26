@@ -13,7 +13,7 @@ CREATE TABLE `lh_history_hold_value` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='个人持有靓号的估值';
 
 
-#个人靓号持有的估值 统计表
+#个人靓号持有的估值 统计表 实时的
 SELECT
   hold_user_id,
 	hold_phone,
@@ -280,6 +280,283 @@ ORDER BY
 
 
 
-
-
-
+#昨日
+SELECT
+  hold_user_id lh_user_id,
+	hold_phone phone,
+	sum( c.sum_price ) total_money,
+	sum( type_count ) hold_count
+FROM
+	(
+	SELECT
+		*
+	FROM
+		(
+		SELECT
+			a.*,
+			lh_config_guide.guide_price,
+			lh_config_guide.guide_price * a.type_count sum_price,
+			lh_config_guide.date
+		FROM
+			(
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_0
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and create_time <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_1
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_2
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_3
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_4
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_5
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_6
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_7
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_8
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_9
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_a
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_b
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_c
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_d
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_e
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id UNION ALL
+			SELECT
+			  hold_user_id,
+				hold_nick_name,
+				hold_phone,
+				pretty_type_id,
+				count(*) type_count
+			FROM
+				lh_pretty_hold_f
+			WHERE
+				del_flag = 0
+				AND `status` IN ( 0, 2, 1 )
+				and DATE_FORMAT(create_time,"%Y%m%d") <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			GROUP BY
+				hold_phone,
+				pretty_type_id
+			) a
+			LEFT JOIN lh_config_guide ON a.pretty_type_id = lh_config_guide.pretty_type_id
+		WHERE
+			lh_config_guide.date <= date_add(CURRENT_DATE(),INTERVAL -1 day)
+			AND lh_config_guide.del_flag = 0
+		GROUP BY
+			a.hold_phone,
+			lh_config_guide.pretty_type_id,
+			lh_config_guide.date
+		ORDER BY
+			lh_config_guide.date DESC
+		) b
+	GROUP BY
+		b.hold_phone,
+		b.pretty_type_id
+	) c
+GROUP BY
+	hold_phone
+having hold_phone != ""
+ORDER BY
+	total_money DESC
