@@ -181,4 +181,4 @@ def thaw_count_data(mode='update'):
         logger.error('解冻靓号统计写入失败')
 
 
-thaw_count_data(mode='init')
+thaw_count_data()
