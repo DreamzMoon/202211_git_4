@@ -5,6 +5,8 @@
 import sys, os
 father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
+
+import traceback
 from config import *
 from util.help_fun import *
 
@@ -34,7 +36,8 @@ def init_table(table_name):
         conn_rw.commit()
         conn_rw.close()
     except:
-        return logger.error('表数据初始化异常')
+        logger.error(traceback.format_exc())
+        logger.error('表数据初始化异常')
 
 
 
@@ -61,7 +64,8 @@ def count_order_data():
         transfer_total_data.to_sql("lh_transfer_total_price", con=conn_rw, if_exists="append", index=False)
         logger.info("转让费用写入成功")
     except:
-        return logger.error("数据更新异常")
+        logger.error(traceback.format_exc())
+        logger.error('费用数据统计失败')
 
 
 count_order_data()
