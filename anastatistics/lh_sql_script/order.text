@@ -47,7 +47,7 @@ CREATE TABLE `lh_repeat_order_count` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
 	`statistic_time` date NULL DEFAULT NULL COMMENT '统计时间',
 	`create_order_time` date NULL DEFAULT NULL COMMENT '订单创建时间',
-	`user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户id',
+	`lh_user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户id',
 	`unionid` bigint NOT NULL COMMENT 'unionid',
 	`name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '',
 	`nickname` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '',

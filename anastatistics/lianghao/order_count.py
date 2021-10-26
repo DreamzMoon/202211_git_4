@@ -54,9 +54,12 @@ def count_order_data():
         conn_read.close()
 
         logger.info('=' * 20 + '查询结果' + '=' * 20)
-        logger.info('total_data:', total_data)
-        logger.info('official_total_data:', official_total_data)
-        logger.info('transfer_total_data:', transfer_total_data)
+        logger.info('total_data')
+        logger.info(total_data.head())
+        logger.info('official_total_data')
+        logger.info(official_total_data.head())
+        logger.info('transfer_total_data')
+        logger.info(transfer_total_data.head())
         logger.info('=' * 30)
 
         logger.info("准备写入")

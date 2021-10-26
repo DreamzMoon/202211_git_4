@@ -78,7 +78,7 @@ def repeat_order_data(mode='update'):
             logger.info('进行表数据初始化')
             repeat_order_sql = '''
                         select
-                            user_id, date_format(create_time, '%Y-%m-%d') create_order_time, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count
+                            user_id lh_user_id, date_format(create_time, '%Y-%m-%d') create_order_time, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count
                         from 
                             lh_order
                         where
@@ -94,7 +94,7 @@ def repeat_order_data(mode='update'):
             logger.info('进行数据更新')
             repeat_order_sql = '''
                 select
-                    user_id, date_format(create_time, '%Y-%m-%d') create_order_time, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count
+                    user_id lh_user_id, date_format(create_time, '%Y-%m-%d') create_order_time, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count
                 from 
                     lh_order
                 where
