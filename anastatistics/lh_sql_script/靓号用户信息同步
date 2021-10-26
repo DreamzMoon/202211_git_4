@@ -1,0 +1,22 @@
+###建表
+CREATE TABLE `lh_user` (
+  `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
+  `parentid` bigint(20) DEFAULT NULL COMMENT '推荐id',
+  `lh_user_id` bigint(20) DEFAULT NULL COMMENT '靓号id',
+  `lh_status` tinyint(2) DEFAULT NULL COMMENT '启用状态 0否 1是',
+  `phone` varchar(11) DEFAULT NULL COMMENT '手机号码',
+  `addtime` datetime DEFAULT NULL COMMENT '创建时间',
+  `updtime` datetime DEFAULT NULL COMMENT '更新时间',
+  `sex` tinyint(1) DEFAULT NULL COMMENT '0未知  1男  2女',
+  `nickname` varchar(100) DEFAULT NULL COMMENT '昵称',
+  `name` varchar(100) DEFAULT NULL COMMENT '真实姓名',
+  `auto_type` tinyint(1) DEFAULT NULL COMMENT '1 人工审核  2自动审核',
+  `vertify_status` tinyint(1) DEFAULT NULL COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
+  `address` text COMMENT '身份证地址',
+  `birth` date DEFAULT NULL COMMENT '出生日期',
+  `nationality` varchar(10) DEFAULT NULL COMMENT '族'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+#删除
+delete from lh_user
