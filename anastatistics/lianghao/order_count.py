@@ -13,11 +13,11 @@ from util.help_fun import *
 # 建表插数据
 def init_table(table_name):
     if table_name == 'lh_total_price':
-        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
+        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 group by statistic_time having statistic_time < curdate() order by statistic_time desc'
     elif table_name == 'lh_official_total_price':
-        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
+        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 group by statistic_time having statistic_time < curdate() order by statistic_time desc'
     elif table_name == 'lh_transfer_total_price':
-        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type in (1, 4) group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
+        select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type in (1, 4) group by statistic_time having statistic_time < curdate() order by statistic_time desc'
     else:
         return logger.error('请输入正确的表名')
     try:
@@ -45,11 +45,11 @@ def count_order_data():
     try:
         # 执行查询总费用的统计
         conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-        total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and date_format(create_time, '%Y-%m-%d') = curdate()", conn_read)
+        total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
         logger.info("总费用查询完成")
-        official_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 and date_format(create_time, '%Y-%m-%d') = curdate()", conn_read)
+        official_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
         logger.info("官方总费用查询成功")
-        transfer_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type in (1, 4) and date_format(create_time, '%Y-%m-%d') = curdate()", conn_read)
+        transfer_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type in (1, 4) and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
         logger.info("转让费用查询成功")
         conn_read.close()
         logger.info("准备写入")
