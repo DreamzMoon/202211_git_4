@@ -11,7 +11,7 @@ CREATE TABLE `lh_history_pur` (
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `statistic_time` timestamp NULL DEFAULT NULL COMMENT '统计时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='历史采购表';
 
 
 #统计sql 前一天的  要取创建时间 付款时间由于解冻时间可修改不准

@@ -4,7 +4,7 @@ CREATE TABLE `lh_recycle` (
   `recycle_count` decimal(15,0) DEFAULT NULL COMMENT '回收数量',
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='回收靓号的每日统计';
 
 #回收靓号统计 全部统计
 insert into lh_analyze.lh_recycle (statistic_time,recycle_count)
