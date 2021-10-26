@@ -349,5 +349,6 @@ try:
         conn_rw.commit()
 
     conn_rw.close()
+    logger.info("入库成功")
 except:
     logger.exception(traceback.format_exception())
