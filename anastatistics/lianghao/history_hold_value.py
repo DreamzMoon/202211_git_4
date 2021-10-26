@@ -296,6 +296,7 @@ try:
     logger.info("-------")
     conn_read.close()
 
+    logger.info(datas.shape)
     #准备进入数据拼接获取用户信息 获取crm拼接 数据要一条一条查不然有出入 数据匹配不对
     crm_mysql_conf["db"] = "luke_sincerechat"
     conn_crm = direct_get_conn(crm_mysql_conf)
@@ -303,51 +304,50 @@ try:
     if not conn_crm:
         exit()
 
+    crm_datas = ""
     with conn_crm.cursor() as cursor:
-        for i in range(datas.shape[0]):
-            logger.info("i:%s" %i)
-            sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
-            phone = datas.loc[i,"phone"]
-            logger.info("phone:%s" %phone)
-            cursor.execute(sql,(phone))
-            data = cursor.fetchone()
-            logger.info(data)
-            if data:
-                datas.loc[i,["unionid","name","nickname"]] = data.values()
-                logger.info(datas)
-            else:
-                pass
+        sql = '''select id unionid,`name`,nickname,phone from user where phone is not null or phone != ""'''
+        cursor.execute(sql)
+        crm_datas = cursor.fetchall()
+        crm_datas = pd.DataFrame(crm_datas)
 
+    # with conn_crm.cursor() as cursor:
+    #     for i in range(datas.shape[0]):
+    #         logger.info("i:%s" %i)
+    #         sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
+    #         phone = datas.loc[i,"phone"]
+    #         logger.info("phone:%s" %phone)
+    #         cursor.execute(sql,(phone))
+    #         data = cursor.fetchone()
+    #         logger.info(data)
+    #         if data:
+    #             datas.loc[i,["unionid","name","nickname"]] = data.values()
+    #             logger.info(datas)
+    #         else:
+    #             pass
 
     conn_crm.close()
 
-    datas.fillna("",inplace=True)
-    datas["statistic_time"] = [(datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S")]*len(datas)
-    #删除unionid为空
-    last_datas = datas.drop(datas[datas["unionid"]==""].index)
+    ok_datas = datas.merge(crm_datas, how="left", on="phone")
+
+    ok_datas.fillna("", inplace=True)
+    # ok_datas["statistic_time"] = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S")
+    ok_datas["statistic_time"] = (datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+    # 删除unionid为空
+    last_datas = ok_datas.drop(ok_datas[ok_datas["unionid"] == ""].index)
 
     # 因为要实时调用 所以要走查询更新 或者查询插入操作
     conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
     last_datas = last_datas.values.tolist()
-    logger.info(last_datas[0])
+    # logger.info(last_datas[0])
+    logger.info(len(last_datas))
 
-
-
-    # 批量插入
+    # # 批量插入
     with conn_rw.cursor() as cursor:
-
         insert_sql = '''insert into lh_history_hold_value (lh_user_id,phone,total_money,hold_count,unionid,name,nickname,statistic_time) values (%s,%s,%s,%s,%s,%s,%s,%s)'''
         cursor.executemany(insert_sql,last_datas)
         conn_rw.commit()
 
-
     conn_rw.close()
-
-    # # 通过sqlclchemy创建的连接无需关闭
-    # logger.info("准备写入的数据")
-    # logger.info(datas)
-    # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
-    # datas.to_sql("lh_history_hold_value",con=conn_rw,if_exists="append",index=False)
-    # logger.info("写入成功")
 except:
     logger.exception(traceback.format_exception())
