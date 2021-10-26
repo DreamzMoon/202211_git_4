@@ -33,7 +33,7 @@ try:
     conn = direct_get_conn(crm_mysql_conf)
     vip_datas = ""
     serpro_datas = ""
-    # pandas read_sql 不支持sql时间戳格式化FROM_UNIXTIME
+    # pandas read_sql 不支持sql时间戳格式化FROM_UNIXTIME 所以这里改用sql查询方式 然后进行pandas 的动态拼接
     with conn.cursor() as cursor:
         sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
         cursor.execute(sql)
