@@ -10,7 +10,7 @@ CREATE TABLE `lh_history_hold_value` (
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `statistic_time` timestamp NULL DEFAULT NULL COMMENT '统计时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='个人持有靓号的估值';
 
 
 #个人靓号持有的估值 统计表
