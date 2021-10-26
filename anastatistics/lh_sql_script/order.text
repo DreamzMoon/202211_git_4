@@ -40,47 +40,28 @@ CREATE TABLE `lh_transfer_total_price` (
   `upd_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='转让费用统计';
+
+# 分用户重复下单统计
+CREATE TABLE `lh_repeat_order_count` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+	`statistic_time` timestamp NULL DEFAULT NULL COMMENT '统计时间',
+	`user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户id',
+	`unionid` bigint NOT NULL COMMENT 'unionid',
+	`name` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '',
+	`nickname` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT '',
+	`phone` char(16) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL COMMENT '用户手机',
+	`repeat_count` bigint(10) DEFAULT NULL COMMENT '重复订单总数',
+	`total_price` decimal(10,2) DEFAULT NULL COMMENT '重复订单总金额',
+	`total_count` bigint(10) DEFAULT NULL COMMENT '重复订单总数量',
+  `add_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
+  `upd_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='重复订单统计';
 ###################################################################################
 
-####################################### 建表后更新数据 #######################################
-# 总订单
-conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-with conn_read.cursor() as cursor:
-    select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
-    cursor.execute(select_sql)
-    select_data = cursor.fetchall()
-    logger.info('查询成功')
-    logger.info(select_data)
-conn_read.close()
 
-conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
-with conn_rw.cursor() as cursor:
-    insert_sql = "insert into lh_total_price_test(`statistic_time`, `order_count`, `total_count`, `sell_fee`, `buyer_fee`, `total_price`) values (%s, %s, %s, %s, %s, %s)"
-    # insert_sql = 'insert into lh_total_price_test values %s'
-    cursor.executemany(insert_sql, select_data)
-    logger.info('插入成功')
-conn_rw.commit()
-conn_rw.close()
-
-# 官方费用统计
-conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-with conn_read.cursor() as cursor:
-    select_sql = 'select date_format(create_time, "%Y-%m-%d") statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 group by statistic_time having statistic_time <> curdate() order by statistic_time desc'
-    cursor.execute(select_sql)
-    select_data = cursor.fetchall()
-    logger.info('查询成功')
-    logger.info(select_data)
-conn_read.close()
-
-conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
-with conn_rw.cursor() as cursor:
-    insert_sql = "insert into lh_official_total_price_test(`statistic_time`, `order_count`, `total_count`, `sell_fee`, `buyer_fee`, `total_price`) values (%s, %s, %s, %s, %s, %s)"
-    # insert_sql = 'insert into lh_total_price_test values %s'
-    cursor.executemany(insert_sql, select_data)
-    logger.info('插入成功')
-conn_rw.commit()
-conn_rw.close()
-###########################################################################################
+######################################## sql 语句####################################
+# 总费用查询
 select
     date_format(create_time, '%Y-%m-%d') statistic_time,
     count(*) order_count,
@@ -96,3 +77,49 @@ and
     del_flag = 0
 and
     date_format(create_time, '%Y-%m-%d') = curdate()
+
+# 官方费用查询
+select
+    date_format(create_time, '%Y-%m-%d') statistic_time,
+    count(*) order_count,
+    sum(count) total_count,
+    sum(sell_fee) sell_fee,
+    sum(fee) buyer_fee,
+    sum(total_price) total_price
+from
+    lh_order
+where
+    `status` = 1
+and
+    del_flag = 0
+and
+    type = 0
+and
+    date_format(create_time, '%Y-%m-%d') = curdate()
+
+# 转让费用查询
+select
+    date_format(create_time, '%Y-%m-%d') statistic_time,
+    count(*) order_count,
+    sum(count) total_count,
+    sum(sell_fee) sell_fee,
+    sum(fee) buyer_fee,
+    sum(total_price) total_price
+from
+    lh_order
+where
+    `status` = 1
+and
+    del_flag = 0
+and
+    type in (1, 4)
+and
+    date_format(create_time, '%Y-%m-%d') = curdate()
+
+# 重复下单统计
+select
+    user_id, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count from lh_order
+where
+    (now() - create_time) > 10 and `status` <> 1
+group by
+    user_id
