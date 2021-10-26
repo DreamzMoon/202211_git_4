@@ -37,7 +37,6 @@ def repeat_order_data():
         logger.info('重复订单查询结束')
         logger.info(repeat_data.shape)
 
-        repeat_data['unionid'] = repeat_data['name'] = repeat_data['nickname'] = ''
         #用户信息查询
         crm_mysql_conf["db"] = "luke_sincerechat"
         conn_crm = direct_get_conn(crm_mysql_conf)
@@ -46,24 +45,17 @@ def repeat_order_data():
             logger.info("conn_crm failed")
             exit()
         with conn_crm.cursor() as cursor:
-            for i in range(repeat_data.shape[0]):
-                logger.info('i: %s' % i)
-                sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
-                phone = repeat_data.loc[i, "phone"]
-                cursor.execute(sql, (phone))
-                data = cursor.fetchone()
-                if data:
-                    repeat_data.loc[i, ["unionid", "name", "nickname"]] = data.values()
-                else:
-                    pass
+            sql = '''select id as unionid, phone, `name`, nickname from user where phone is not null and phone != '' '''
+            cursor.execute(sql)
+            crm_data = cursor.fetchall()
         conn_crm.close()
-        logger.info(repeat_data.shape)
-
 
         logger.info("准备写入")
+        crm_data = pd.DataFrame(crm_data)
         repeat_data["statistic_time"] = (date.today()).strftime("%Y-%m-%d")
+        repeat_data = repeat_data.merge(crm_data, how='left', on='phone')
         repeat_data = repeat_data.loc[:, ['statistic_time', 'user_id', 'unionid', 'name', 'nickname', 'phone', 'repeat_count', 'total_price', 'total_count']]
-        logger.info(repeat_data.columns)
+        logger.info(repeat_data.shape)
         # 通过sqlclchemy创建的连接无需关闭
         conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
         logger.info(conn_rw)
