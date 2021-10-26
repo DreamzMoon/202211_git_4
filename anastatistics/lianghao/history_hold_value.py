@@ -311,21 +311,6 @@ try:
         crm_datas = cursor.fetchall()
         crm_datas = pd.DataFrame(crm_datas)
 
-    # with conn_crm.cursor() as cursor:
-    #     for i in range(datas.shape[0]):
-    #         logger.info("i:%s" %i)
-    #         sql = '''select id unionid,`name`,nickname  from user where phone = %s'''
-    #         phone = datas.loc[i,"phone"]
-    #         logger.info("phone:%s" %phone)
-    #         cursor.execute(sql,(phone))
-    #         data = cursor.fetchone()
-    #         logger.info(data)
-    #         if data:
-    #             datas.loc[i,["unionid","name","nickname"]] = data.values()
-    #             logger.info(datas)
-    #         else:
-    #             pass
-
     conn_crm.close()
 
     ok_datas = datas.merge(crm_datas, how="left", on="phone")
