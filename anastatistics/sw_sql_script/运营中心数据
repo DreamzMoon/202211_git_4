@@ -1,0 +1,19 @@
+######################################## 建表 ######################################
+CREATE TABLE `operationcenter_test` (
+  `unionid` bigint NOT NULL COMMENT 'unionid',
+  `parentid` int NOT NULL DEFAULT '0' COMMENT '邀请人',
+  `capacity` tinyint(1) NOT NULL DEFAULT '1' COMMENT '身份：1运营中心 2公司',
+  `name` varchar(10) NOT NULL DEFAULT '' COMMENT '姓名',
+  `phone` varchar(11) NOT NULL DEFAULT '' COMMENT '联系手机',
+  `operatename` varchar(64) NOT NULL DEFAULT '' COMMENT '运营中心名称',
+  `is_factory` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否工厂：1是  0否',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态：1正常  2关闭',
+  `crm` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'crm支持：1支持 0不支持',
+  `addtime` datetime comment '建立时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='运营中心';
+#######################################################################################
+############################################# sql语句 ##########################################
+select
+    unionid, punionid parentid, capacity, `name`, telephone phone, operatename, is_factory, status, crm, from_unixtime(addtime, '%Y-%m-%d %H:%i:%s') addtime
+from
+    operationcenter
