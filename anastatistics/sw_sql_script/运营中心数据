@@ -1,5 +1,5 @@
 ######################################## 建表 ######################################
-CREATE TABLE `operationcenter` (
+CREATE TABLE `bus_operationcenter` (
   `unionid` bigint(20) NOT NULL COMMENT 'unionid',
   `parentid` int(11) NOT NULL DEFAULT '0' COMMENT '邀请人',
   `capacity` tinyint(1) NOT NULL DEFAULT '1' COMMENT '身份：1运营中心 2公司',

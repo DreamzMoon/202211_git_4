@@ -33,7 +33,7 @@ def operationcenter_info():
         logger.info('写入运营中心数据')
         conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
         logger.info(conn_rw)
-        center_df.to_sql("operationcenter", con=conn_rw, if_exists="append", index=False)
+        center_df.to_sql("bus_operationcenter", con=conn_rw, if_exists="append", index=False)
         logger.info('写入运营中心数据完成')
     except:
         logger.error('写入运营中心数据失败')
