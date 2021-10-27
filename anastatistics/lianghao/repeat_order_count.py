@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
 重复订单数统计
+按天统计
+每日9点更新前一天数据
 '''
 import sys, os
 import traceback
@@ -55,12 +57,12 @@ def init_table():
             crm_data = cursor.fetchall()
         conn_crm.close()
 
-
         crm_data = pd.DataFrame(crm_data)
         repeat_data["statistic_time"] = (date.today()).strftime("%Y-%m-%d")
         fina_data = repeat_data.merge(crm_data, how='left', on='phone')
+        fina_data.dropna(subset=['unionid'], inplace=True)
         logger.info(repeat_data.shape)
-        logger.info('total_data')
+
 
         logger.info('=' * 20 + '查询结果' + '=' * 20)
         logger.info(fina_data.head())
@@ -134,6 +136,8 @@ def repeat_order_data(mode='update'):
         crm_data = pd.DataFrame(crm_data)
         repeat_data["statistic_time"] = (date.today()).strftime("%Y-%m-%d")
         fina_data = repeat_data.merge(crm_data, how='left', on='phone')
+        # 删除控制
+        fina_data.dropna(subset=['unionid'], inplace=True)
         logger.info(fina_data.shape)
 
         logger.info('=' * 20 + '查询结果' + '=' * 20)

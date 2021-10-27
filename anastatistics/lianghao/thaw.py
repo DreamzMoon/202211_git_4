@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
 解冻
+按天统计
+每日9点更新前一天数据
 '''
 import sys, os
 father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
