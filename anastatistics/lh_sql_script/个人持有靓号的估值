@@ -3,7 +3,7 @@ CREATE TABLE `lh_history_hold_value` (
   `unionid` bigint(20) NOT NULL COMMENT '用户的unionid',
   `lh_user_id` varchar(50) DEFAULT NULL COMMENT '靓号的用户id',
   `name` varchar(100) DEFAULT NULL COMMENT '姓名',
-  `nickname` varchar(100) DEFAULT NULL COMMENT '用户的昵称',
+  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户的昵称',
   `phone` varchar(11) DEFAULT NULL COMMENT '用户的手机号码',
   `total_money` decimal(15,2) DEFAULT NULL COMMENT '购买靓号总金额',
   `hold_count` int(15) DEFAULT NULL COMMENT '购买靓号总数量',

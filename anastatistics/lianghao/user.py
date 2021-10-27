@@ -72,7 +72,6 @@ try:
 
     conn_crm.close()
 
-    logger.info("长、宽:",last_datas.shape)
 
     #准备入库
     conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
