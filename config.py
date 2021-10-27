@@ -50,7 +50,7 @@ lianghao_mysql_conf = {
   "user": 'lh_read',
   "password": 'fBaVM4MMS8Myx9g6',
   "db": 'lh_pretty_client',
-  "charset": "utf8"
+  "charset": "utf8mb4"
 }
 
 lianghao_rw_mysql_conf = {
@@ -59,7 +59,7 @@ lianghao_rw_mysql_conf = {
   "user": 'lh_analyze',
   "password": 'Z4qEu8FHaphqMd6i',
   "db": 'lh_analyze',
-  "charset": "utf8"
+  "charset": "utf8mb4"
 }
 
 expect3_mysql_conf = {
@@ -68,7 +68,7 @@ expect3_mysql_conf = {
     "user":"expect3",
     "password":"beXhrrATb1PmJ541",
     "db":"expect3",
-    "charset": "utf8"
+    "charset": "utf8mb4"
 }
 
 
@@ -78,7 +78,7 @@ qw3_mysql_conf = {
     "user":"root",
     "password":"luke@20193306",
     "db":"expect_dev",
-    "charset": "utf8"
+    "charset": "utf8mb4"
 }
 
 crm_mysql_conf = {
@@ -87,7 +87,7 @@ crm_mysql_conf = {
     "user":"copy",
     "password":"459915476",
     "db":"luke_crm",
-    "charset":"utf8",
+    "charset":"utf8mb4",
     "cursorclass": pymysql.cursors.DictCursor
 }
 
@@ -111,5 +111,8 @@ zx_pass_word_list = ['我爱卡', '微信搜索', '公众号', '动态横版二�
 
 #服务端相应的数据
 message = {
-    "10000":"网络异常，请稍后重试"
+    "10000":"网络异常，请稍后重试",
+    "10001":"参数不能为空",
+    "10002":"数据建立连别失败",
+    "10003":"暂无crm数据，无法同步"
 }

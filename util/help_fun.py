@@ -37,7 +37,7 @@ def ssh_get_conn(ssh_conf,mysql_conf):
                                     user=mysql_conf["user"],
                                     passwd=mysql_conf["password"],
                                     db=mysql_conf["db"],
-                                    charset="utf8")
+                                    charset="utf8mb4")
 
         return client
     except:
@@ -67,7 +67,7 @@ def ssh_get_sqlalchemy_conn(ssh_conf,mysql_conf):
         sql_conf["password"] = mysql_conf["password"]
         sql_conf["db"] = mysql_conf["db"]
 
-        client = create_engine('mysql+pymysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8' % sql_conf,encoding='utf-8')
+        client = create_engine('mysql+pymysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8mb4' % sql_conf,encoding='utf-8')
 
         return client
     except:
@@ -98,7 +98,7 @@ def pd_conn(sql_conf):
     '''
     try:
         # 这样子连接可以对号入座 如果写死的话 密码里面有特殊字符会被转义 比如 con = create_engine('mysql+pymysql://root:luke@20193306@47.98.131.135:43306/expect_dev?charset=utf-8')
-        conn_engine = create_engine('mysql+pymysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8' % sql_conf,encoding='utf-8')
+        conn_engine = create_engine('mysql+pymysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8mb4' % sql_conf,encoding='utf-8')
         return conn_engine
     except:
         return None
@@ -111,7 +111,7 @@ def sqlalchemy_conn(sql_conf):
     '''
     try:
         # 这样子连接可以对号入座 如果写死的话 密码里面有特殊字符会被转义 比如 con = create_engine('mysql+pymysql://root:luke@20193306@47.98.131.135:43306/expect_dev?charset=utf-8')
-        conn_engine = create_engine('mysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8' % sql_conf,encoding='utf-8')
+        conn_engine = create_engine('mysql://%(user)s:%(password)s@%(host)s:%(port)d/%(db)s?charset=utf8mb4' % sql_conf,encoding='utf-8')
         return conn_engine
     except:
         return None
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # data = cursor.fetchall()
     # logger.info(data)
 
-    #crm  pandas 不支持这种时间
+    #crm
     conn_engine = pd_conn(crm_mysql_conf)
     sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
     data = pd.read_sql(sql,conn_engine)
