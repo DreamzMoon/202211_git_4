@@ -3,15 +3,15 @@ CREATE TABLE `bus_user` (
   `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
   `parentid` bigint(20) DEFAULT '0' COMMENT '父id',
   `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '姓名',
-  `nickname` varchar(128) CHARACTER SET utf8 COLLATE utf8_german2_ci DEFAULT '' COMMENT '昵称',
+  `nickname` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '' COMMENT '昵称',
   `sex` tinyint(1) DEFAULT '0' COMMENT '性别：0未知 1男  2女',
   `phone` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '手机号',
-  `identity` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '身份证号',
+  `identity` char(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '' COMMENT '身份证号',
   `auto_type` tinyint(1) DEFAULT '1' COMMENT '1 人工审核  2自动审核',
   `vertify_status` tinyint(1) DEFAULT '0' COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
-  `address` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '身份证地址',
+  `address` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '' COMMENT '身份证地址',
   `birth` date DEFAULT NULL COMMENT '生日',
-  `nationality` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '' COMMENT '民族',
+  `nationality` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT '' COMMENT '民族',
   `capacity` tinyint(2) DEFAULT '20' COMMENT '身份：1运营中心/公司 2网店主 3带货者 20无身份(普通用户)',
   `exclusive` tinyint(1) DEFAULT '1' COMMENT '网店主类型：1专营店 2自营店',
   `bus_status` tinyint(1) DEFAULT '1' COMMENT '状态：1正常  2冻结 3已购买系统待进货',
@@ -26,7 +26,7 @@ CREATE TABLE `bus_user` (
   `invtime` datetime DEFAULT NULL COMMENT '被邀请时间',
   `extime` datetime DEFAULT NULL COMMENT '审核时间',
   `user_type` tinyint(1) DEFAULT '0' COMMENT '账号类型:0:正常用户 1：开发用户 2：运营 3：测试'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 #######################################################################################
 ############################################# sql语句 ##########################################
 # luke_bus user
