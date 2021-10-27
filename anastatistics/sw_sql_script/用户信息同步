@@ -1,5 +1,5 @@
 ######################################## 建表 ######################################
-CREATE TABLE `bus_user_test` (
+CREATE TABLE `bus_user` (
   `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
   `parentid` bigint(20) DEFAULT '0' COMMENT '父id',
   `name` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '姓名',
@@ -21,10 +21,10 @@ CREATE TABLE `bus_user_test` (
   `vip_grade` int(11) DEFAULT NULL COMMENT '等级 1普通会员 2vip会员 3至尊VIP',
   `vip_starttime` datetime DEFAULT NULL COMMENT 'vip开通时间',
   `vip_endtime` datetime DEFAULT NULL COMMENT 'vip结束时间',
-  `addtime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '注册时间',
-  `udptime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '修改时间',
-  `invtime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '被邀请时间',
-  `extime` datetime DEFAULT '0000-00-00 00:00:00' COMMENT '审核时间',
+  `addtime` datetime DEFAULT NULL COMMENT '注册时间',
+  `udptime` datetime DEFAULT NULL COMMENT '修改时间',
+  `invtime` datetime DEFAULT NULL COMMENT '被邀请时间',
+  `extime` datetime DEFAULT NULL COMMENT '审核时间',
   `user_type` tinyint(1) DEFAULT '0' COMMENT '账号类型:0:正常用户 1：开发用户 2：运营 3：测试'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 #######################################################################################
