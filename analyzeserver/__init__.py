@@ -25,6 +25,9 @@ def hello():
 from analyzeserver.demo import demobp
 app.register_blueprint(demobp)
 
+from analyzeserver.user import userbp
+app.register_blueprint(userbp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
