@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # data = cursor.fetchall()
     # logger.info(data)
 
-    #crm
+    #crm  pandas 不支持这种时间
     conn_engine = pd_conn(crm_mysql_conf)
     sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
     data = pd.read_sql(sql,conn_engine)
