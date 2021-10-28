@@ -1,15 +1,16 @@
 ######################################## 建表 ######################################
 CREATE TABLE `bus_operationcenter` (
-  `unionid` bigint(20) NOT NULL COMMENT 'unionid',
-  `parentid` int(11) NOT NULL DEFAULT '0' COMMENT '邀请人',
-  `capacity` tinyint(1) NOT NULL DEFAULT '1' COMMENT '身份：1运营中心 2公司',
-  `name` varchar(10) CHARACTER SET utf8 NOT NULL DEFAULT '' COMMENT '姓名',
-  `phone` varchar(11) CHARACTER SET utf8 NOT NULL DEFAULT '' COMMENT '联系手机',
-  `operatename` varchar(64) CHARACTER SET utf8 NOT NULL DEFAULT '' COMMENT '运营中心名称',
-  `is_factory` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否工厂：1是  0否',
-  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态：1正常  2关闭',
-  `crm` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'crm支持：1支持 0不支持',
-  `addtime` datetime DEFAULT NULL COMMENT '建立时间'
+  `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
+  `parentid` int(11) DEFAULT NULL COMMENT '邀请人',
+  `capacity` tinyint(1) DEFAULT NULL COMMENT '身份：1运营中心 2公司',
+  `name` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '姓名',
+  `phone` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '联系手机',
+  `operatename` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT '' COMMENT '运营中心名称',
+  `is_factory` tinyint(1) DEFAULT NULL COMMENT '是否工厂：1是  0否',
+  `status` tinyint(1) DEFAULT NULL COMMENT '状态：1正常  2关闭',
+  `crm` tinyint(1) DEFAULT NULL COMMENT 'crm支持：1支持 0不支持',
+  `addtime` datetime DEFAULT NULL COMMENT '建立时间',
+  `sync_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '同步时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='运营中心';
 #######################################################################################
 ############################################# sql语句 ##########################################

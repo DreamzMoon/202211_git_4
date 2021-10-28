@@ -25,7 +25,8 @@ CREATE TABLE `bus_user` (
   `udptime` datetime DEFAULT NULL COMMENT '修改时间',
   `invtime` datetime DEFAULT NULL COMMENT '被邀请时间',
   `extime` datetime DEFAULT NULL COMMENT '审核时间',
-  `user_type` tinyint(1) DEFAULT '0' COMMENT '账号类型:0:正常用户 1：开发用户 2：运营 3：测试'
+  `user_type` tinyint(1) DEFAULT '0' COMMENT '账号类型:0:正常用户 1：开发用户 2：运营 3：测试',
+  `sync_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '同步时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 #######################################################################################
 ############################################# sql语句 ##########################################
