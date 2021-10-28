@@ -69,7 +69,7 @@ def lh_user_add():
             cursor.execute(insert_sql,param)
             conn_rw.commit()
         conn_rw.close()
-        return {"code":0,"status":"success","msg":u"靓号数据同步成功"}
+        return {"code":"0000","status":"success","msg":u"靓号数据同步成功"}
 
     except:
         logger.exception(traceback.format_exc())
@@ -103,11 +103,14 @@ def crm_user_add():
             left join luke_crm.authentication b on a.id = b.unionid
             left join luke_crm.user_vip c on b.unionid = c.unionid
             left join luke_crm.user_serpro d on c.unionid = d.unionid
-            where a.id = %s'''
+            where a.id = %s and a.phone = %s'''
 
-            cursor.execute(sql,(unionid))
+            cursor.execute(sql,(unionid,phone))
             crm_data = cursor.fetchone()
         conn_crm.close()
+
+        if not crm_data:
+            return {"code":"10003","status":"failed","msg":message["10003"]}
 
         param = [crm_data["unionid"], crm_data["parentid"], phone, crm_data["status"],crm_data["nickname"], crm_data["name"],crm_data["sex"],
                  crm_data["birth"],crm_data["address"],crm_data["nationality"],crm_data["auto_type"], crm_data["vertify_status"],
@@ -123,7 +126,7 @@ def crm_user_add():
             cursor.execute(insert_sql, param)
             conn_rw.commit()
         conn_rw.close()
-        return {"code": 0, "status": "success", "msg": u"crm数据同步成功"}
+        return {"code": "0000", "status": "success", "msg": u"crm数据同步成功"}
 
 
     except:
