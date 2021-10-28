@@ -2,7 +2,7 @@
 CREATE TABLE `lh_user` (
   `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
   `parentid` bigint(20) DEFAULT NULL COMMENT '推荐id',
-  `lh_user_id` bigint(20) DEFAULT NULL COMMENT '靓号id',
+  `lh_user_id` varchar(50) DEFAULT NULL COMMENT '靓号id',
   `lh_status` tinyint(2) DEFAULT NULL COMMENT '启用状态 0否 1是',
   `phone` varchar(11) DEFAULT NULL COMMENT '手机号码',
   `addtime` datetime DEFAULT NULL COMMENT '创建时间',
@@ -21,7 +21,8 @@ CREATE TABLE `lh_user` (
   `serpro_grade` tinyint(2) DEFAULT NULL COMMENT '服务商等级：1初级 2中级 3高级 4机构服务商',
   `serpro_status` tinyint(2) DEFAULT NULL COMMENT '服务视状态：1正常  0已注销',
   `serpro_starttime` datetime DEFAULT NULL COMMENT '服务商的开通时间',
-  `user_type` tinyint(1) DEFAULT '0' COMMENT '0:正常用户 1：开发用户 2：运营 3：测试'
+  `user_type` tinyint(1) DEFAULT '0' COMMENT '0:正常用户 1：开发用户 2：运营 3：测试',
+  `sync_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '同步时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 #删除
