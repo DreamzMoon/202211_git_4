@@ -181,7 +181,7 @@ def bus_user_add():
             bus_user_data = cursor.fetchone()
         conn_bus.close()
         if not bus_user_data:
-            return {"code": "10003", "status": "failed", "msg": message["10003"]}
+            return {"code": "10005", "status": "failed", "msg": message["10005"]}
         logger.info(bus_user_data)
 
         # 禄可商户用户插入列
@@ -234,7 +234,7 @@ def bus_operationcenter_add():
             bus_center_data = cursor.fetchone()
         conn_bus_center.close()
         if not bus_center_data:
-            return {"code": "10003", "status": "failed", "msg": message["10003"]}
+            return {"code": "10005", "status": "failed", "msg": message["10005"]}
 
         # 禄可商务运营中心插入列
         bus_center_param = [bus_center_data['unionid'], bus_center_data['parentid'], bus_center_data['capacity'], bus_center_data['name'],
