@@ -75,5 +75,9 @@ def putdemo():
     except:
         return {"code":"10000","status":"failed","msg":message["10000"]}
 
+@demobp.route("/ciyun",methods=["GET"])
+def ciyun_render():
+    return render_template("ciyun.html")
+
 
 
