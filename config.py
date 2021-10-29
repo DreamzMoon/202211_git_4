@@ -82,7 +82,7 @@ qw3_mysql_conf = {
 }
 
 crm_mysql_conf = {
-    "host":"118.31.53.162",
+    "host":"47.97.115.105",
     "port":3308,
     "user":"copy",
     "password":"459915476",
