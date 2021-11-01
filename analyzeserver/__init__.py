@@ -28,6 +28,9 @@ app.register_blueprint(demobp)
 from analyzeserver.user import userbp
 app.register_blueprint(userbp)
 
+from analyzeserver.lianghao import lhbp
+app.register_blueprint(lhbp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
