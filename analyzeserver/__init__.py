@@ -22,13 +22,13 @@ def hello():
     return 'Hello, World!'
 
 
-from analyzeserver.demo import demobp
-app.register_blueprint(demobp)
+# from analyzeserver.demo import demobp
+# app.register_blueprint(demobp)
 
-from analyzeserver.user import userbp
+from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
 
-from analyzeserver.lianghao import lhbp
+from analyzeserver.lianghao.tranferorder import lhbp
 app.register_blueprint(lhbp)
 
 if __name__ == "__main__":

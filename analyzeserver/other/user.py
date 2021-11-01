@@ -7,8 +7,8 @@
 # @File : user.py
 
 import sys
-sys.path.append(".")
-sys.path.append("../")
+sys.path.append("..")
+sys.path.append("../../")
 from flask import *
 from config import *
 import traceback
