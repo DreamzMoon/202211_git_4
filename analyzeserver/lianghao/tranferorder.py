@@ -13,4 +13,4 @@ from util.help_fun import *
 import time
 import datetime
 
-lhbp = Blueprint('lh', __name__, url_prefix='/lh')
+lhbp = Blueprint('transfer', __name__, url_prefix='/lh/transfer')
