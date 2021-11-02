@@ -31,6 +31,9 @@ app.register_blueprint(userbp)
 from analyzeserver.lianghao.tranferorder import lhbp
 app.register_blueprint(lhbp)
 
+from analyzeserver.lianghao.operationcenter import opbp
+app.register_blueprint(opbp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
