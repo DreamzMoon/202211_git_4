@@ -4,8 +4,8 @@
 # @File : .py
 # --------------------------------------
 import os, sys, json
-# father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
-# sys.path.append(sys.path[0].split(father_dir)[0])
+father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+sys.path.append(sys.path[0].split(father_dir)[0])
 from flask import *
 from config import *
 import traceback
@@ -20,12 +20,26 @@ opbp = Blueprint('operations', __name__, url_prefix='/lh/operations')
 @opbp.route('/center', methods=['POST'])
 def operations_order_count():
     try:
-        return "1"
-        num = int(request.json.get('num'))
-        # 运营中心sql
-        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 3:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+            search_key = request.json['key']
+            form_operatename = request.json['operatename']
+            num = request.json['num']
+            if not num.isdigit():
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            else:
+                num = int(num)
+        except:
+            # 参数名错误
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        # crm用户数据（手机号不为空）
+        crm_user_sql = 'select `phone` from luke_sincerechat.user where phone is not null'
         # 运营中心关系sql
-        search_sql = '''
+        supervisor_sql = '''
         select a.*,b.operatename,b.crm from 
         (WITH RECURSIVE temp as (
             SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
@@ -52,27 +66,83 @@ def operations_order_count():
         group by sell_phone) t2
         on t1.phone=t2.sell_phone)
         '''
-        # 靓号数据
-        conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-        user_order_df = pd.read_sql(lh_count_sql, conn_lh)
-
-        # crm数据
+        # 数据库连接
         conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        if not conn_crm or not conn_lh:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+
+        # crm_cursor
         crm_cursor = conn_crm.cursor()
 
         # 运营中心数据
-        crm_cursor.execute(operate_sql)
+        if search_key == "" and form_operatename == "":
+            # 运营中心sql
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        # 11位手机号
+        elif search_key.isdigit() and len(search_key) == 11 and not form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s'
+        elif search_key.isdigit() and len(search_key) == 11 and form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and operatename=%s'
+        # unionid
+        elif search_key.isdigit() and len(search_key) < 11 and not form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s'
+        elif search_key.isdigit() and len(search_key) < 11 and form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and operatename=%s'
+        # 名称
+        elif search_key and not search_key.isdigit() and not form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s'
+        elif search_key and not search_key.isdigit() and form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and operatename=%s'
+        elif not search_key and form_operatename:
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and operatename=%s'
+        else: # 手机号输入过长或者unionid输入错误
+            return {"code": "10008", "status": "failed", "msg": message["10008"]}
+        logger.info(operate_sql)
+        if not search_key and not form_operatename: # 都为空
+            crm_cursor.execute(operate_sql)
+        elif search_key and not form_operatename: # 搜索不为空，运营中心为空
+            crm_cursor.execute(operate_sql, search_key)
+        elif search_key and form_operatename: # 都不为空
+            crm_cursor.execute(operate_sql, (search_key, form_operatename))
+        else: # 搜索为空，运营中心不为空
+            crm_cursor.execute(operate_sql, form_operatename)
         operate_data = crm_cursor.fetchall()
+        if not operate_data:
+            return {"code": "10010", "status": "failed", "msg": message["10010"]}
         operate_df = pd.DataFrame(operate_data)
+
+        # 用户数据
+        crm_cursor.execute(crm_user_sql)
+        crm_user_data = pd.DataFrame(crm_cursor.fetchall())  # 用户id为642184手机号为空值
+        crm_user_data['type'] = 1
+
+        # 靓号数据
+        user_order_df = pd.read_sql(lh_count_sql, conn_lh)
 
         # 运营中心手机号列表
         operate_telephone_list = operate_df['telephone'].to_list()
 
-        fina_data_list = []
-        for phone in operate_telephone_list[:2]:
-            conn_crm = direct_get_conn(crm_mysql_conf)
-            crm_cursor = conn_crm.cursor()
-            crm_cursor.execute(search_sql, phone)
+        # 横标总数据
+        title_df = user_order_df.merge(crm_user_data, how='left', on='phone')
+        # 剔除不在crm的用户订单
+        title_df = title_df.loc[title_df['type'] == 1, :]
+        title_data = {
+                'buy_order': int(title_df['buy_order'].sum()),  # 采购订单数量
+                'buy_count': int(title_df['buy_count'].sum()),  # 采购靓号数量
+                'buy_price': str(round(title_df['buy_price'].sum(), 2)),  # 采购金额
+                'publish_total_count': int(title_df['publish_total_count'].sum()),  # 发布靓号
+                'publish_sell_count': int(title_df['publish_sell_count'].sum()),  # 发布订单
+                'publish_total_price': str(round(title_df['publish_total_price'].sum(), 2)),  # 发布金额
+                'sell_order': int(title_df['sell_order'].sum()),  # 出售订单数
+                'sell_price': str(round(title_df['sell_price'].sum(), 2)),  # 出售金额
+                'sell_count': int(title_df['sell_count'].sum()),  # 出售靓号数
+                'true_price': str(round(title_df['true_price'].sum(), 2)),  # 出售时实收金额
+                'sell_fee': str(round(title_df['sell_fee'].sum(), 2)),  # 出售手续费
+            }
+        fina_center_data_list = []
+        for phone in operate_telephone_list:
+            crm_cursor.execute(supervisor_sql, phone)
             all_data = crm_cursor.fetchall()
             # 总数据
             all_data = pd.DataFrame(all_data)
@@ -93,7 +163,7 @@ def operations_order_count():
                 if i in child_center_phone_list:
                     continue
                 first_child_center.append(i)
-                crm_cursor.execute(search_sql, i)
+                crm_cursor.execute(supervisor_sql, i)
                 center_data = crm_cursor.fetchall()
                 center_df = pd.DataFrame(center_data)
                 center_df.dropna(subset=['phone'], axis=0, inplace=True)
@@ -106,32 +176,33 @@ def operations_order_count():
                 'operatename': operatename,  # 运营中心名
                 'operate_leader_name': operate_leader_name,  # 运营中心负责人
                 'operate_leader_phone': phone,  # 手机号
-                'operate_leader_unionid': operate_leader_unionid,  # unionID
-                'buy_order': child_df['buy_order'].sum(),  # 采购订单数量
-                'buy_count': child_df['buy_count'].sum(),  # 采购靓号数量
-                'buy_price': child_df['buy_price'].sum(),  # 采购金额
-                'publish_total_count': child_df['publish_total_count'].sum(),  # 发布靓号
-                'publish_sell_count': child_df['publish_sell_count'].sum(),  # 发布订单
-                'publish_total_price': child_df['publish_total_price'].sum(),  # 发布金额
-                'sell_order': child_df['sell_order'].sum(),  # 出售订单数
-                'sell_price': child_df['sell_price'].sum(),  # 出售金额
-                'sell_count': child_df['sell_count'].sum(),  # 出售靓号数
-                'true_price': child_df['true_price'].sum(),  # 出售时实收金额
-                'sell_fee': child_df['sell_fee'].sum(),  # 出售手续费
+                'operate_leader_unionid': str(int(operate_leader_unionid)),  # unionID
+                'buy_order': int(child_df['buy_order'].sum()),  # 采购订单数量
+                'buy_count': int(child_df['buy_count'].sum()),  # 采购靓号数量
+                'buy_price': str(round(child_df['buy_price'].sum(), 2)),  # 采购金额
+                'publish_total_count': int(child_df['publish_total_count'].sum()),  # 发布靓号
+                'publish_sell_count': int(child_df['publish_sell_count'].sum()),  # 发布订单
+                'publish_total_price': str(round(child_df['publish_total_price'].sum(), 2)),  # 发布金额
+                'sell_order': int(child_df['sell_order'].sum()),  # 出售订单数
+                'sell_price': str(round(child_df['sell_price'].sum(), 2)),  # 出售金额
+                'sell_count': int(child_df['sell_count'].sum()),  # 出售靓号数
+                'true_price': str(round(child_df['true_price'].sum(), 2)),  # 出售时实收金额
+                'sell_fee': str(round(child_df['sell_fee'].sum(), 2)),  # 出售手续费
             }
-            fina_data_list.append(notice_data)
+            fina_center_data_list.append(notice_data)
             logger.info(notice_data)
         conn_crm.close()
-        # return_data = json.dumps(fina_data_list[:num])
-        # logger.info(return_data)
+        # 如果num超过数据条数
+        if num > len(fina_center_data_list):
+            num = len(fina_center_data_list)
+        return_data = {
+            'title_data': title_data,
+            'search_data': fina_center_data_list[:num]
+        }
+        logger.info(return_data)
         logger.info('-' * 50)
-        logger.info(fina_data_list[:num])
-        return {"code": "0000", "status": "success", "data": fina_data_list[:num]}
+        logger.info(fina_center_data_list[:num])
+        return {"code": "0000", "status": "success", "data": return_data}
     except:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-
-@opbp.route('/center1', methods=['POST'])
-def test():
-    return "1"
