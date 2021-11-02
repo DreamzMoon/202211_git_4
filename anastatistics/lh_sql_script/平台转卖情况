@@ -2,7 +2,7 @@
 select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time HAVING statistic_time != CURRENT_DATE() order by statistic_time desc
 
 #二手平台发布统计
-select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0
+select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
 group by statistic_time
 having statistic_time != CURRENT_DATE()
 order by statistic_time desc
@@ -11,14 +11,14 @@ order by statistic_time desc
 select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = DATE_ADD(CURRENT_DATE(),INTERVAL -1 day)
 
 #统计昨天的--二手平台发布统计
-select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0
+select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
 and DATE_FORMAT(create_time, '%Y%m%d') = DATE_ADD(CURRENT_DATE(),INTERVAL -1 day)
 
 #统计今天的--二手平台采购和转让统计
 select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()
 
 #统计今天的--二手平台发布统计
-select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0
+select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
 and DATE_FORMAT(create_time, '%Y%m%d') = DATE_ADD(CURRENT_DATE(),INTERVAL -1 day)
 
 

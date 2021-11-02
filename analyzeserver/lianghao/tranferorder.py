@@ -140,7 +140,7 @@ def transfer_all():
                 cursor.execute(sql,args_list)
                 order_data = cursor.fetchone()
 
-                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
                                 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and !find_in_set (sell_phone,%s)'''
                 cursor.execute(sql,args_list)
                 sell_data = cursor.fetchone()
@@ -150,7 +150,7 @@ def transfer_all():
                 cursor.execute(sql,args_list)
                 all_order_data = cursor.fetchone()
 
-                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and !find_in_set (sell_phone,%s)'''
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and !find_in_set (sell_phone,%s)'''
                 cursor.execute(sql,args_list)
                 all_sell_data = cursor.fetchone()
 
@@ -161,6 +161,7 @@ def transfer_all():
                 logger.info(order_data)
 
                 sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 
+                and status != 1
                 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE()'''
                 cursor.execute(sql)
                 sell_data = cursor.fetchone()
@@ -170,7 +171,7 @@ def transfer_all():
                 cursor.execute(sql)
                 all_order_data = cursor.fetchone()
 
-                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 '''
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
                 cursor.execute(sql)
                 all_sell_data = cursor.fetchone()
 
@@ -201,6 +202,53 @@ def transfer_all():
         }
 
         return {"code":"0000","status":"success","data":last_data}
+
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_read.close()
+
+
+@lhbp.route("order",methods=["POST"])
+def transfer_order():
+    try:
+        #参数获取 1 采购订单 2发布订单 3 出售订单
+        order_type = request.json["order_type"]
+        unioinid_lists = request.json["unioinid_lists"]
+        phone_lists = request.json["phone_lists"]
+        bus_lists = request.json["bus_lists"]
+        # 1 今日 2 本周 3 本月  4 可选择区域
+        time_type = request.join["time_type"]
+        start_time = request.join["start_time"]
+        end_time = request.join["end_time"]
+
+        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_ssh_conf)
+        cursor = conn_read.cursor()
+
+        if order_type == 1:
+            args_list = []
+            if phone_lists:
+                pass
+            if unioinid_lists:
+                pass
+            if bus_lists:
+                pass
+
+            if args_list:
+                pass
+            else:
+
+                sql = ''''''
+
+        elif order_type == 2:
+            pass
+        elif order_type == 3:
+            pass
+        else:
+            return {"code":"10007","status":"failed","msg":message["10007"]}
+
 
 
     except:
