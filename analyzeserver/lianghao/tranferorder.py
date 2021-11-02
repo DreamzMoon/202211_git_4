@@ -155,14 +155,14 @@ def transfer_all():
                 all_sell_data = cursor.fetchone()
 
             else:
-                sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE()'''
+                sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                 cursor.execute(sql)
                 order_data = cursor.fetchone()
                 logger.info(order_data)
 
                 sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 
                 and status != 1
-                and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE()'''
+                and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                 cursor.execute(sql)
                 sell_data = cursor.fetchone()
                 logger.info(sell_data)
@@ -211,46 +211,129 @@ def transfer_all():
         conn_read.close()
 
 
-@lhbp.route("order",methods=["POST"])
+@lhbp.route("buy/order",methods=["POST"])
 def transfer_order():
     try:
-        #参数获取 1 采购订单 2发布订单 3 出售订单
-        order_type = request.json["order_type"]
+        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        if not conn_read:
+            return {"code":"10008","status":"failed","msg":message["10008"]}
+
+        logger.info(request.json)
         unioinid_lists = request.json["unioinid_lists"]
         phone_lists = request.json["phone_lists"]
         bus_lists = request.json["bus_lists"]
         # 1 今日 2 本周 3 本月  4 可选择区域
-        time_type = request.join["time_type"]
-        start_time = request.join["start_time"]
-        end_time = request.join["end_time"]
+        time_type = request.json["time_type"]
+        start_time = request.json["start_time"]
+        end_time = request.json["end_time"]
 
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_ssh_conf)
+        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
         cursor = conn_read.cursor()
 
-        if order_type == 1:
-            args_list = []
-            if phone_lists:
-                pass
-            if unioinid_lists:
-                pass
-            if bus_lists:
-                pass
 
-            if args_list:
-                pass
-            else:
+        # 如果选择今天的就按照今天的时间返回
+        if time_type == "1":
+            #今日
+            circle_sql = '''select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE() union all
+select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today":circle_data[0][0],"today_buy_total_price":circle_data[0][1],
+                "yesterday":circle_data[1][0],"yes_buy_total_price":circle_data[1][1]
+            }
 
-                sql = ''''''
-
-        elif order_type == 2:
-            pass
-        elif order_type == 3:
-            pass
-        else:
-            return {"code":"10007","status":"failed","msg":message["10007"]}
-
-
-
+            today_sql = '''select DATE_FORMAT(create_time, '%Y%m%d %H') AS statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE group by statistic_time order by statistic_time desc'''
+            cursor.execute(today_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[1])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[3])
+                today.append(td_dict)
+            logger.info(today)
+            last_data = {"circle":circle,"today":today}
+            return {"code":"0000","status":"successs","msg":last_data}
+        elif time_type == "2":
+            circle_sql = '''select "current_week" week,sum(buy_total_price) buy_total_price from(
+            select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 7) a
+            union all
+            select "last_week" week,sum(buy_total_price) buy_total_price from(
+            select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 7,7) b'''
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1]
+            }
+            # 本周
+            week_sql = '''select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 7'''
+            cursor.execute(week_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[1])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[3])
+                today.append(td_dict)
+            logger.info(today)
+            last_data = {"circle": circle, "today": today}
+            return {"code": "0000", "status": "successs", "msg": last_data}
+        elif time_type == "3":
+            circle_sql = '''select "current_week" week,sum(buy_total_price) buy_total_price from(
+            select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 30) a
+            union all
+            select "last_week" week,sum(buy_total_price) buy_total_price from(
+            select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 30,30) b'''
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1]
+            }
+            # 本年
+            week_sql = '''select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 30'''
+            cursor.execute(week_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[1])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[3])
+                today.append(td_dict)
+            logger.info(today)
+            last_data = {"circle": circle, "today": today}
+            return {"code": "0000", "status": "successs", "msg": last_data}
+        elif time_type == "4":
+            # 自定义
+            sql = '''select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and statistic_time >= "%s" and statistic_time <= "%s" '''
+            cursor.execute(sql,(start_time,end_time))
+            current_datas = cursor.fetchall()
+            logger.info(current_datas)
+            datas = []
+            for td in current_datas:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[1])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[3])
+                datas.append(td_dict)
+            logger.info(datas)
+            last_data = {"data": datas}
+            return {"code": "0000", "status": "successs", "msg": last_data}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}

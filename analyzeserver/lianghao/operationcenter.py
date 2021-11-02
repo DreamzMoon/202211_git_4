@@ -4,8 +4,8 @@
 # @File : .py
 # --------------------------------------
 import os, sys, json
-father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
-sys.path.append(sys.path[0].split(father_dir)[0])
+# father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+# sys.path.append(sys.path[0].split(father_dir)[0])
 from flask import *
 from config import *
 import traceback
@@ -20,7 +20,7 @@ opbp = Blueprint('operations', __name__, url_prefix='/lh/operations')
 @opbp.route('/center', methods=['POST'])
 def operations_order_count():
     try:
-        return 1
+        return "1"
         num = int(request.json.get('num'))
         # 运营中心sql
         operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
@@ -130,3 +130,8 @@ def operations_order_count():
     except:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+@opbp.route('/center1', methods=['POST'])
+def test():
+    return "1"
