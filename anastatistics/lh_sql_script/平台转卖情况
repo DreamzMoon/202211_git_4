@@ -19,7 +19,7 @@ select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,count(*) buy_order_c
 
 #统计今天的--二手平台发布统计
 select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
-and DATE_FORMAT(create_time, '%Y%m%d') = DATE_ADD(CURRENT_DATE(),INTERVAL -1 day)
+and DATE_FORMAT(create_time, '%Y%m%d') =CURRENT_DATE()
 
 
 
