@@ -222,6 +222,3 @@ def operations_order_count():
 
 
 
-@opbp.route("/center/list",methods=["GET"])
-def ok():
-    pass
