@@ -41,6 +41,9 @@ app.register_blueprint(pmbp)
 from analyzeserver.operate.center import ocbp
 app.register_blueprint(ocbp)
 
+from analyzeserver.user.sysuser import sysuserbp
+app.register_blueprint(sysuserbp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

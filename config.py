@@ -35,6 +35,11 @@ elif ENV == "pro":
 else:
     pass
 
+# 本地的先做测试 目前的redis要配置通道还未封装
+redis_host = "127.0.0.1"
+redis_port = 6979
+redis_password = ""
+# redis_password = "_3:wOk!:)W]sak0EcWYYang"
 
 lianghao_ssh_conf = {
     "host":"47.117.125.39",
@@ -122,5 +127,7 @@ message = {
     "10007": "订单类型不正确",
     "10008": "靓号数据库连接失败",
     "11009":"时间类型不正确",
+    "11010":"该用户暂无法登录，请授权",
+    "11011":"该用户已注册，请不要重新注册"
 
 }
