@@ -23,15 +23,20 @@ def operations_order_count():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 3:
+            if len(request.json) != 4:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
             search_key = request.json['key']
             form_operatename = request.json['operatename']
             num = request.json['num']
-            if not num.isdigit():
+            page = request.json['page']
+            # isdigit()可以判断是否为正整数
+            if not num.isdigit() or int(num) < 1:
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            elif not page.isdigit() or int(page) < 1:
                 return {"code": "10009", "status": "failed", "msg": message["10009"]}
             else:
                 num = int(num)
+                page = int(page)
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -192,16 +197,21 @@ def operations_order_count():
             fina_center_data_list.append(notice_data)
             logger.info(notice_data)
         conn_crm.close()
+        start_num = (page-1) * num
+        end_num = page * num
         # 如果num超过数据条数
-        if num > len(fina_center_data_list):
-            num = len(fina_center_data_list)
+        if end_num > len(fina_center_data_list):
+            end_num = len(fina_center_data_list)
         return_data = {
+            'count': len(fina_center_data_list),
             'title_data': title_data,
-            'search_data': fina_center_data_list[:num]
+            'search_data': fina_center_data_list[start_num:end_num]
         }
         logger.info(return_data)
         logger.info('-' * 50)
-        logger.info(fina_center_data_list[:num])
+        logger.info(start_num)
+        logger.info(end_num)
+        logger.info(fina_center_data_list[start_num:end_num])
         return {"code": "0000", "status": "success", "data": return_data}
     except:
         logger.error(traceback.format_exc())
