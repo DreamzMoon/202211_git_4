@@ -34,6 +34,8 @@ app.register_blueprint(lhbp)
 from analyzeserver.lianghao.operationcenter import opbp
 app.register_blueprint(opbp)
 
+from analyzeserver.lianghao.personal_market import pmbp
+app.register_blueprint(pmbp)
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
