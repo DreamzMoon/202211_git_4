@@ -16,3 +16,4 @@ import datetime
 
 pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 
+

@@ -73,7 +73,7 @@ def transfer_all():
                 order_data = cursor.fetchone()
 
                 sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
-                                and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and !find_in_set (sell_phone,%s)'''
+                                and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and !find_in_set (sell_phone,%s)'''
                 cursor.execute(sql,args_list)
                 sell_data = cursor.fetchone()
                 logger.info(sell_data)
@@ -94,7 +94,7 @@ def transfer_all():
 
                 sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 
                 and status != 1
-                and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
                 cursor.execute(sql)
                 sell_data = cursor.fetchone()
                 logger.info(sell_data)
@@ -133,7 +133,7 @@ def transfer_all():
             "all_data":all_data
         }
 
-        return {"code":"0000","status":"success","data":last_data}
+        return {"code":"0000","status":"success","msg":last_data}
 
 
     except:
@@ -165,7 +165,7 @@ def transfer_buy_order():
         #校验参数
         if time_type == "4":
             if not start_time or not end_time:
-                return {"code":"10009","status":"failed","msg":message["10009"]}
+                return {"code":"11009","status":"failed","msg":message["11009"]}
 
         args_phone_lists = []
         if phone_lists:
@@ -177,6 +177,8 @@ def transfer_buy_order():
                 args_phone_lists = phone_lists_result[1]
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+        logger.info("args_phone_lists:%s" %args_phone_lists)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == "1":
@@ -292,6 +294,7 @@ def transfer_buy_order():
                 union all
                 select "last_month" week,sum(buy_total_price) buy_total_price,sum(buy_order_count) buy_order_count from(
                 select DATE_FORMAT(create_time, '%Y%m%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by statistic_time order by statistic_time desc limit 30,30) b'''
+            logger.info(circle_sql)
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
             logger.info(circle_data)
@@ -350,7 +353,7 @@ def transfer_buy_order():
             last_data = {"data": datas}
             return {"code": "0000", "status": "successs", "msg": last_data}
         else:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            return {"code": "11009", "status": "failed", "msg": message["11009"]}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
@@ -381,7 +384,7 @@ def transfer_sell_order():
         #校验参数
         if time_type == "4":
             if not start_time or not end_time:
-                return {"code":"10009","status":"failed","msg":message["10009"]}
+                return {"code":"11009","status":"failed","msg":message["11009"]}
 
         args_phone_lists = []
         if phone_lists:
@@ -585,7 +588,7 @@ def transfer_sell_order():
             last_data = {"data": datas}
             return {"code": "0000", "status": "successs", "msg": last_data}
         else:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            return {"code": "11009", "status": "failed", "msg": message["11009"]}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
@@ -617,7 +620,7 @@ def transfer_public_order():
         #校验参数
         if time_type == "4":
             if not start_time or not end_time:
-                return {"code":"10009","status":"failed","msg":message["10009"]}
+                return {"code":"11009","status":"failed","msg":message["11009"]}
 
         args_phone_lists = []
         if phone_lists:
@@ -653,9 +656,9 @@ def transfer_public_order():
         # 如果选择今天的就按照今天的时间返回
         if time_type == "1":
             #今日
-            circle_sql1 = '''select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+            circle_sql1 = '''select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
             circle_conn = " union all"
-            circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+            circle_sql2 = ''' select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
 
 
             # #直接拼接sql 不然会有很多重复的代码 很烦人
@@ -675,7 +678,7 @@ def transfer_public_order():
                 "yesterday":circle_data[1][0],"yes_public_total_price":circle_data[1][1],"yes_publish_sell_count":circle_data[1][2]
             }
 
-            today_sql = '''select DATE_FORMAT(create_time, '%Y%m%d %H') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+            today_sql = '''select DATE_FORMAT(up_time, '%Y%m%d %H') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
             if args_phone_lists:
@@ -702,20 +705,20 @@ def transfer_public_order():
             circle_sql = ""
             if args_phone_lists:
                 circle_sql = '''select "current_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 group by statistic_time order by statistic_time desc limit 7
                 ) a
                 union all
                 select "last_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 group by statistic_time order by statistic_time desc limit 7,7) b''' %(args_phone_lists,args_phone_lists)
             else:
                 circle_sql = '''select "current_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
                 group by statistic_time order by statistic_time desc limit 7) a
                 union all
                 select "last_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
                 group by statistic_time order by statistic_time desc limit 7,7) b'''
 
 
@@ -727,7 +730,7 @@ def transfer_public_order():
                 "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],"today_publish_sell_count": circle_data[0][2],
                 "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],"yes_publish_sell_count": circle_data[1][2]}
             # 本周
-            week_sql = '''select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 '''
+            week_sql = '''select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 '''
             group_order_sql = ''' group by statistic_time order by statistic_time desc limit 7'''
 
             if args_phone_lists:
@@ -756,20 +759,20 @@ def transfer_public_order():
 
             if args_phone_lists:
                 circle_sql = '''select "current_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 group by statistic_time order by statistic_time desc limit 30
                 ) a
                 union all
                 select "last_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 group by statistic_time order by statistic_time desc limit 30,30) b''' % (args_phone_lists, args_phone_lists)
             else:
                 circle_sql = '''select "current_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
                 group by statistic_time order by statistic_time desc limit 30) a
                 union all
                 select "last_week" week,sum(publish_total_price) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1
                 group by statistic_time order by statistic_time desc limit 30,30) b'''
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
@@ -778,7 +781,7 @@ def transfer_public_order():
                 "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],"today_publish_sell_count": circle_data[0][2],
                 "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],"yes_publish_sell_count": circle_data[1][2]}
             # 本月
-            month_sql = '''select DATE_FORMAT(create_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 '''
+            month_sql = '''select DATE_FORMAT(up_time, '%Y%m%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 '''
             group_order_sql = ''' group by statistic_time order by statistic_time desc limit 30'''
 
             if args_phone_lists:
@@ -804,7 +807,7 @@ def transfer_public_order():
         elif time_type == "4":
             logger.info("1111")
             # 自定义
-            sql = '''select DATE_FORMAT(create_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and create_time >= %s and create_time <= %s'''
+            sql = '''select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and create_time >= %s and create_time <= %s'''
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
             if args_phone_lists:
                 condition_sql = ''' and phone not in (%s)''' %(args_phone_lists)
@@ -828,7 +831,7 @@ def transfer_public_order():
             last_data = {"data": datas}
             return {"code": "0000", "status": "successs", "msg": last_data}
         else:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            return {"code": "11009", "status": "failed", "msg": message["11009"]}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}

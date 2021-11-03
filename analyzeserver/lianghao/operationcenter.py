@@ -219,3 +219,9 @@ def operations_order_count():
     except Exception as e:
         logger.error(e)
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+
+@opbp.route("/center/list",methods=["GET"])
+def ok():
+    pass
