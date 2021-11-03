@@ -28,8 +28,8 @@ def hello():
 from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
 
-from analyzeserver.lianghao.tranferorder import lhbp
-app.register_blueprint(lhbp)
+from analyzeserver.lianghao.tranferorder import tobp
+app.register_blueprint(tobp)
 
 from analyzeserver.lianghao.operationcenter import opbp
 app.register_blueprint(opbp)

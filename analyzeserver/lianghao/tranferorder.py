@@ -14,9 +14,9 @@ import time
 import datetime
 from analyzeserver.common import *
 
-lhbp = Blueprint('transfer', __name__, url_prefix='/lh/transfer')
+tobp = Blueprint('transfer', __name__, url_prefix='/lh/transfer')
 
-@lhbp.route("/total",methods=["POST"])
+@tobp.route("/total",methods=["POST"])
 def transfer_all():
     try:
         logger.info(request.json)
@@ -143,7 +143,7 @@ def transfer_all():
         conn_read.close()
 
 
-@lhbp.route("buy",methods=["POST"])
+@tobp.route("buy",methods=["POST"])
 def transfer_buy_order():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
@@ -359,7 +359,7 @@ def transfer_buy_order():
 
 
 
-@lhbp.route("sell",methods=["POST"])
+@tobp.route("sell",methods=["POST"])
 def transfer_sell_order():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
@@ -595,7 +595,7 @@ def transfer_sell_order():
 
 
 
-@lhbp.route("public",methods=["POST"])
+@tobp.route("public",methods=["POST"])
 def transfer_public_order():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
