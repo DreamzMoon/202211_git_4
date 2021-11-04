@@ -261,6 +261,7 @@ def user_belong_bus(need_data):
 
         crm_user_sql = '''select sex,id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
+
         user_data = need_data.merge(crm_user_data, how="left", on="phone")
 
         phone_list = user_data.to_dict('list')['phone']

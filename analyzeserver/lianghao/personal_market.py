@@ -56,7 +56,6 @@ def personal_order_flow():
 def personal_total():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
-        # conn_crm = direct_get_conn(crm_mysql_conf)
 
         page = request.json["page"]
         size = request.json["size"]
@@ -87,17 +86,19 @@ def personal_total():
 
         public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 group by sell_phone '''
         public_order = pd.read_sql(public_sql,conn_read)
+        logger.info(public_order.shape)
 
         df_list = []
         df_list.append(order_data)
         df_list.append(sell_order)
         df_list.append(public_order)
-        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
-        logger.info(code_page)
-        logger.info(code_size)
+
         need_data = df_merged.loc[code_page:code_size]
         logger.info(need_data)
+
+        # phone_list = need_data.to_dict('list')['phone']
 
         # #然后查crm
         # conn_crm = direct_get_conn(crm_mysql_conf)
@@ -151,13 +152,15 @@ def personal_total():
         # # user_data.to_csv("e:/huhu.csv")
         # last_data = user_data.to_dict("records")
         # logger.info(last_data)
+        # conn_crm.close()
 
         result = user_belong_bus(need_data)
+        # logger.info(result)
         if result[0] == 1:
             last_data = result[1]
         else:
             return {"code":"10006","status":"failed","msg":message["10006"]}
-        return {"code":"0000","status":"success","msg":last_data}
+        return {"code":"0000","status":"success","msg":last_data,"count":len(df_merged)}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}

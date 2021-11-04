@@ -49,12 +49,13 @@ def check_token(token,user_id):
         return {"code": "10020", "msg": message["10020"], "status": "failed"}
 
       token_result = r.get(token)
+      logger.info(token_result)
       if not token_result:
-        return {"code": "10018", "msg": message["10018"], "status": "failed"}
+        return {"code": "11012", "msg": message["11012"], "status": "failed"}
 
       redis_user_id = json.loads(token_result)["user_id"]
       if str(user_id) != str(redis_user_id):
-        return {"code": "10019", "msg": message["10019"], "status": "failed"}
+        return {"code": "11013", "msg": message["11013"], "status": "failed"}
 
       logger.info("用户令牌正确")
       return {"code":"0000","msg":"用户令牌正常","status":"success"}
@@ -162,3 +163,28 @@ def login():
 
 
 
+@sysuserbp.route("check",methods=["GET"])
+def check():
+    try:
+        conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        if not conn:
+            return {"code": 10001, "status": "failed", "msg": message["10001"]}
+
+        request_headers = request.headers
+        logger.info(request_headers)
+        token = request_headers["Token"]
+
+
+        user_id = request.args.get("user_id")
+
+        if not user_id:
+          return {"code": "10005", "msg": message["10005"], "status": "failed"}
+
+        check_token_result = check_token(token,user_id)
+        if check_token_result["code"] == "0000":
+          return {"code":"0000","data":"用户登录状态正常","status":"success"}
+        else:
+          return check_token_result
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
