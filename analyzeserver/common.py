@@ -326,7 +326,6 @@ def get_all_user_operationcenter():
         logger.info(e)
         return False, e
 
-
 def user_belong_bus(need_data):
     '''
 
@@ -388,7 +387,6 @@ def user_belong_bus(need_data):
         return 0,e
     finally:
         conn_crm.close()
-
 
 def get_phone_by_keyword(keyword):
     '''
