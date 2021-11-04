@@ -86,8 +86,10 @@ def get_lukebus_phone(bus_lists):
         phone_lists = list(set(all_phone_lists) - set(filter_phone_lists))
         logger.info(len(phone_lists))
         args_phone_lists = ",".join(phone_lists)
-
-        return 1,args_phone_lists
+        if args_phone_lists:
+            return 1,args_phone_lists
+        else:
+            return 0,"暂无数据"
     except Exception as e:
         logger.exception(e)
         return 0,e
@@ -256,6 +258,11 @@ def get_all_user_operationcenter():
 
 
 def user_belong_bus(need_data):
+    '''
+
+    :param need_data: 需要查询的用户的dataframe
+    :return: 用户的dataframe 包括运营中心 和crm的数据
+    '''
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
 
@@ -284,7 +291,7 @@ def user_belong_bus(need_data):
                     on a.id = b.unionid
                     ''' % pl
             operate_data = pd.read_sql(operate_sql, conn_crm)
-            logger.info(operate_data)
+            # logger.info(operate_data)
             logger.info("----------------")
 
             if len(operate_data) > 0:
@@ -312,6 +319,64 @@ def user_belong_bus(need_data):
     finally:
         conn_crm.close()
 
+
+def get_phone_by_keyword(keyword):
+    '''
+    :param keyword:根据关键词找手机号
+    :return:
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        with conn_crm.cursor() as cursor:
+            # sql = '''select * from luke_sincerechat.user where id like %%%s%% or phone like %%%s%% or nickname'''
+            # cursor.execute(sql,(keyword,keyword,keyword))
+            # params = ("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+            # sql = '''select * from (select phone from luke_sincerechat.user where phone like "%s" or id like "%s" or nickname like "%s") t where t.phone is not null''' %params
+            # logger.info(sql)
+            # cursor.execute(sql)
+            # datas = cursor.fetchall()
+            # # logger.info(datas)
+
+
+            sql = '''select * from (select phone from luke_sincerechat.user where phone like %s or id like %s or nickname like %s) t where t.phone is not null'''
+            logger.info(sql)
+            cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
+            datas = cursor.fetchall()
+            logger.info(datas)
+
+            if datas:
+                phone_list = [data["phone"] for data in datas]
+                return 1,phone_list
+            else:
+                return 0,"暂无数据"
+    except Exception as e:
+        return 0,e
+    finally:
+        conn_crm.close()
+
+def get_phone_by_unionid(unionid):
+    '''
+    :param keyword:根据关键词找手机号
+    :return:
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        with conn_crm.cursor() as cursor:
+            sql = '''select * from luke_sincerechat.user where id = %s'''
+            cursor.execute(sql,(unionid))
+            data = cursor.fetchone()
+            if data:
+                return 1,data["phone"]
+            else:
+                return 0,"暂无该用户"
+    except Exception as e:
+        return 0,e
+    finally:
+        conn_crm.close()
+
+
 if __name__ == "__main__":
-    result = get_lukebus_phone(["四川成都天府新区运营中心"])
+    # result = get_lukebus_phone(["四川成都天府新区运营中心"])
+    # logger.info(result)
+    result = get_phone_by_keyword("6425")
     logger.info(result)

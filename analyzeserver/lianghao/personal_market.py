@@ -58,11 +58,46 @@ def personal_total():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
 
+        logger.info(request.json)
+        time.sleep(2)
         page = request.json["page"]
         size = request.json["size"]
 
-        if not page or not size:
-            return {"code":10001,"status":"failed","msg":message["10001"]}
+        # 可以是用户名称 手机号 unionid 模糊的
+        # keyword = request.json["keyword"]
+        #
+        # # 查询归属上级 精准的
+        # parent = request.json["parent"]
+        # bus = request.json["bus"]
+        #
+        # # 字符串拼接的手机号码
+        # query_phone = ""
+        #
+        # if parent:
+        #     if len(parent) == 11:
+        #         query_phone = parent
+        #     else:
+        #         result = get_phone_by_unionid(parent)
+        #         if result[0] == 1:
+        #             query_phone = result[1]
+        #         else:
+        #             return {"code":"11014","status":"failed","msg":message["code"]}
+        #
+        # if bus:
+        #     result = get_lukebus_phone([bus])
+        #     if result[0] == 1:
+        #         query_phone = result[1]
+        #     else:
+        #         return {"code":"11015","status":"failed","msg":message["11015"]}
+        #
+        # if keyword:
+        #     result = get_phone_by_keyword(keyword)
+        #     if result[0] == 1:
+        #         query_phone = result[1]
+        #     else:
+        #         return {"code":"11016","status":"failed","msg":message["11016"]}
+        #
+        # logger.info(query_phone)
 
         code_page = (page - 1) * 10
         code_size = page * size
@@ -96,7 +131,10 @@ def personal_total():
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
 
-        need_data = df_merged.loc[code_page:code_size]
+        if page and size:
+            need_data = df_merged.loc[code_page:code_size]
+        else:
+            need_data = df_merged.copy()
         logger.info(need_data)
 
         result = user_belong_bus(need_data)
