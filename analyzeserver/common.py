@@ -297,13 +297,13 @@ def user_belong_bus(need_data):
                 pl_op_dict["operate_name"] = ""
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
-        logger.info(all_operate)
+        # logger.info(all_operate)
 
         all_operate = pd.DataFrame(all_operate)
-        logger.info(all_operate)
+        # logger.info(all_operate)
 
         user_data = user_data.merge(all_operate, how="left", on="phone")
-        logger.info(user_data.loc[0])
+        # logger.info(user_data.loc[0])
         last_data = user_data.to_dict("records")
         logger.info(last_data)
         return 1, last_data
