@@ -142,7 +142,7 @@ def login():
                 if data[3] == password:
                     if data[7] == 0:
                         return {"code": "11010", "status": "success", "msg": message["11010"]}
-                    user_id = data["id"]
+                    user_id = data[0]
                     token = create_token(user_id, datetime.datetime.now())
                     r.set(token, json.dumps({"user_id": user_id, "username": username}),ex=86400)
                     return_data = {"user_id": user_id, "token": token}

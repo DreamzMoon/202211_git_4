@@ -37,7 +37,7 @@ else:
 
 # 本地的先做测试 目前的redis要配置通道还未封装
 redis_host = "127.0.0.1"
-redis_port = 6979
+redis_port = 6379
 redis_password = ""
 # redis_password = "_3:wOk!:)W]sak0EcWYYang"
 

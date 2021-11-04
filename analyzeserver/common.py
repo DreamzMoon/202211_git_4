@@ -18,6 +18,10 @@ import datetime
 
 #通过禄可运营中心查询对应的手机号码
 def get_lukebus_phone(bus_lists):
+    '''
+    :param bus_lists: 传入运营中心的列表
+    :return:返回手机号码
+    '''
     try:
         phone_lists = []
         conn_crm = direct_get_conn(crm_mysql_conf)
@@ -251,6 +255,62 @@ def get_all_user_operationcenter():
         return False, e
 
 
+def user_belong_bus(need_data):
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+
+        crm_user_sql = '''select sex,id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
+        user_data = need_data.merge(crm_user_data, how="left", on="phone")
+
+        phone_list = user_data.to_dict('list')['phone']
+        logger.info(len(phone_list))
+
+        # 查运营中心
+        all_operate = []
+        for pl in phone_list:
+            logger.info("phone:%s" % pl)
+            pl_op_dict = {}
+            operate_sql = '''
+                    select a.*,b.operatename,b.crm from 
+                    (WITH RECURSIVE temp as (
+                            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                            UNION ALL
+                            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                    )
+                    SELECT * FROM temp 
+                    )a left join luke_lukebus.operationcenter b
+                    on a.id = b.unionid
+                    ''' % pl
+            operate_data = pd.read_sql(operate_sql, conn_crm)
+            logger.info(operate_data)
+            logger.info("----------------")
+
+            if len(operate_data) > 0:
+                # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
+                current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)].iloc[0, :]
+                pl_op_dict["operate_name"] = current_operate_data["operatename"]
+                pl_op_dict["phone"] = pl
+                all_operate.append(pl_op_dict)
+            else:
+                pl_op_dict["operate_name"] = ""
+                pl_op_dict["phone"] = pl
+                all_operate.append(pl_op_dict)
+        logger.info(all_operate)
+
+        all_operate = pd.DataFrame(all_operate)
+        logger.info(all_operate)
+
+        user_data = user_data.merge(all_operate, how="left", on="phone")
+        logger.info(user_data.loc[0])
+        last_data = user_data.to_dict("records")
+        logger.info(last_data)
+        return 1, last_data
+    except Exception as e:
+        return 0,e
+    finally:
+        conn_crm.close()
+
 if __name__ == "__main__":
-    result = get_lukebus_phone(["浙江金华永康运营中心","福州高新区测试运营中心，请勿选择"])
+    result = get_lukebus_phone(["四川成都天府新区运营中心"])
     logger.info(result)
