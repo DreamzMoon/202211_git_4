@@ -16,6 +16,20 @@ import datetime
 
 pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 
+# 个人转卖市场顶发布数据分析
+@pmbp.route('/publish')
+def personal_publish():
+    pass
+
+
+@pmbp.route('/orderflow')
+def personal_order_flow():
+
+
+
+
+
+    pass
 @pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
