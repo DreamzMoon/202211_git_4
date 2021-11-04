@@ -169,6 +169,88 @@ def get_operationcenter_data(cursor, operate_df, user_order_df):
     except Exception as e:
         return False, e
 
+# 返回所有用户运营中心
+def get_all_user_operationcenter():
+    '''
+
+    :param crm_cursor: crm数据库游标。需再调用方法后手动关闭数据库连接
+    :return: crm手机不为空的用户对应运营中心
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        if not conn_crm:
+            return False, '数据库连接失败'
+        crm_cursor = conn_crm.cursor()
+        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        crm_cursor.execute(operate_sql)
+        operate_data = crm_cursor.fetchall()
+        operate_df = pd.DataFrame(operate_data)
+
+        # crm用户数据
+        crm_user_sql = 'select id, pid, phone from luke_sincerechat.user where phone is not null'
+        crm_cursor.execute(crm_user_sql)
+        crm_user_df = pd.DataFrame(crm_cursor.fetchall())
+
+        # 运营中心手机列表
+        operate_telephone_list = operate_df['telephone'].to_list()
+
+        # 关系查找ql
+        supervisor_sql = '''
+                select a.*,b.operatename,b.crm from 
+                (WITH RECURSIVE temp as (
+                    SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+                    UNION ALL
+                    SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+                )
+                SELECT * FROM temp
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid
+                '''
+        child_df_list = []
+        for phone in operate_telephone_list:
+            # 1、获取运营中心所有下级数据
+            crm_cursor.execute(supervisor_sql, phone)
+            all_data = crm_cursor.fetchall()
+            # 总数据
+            all_data = pd.DataFrame(all_data)
+            all_data.dropna(subset=['phone'], axis=0, inplace=True)
+            all_data_phone = all_data['phone'].tolist()
+            # 运营中心名称
+            operatename = operate_df.loc[operate_df['telephone'] == phone, 'operatename'].values[0]
+            # 子运营中心-->包含本身
+            center_phone_list = all_data.loc[all_data['operatename'].notna(), :]['phone'].tolist()
+            child_center_phone_list = []  # 子运营中心所有下级
+            # 2、得到运营中心下所有归属下级
+            first_child_center = []  # 第一级运营中心
+            for i in center_phone_list[1:]:
+                # 剔除下级的下级运营中心
+                if i in child_center_phone_list:
+                    continue
+                # 排除运营中心重复统计
+                #         if i not in center_phone_list:
+                #         first_child_center.append(i)
+                crm_cursor.execute(supervisor_sql, i)
+                center_data = crm_cursor.fetchall()
+                center_df = pd.DataFrame(center_data)
+                center_df.dropna(subset=['phone'], axis=0, inplace=True)
+                child_center_phone_list.extend(center_df['phone'].tolist())
+            ret = list(set(all_data_phone) - set(child_center_phone_list))
+            #     ret.extend(first_child_center)
+            # 3、取得每个运营中心下级df合并
+            child_df = crm_user_df.loc[crm_user_df['phone'].isin(ret), :]
+            child_df['operatename'] = operatename
+            child_df_list.append(child_df)
+        # 用户数据拼接
+        exist_center_df = pd.concat(child_df_list)
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename']], how='left', on='phone')
+        conn_crm.close()
+        logger.info('返回用户数据成功')
+        return True, fina_df
+    except Exception as e:
+        logger.info(e)
+        return False, e
+
+
 if __name__ == "__main__":
     result = get_lukebus_phone(["浙江金华永康运营中心","福州高新区测试运营中心，请勿选择"])
     logger.info(result)

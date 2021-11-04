@@ -24,7 +24,27 @@ def personal_publish():
 
 @pmbp.route('/orderflow')
 def personal_order_flow():
+    order_flow_sql = '''
+    select order_sn, nick_name, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time
+    from lh_pretty_client.lh_order
+    where `status`  = 1
+    and type in (1, 4)
+    and sell_phone is not null
+    '''
+    conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+    order_flow_data = pd.read_sql(order_flow_sql, conn_lh)
 
+    # 获取用户数据
+
+    # 买方数据
+    # buyer_df = crm_user_df.merge(fina_df.loc[:, ['phone', 'operatename']], how='left', on='phone')
+    # buyer_df.columns = ['buyer_unionid', 'parentid', 'buyer_phone', 'operatename']
+    # # 卖方数据
+    # sell_df = buyer_df.loc[:, ['buyer_unionid', 'buyer_phone']]
+    # sell_df.columns = ['sell_unionid', 'sell_phone']
+    # # # 用户数据与订单数据合并
+    # order_flow_data = order_flow_data.merge(buyer_df, how='left', on='buyer_phone')
+    # order_flow_data = order_flow_data.merge(sell_df, how='left', on='sell_phone')
 
 
 
