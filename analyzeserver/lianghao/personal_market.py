@@ -48,10 +48,11 @@ def personal_order_flow():
     # order_flow_data = order_flow_data.merge(buyer_df, how='left', on='buyer_phone')
     # order_flow_data = order_flow_data.merge(sell_df, how='left', on='sell_phone')
 
-
-
-
     pass
+
+
+
+
 @pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
