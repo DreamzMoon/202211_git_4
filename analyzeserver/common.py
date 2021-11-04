@@ -97,17 +97,16 @@ def get_lukebus_phone(bus_lists):
         conn_crm.close()
 
 # 通过运营中心手机号查询对应运营中心数据
-def get_operationcenter_data(cursor, operate_df, user_order_df):
+def get_operationcenter_data(user_order_df, search_key, search_operatename,):
     '''
-    :param cursor: crm数据库游标
-    :param operate_df:  运营中心DataFrame
     :param user_order_df: 用户订单DataFrame
-    :return:
+    :param search_key: 搜索关键字
+    :param search_operatename: 搜索运营中心名称
+    :return: 成功返回： 所有运营中心统计结果列表[{}, {}];失败返回状态码
     '''
     try:
-        # 运营中心关系sql
         supervisor_sql = '''
-                select a.*,b.operatename,b.crm from 
+                select a.*,b.operatename,b.crm from
                 (WITH RECURSIVE temp as (
                     SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -117,13 +116,37 @@ def get_operationcenter_data(cursor, operate_df, user_order_df):
                 )a left join luke_lukebus.operationcenter b
                 on a.id = b.unionid
                 '''
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        if not conn_crm:
+            return False, '10002' # 数据库连接失败
+        crm_cursor = conn_crm.cursor()
+
+        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        crm_cursor.execute(operate_sql)
+        operate_data = crm_cursor.fetchall()
+        operate_df = pd.DataFrame(operate_data)
+
         # 运营中心手机号列表
         operate_telephone_list = operate_df['telephone'].to_list()
 
+        title_data = {
+            'buy_order': 0,  # 采购订单数量
+            'buy_count': 0,  # 采购靓号数量
+            'buy_price': 0,  # 采购金额
+            'publish_total_count': 0,  # 发布靓号
+            'publish_sell_count': 0,  # 发布订单
+            'publish_total_price': 0,  # 发布金额
+            'sell_order': 0,  # 出售订单数
+            'sell_price': 0,  # 出售金额
+            'sell_count': 0,  # 出售靓号数
+            'true_price': 0,  # 出售时实收金额
+            'sell_fee': 0,  # 出售手续费
+        }
         fina_center_data_list = []
         for phone in operate_telephone_list:
-            cursor.execute(supervisor_sql, phone)
-            all_data = cursor.fetchall()
+            logger.info(phone)
+            crm_cursor.execute(supervisor_sql, phone)
+            all_data = crm_cursor.fetchall()
             # 总数据
             all_data = pd.DataFrame(all_data)
             all_data.dropna(subset=['phone'], axis=0, inplace=True)
@@ -143,37 +166,84 @@ def get_operationcenter_data(cursor, operate_df, user_order_df):
                 if i in child_center_phone_list:
                     continue
                 first_child_center.append(i)
-                cursor.execute(supervisor_sql, i)
-                center_data = cursor.fetchall()
+                crm_cursor.execute(supervisor_sql, i)
+                center_data = crm_cursor.fetchall()
                 center_df = pd.DataFrame(center_data)
                 center_df.dropna(subset=['phone'], axis=0, inplace=True)
                 child_center_phone_list.extend(center_df['phone'].tolist())
             ret = list(set(all_data_phone) - set(child_center_phone_list))
             ret.extend(first_child_center)
-            # 靓号数据
+            # 每个运营中心的收入df
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
-            notice_data = {
-                'operatename': operatename,  # 运营中心名
-                'operate_leader_name': operate_leader_name,  # 运营中心负责人
-                'operate_leader_phone': phone,  # 手机号
-                'operate_leader_unionid': str(int(operate_leader_unionid)),  # unionID
-                'buy_order': int(child_df['buy_order'].sum()),  # 采购订单数量
-                'buy_count': int(child_df['buy_count'].sum()),  # 采购靓号数量
-                'buy_price': str(round(child_df['buy_price'].sum(), 2)),  # 采购金额
-                'publish_total_count': int(child_df['publish_total_count'].sum()),  # 发布靓号
-                'publish_sell_count': int(child_df['publish_sell_count'].sum()),  # 发布订单
-                'publish_total_price': str(round(child_df['publish_total_price'].sum(), 2)),  # 发布金额
-                'sell_order': int(child_df['sell_order'].sum()),  # 出售订单数
-                'sell_price': str(round(child_df['sell_price'].sum(), 2)),  # 出售金额
-                'sell_count': int(child_df['sell_count'].sum()),  # 出售靓号数
-                'true_price': str(round(child_df['true_price'].sum(), 2)),  # 出售时实收金额
-                'sell_fee': str(round(child_df['sell_fee'].sum(), 2)),  # 出售手续费
-            }
-            fina_center_data_list.append(notice_data)
-            logger.info(notice_data)
-        return True, fina_center_data_list
+            if search_key and not search_operatename:  # 搜索不为空，运营中心为空
+                if search_key in operatename or search_key in phone or search_key in operate_leader_name:
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    fina_center_data_list.append(notice_data)
+            elif not search_key and search_operatename:  # 搜索为空，运营中心不为空
+                if search_operatename == operatename:
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    fina_center_data_list.append(notice_data)
+            elif search_key and search_operatename:  # 都不为空
+                if (
+                        search_key in operatename or search_key in phone or search_key in operate_leader_name) and search_operatename == operatename:
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    fina_center_data_list.append(notice_data)
+            else:
+                notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                fina_center_data_list.append(notice_data)
+            title_data['buy_order'] += int(child_df['buy_order'].sum())
+            title_data['buy_count'] += int(child_df['buy_count'].sum())
+            title_data['buy_price'] += child_df['buy_price'].sum()
+            title_data['publish_total_count'] += int(child_df['publish_total_count'].sum())
+            title_data['publish_sell_count'] += int(child_df['publish_sell_count'].sum())
+            title_data['publish_total_price'] += child_df['publish_total_price'].sum()
+            title_data['sell_order'] += int(child_df['sell_order'].sum())
+            title_data['sell_price'] += child_df['sell_price'].sum()
+            title_data['sell_count'] += int(child_df['sell_count'].sum())
+            title_data['true_price'] += child_df['true_price'].sum()
+            title_data['sell_fee'] += child_df['sell_fee'].sum()
+        conn_crm.close()
+        # 数据圆整
+        title_data['buy_price'] = round(title_data['buy_price'], 2)
+        title_data['publish_total_price'] = round(title_data['publish_total_price'], 2)
+        title_data['sell_price'] = round(title_data['publish_total_price'], 2)
+        title_data['true_price'] = round(title_data['true_price'], 2)
+        title_data['sell_fee'] = round(title_data['sell_fee'], 2)
+        logger.info('返回用户数据成功')
+        return True, fina_center_data_list, title_data
     except Exception as e:
-        return False, e
+        logger.info(e)
+        return False, '10000'
+
+# 运营中心统计结果数据
+def get_notice_data(child_df, operatename, name, phone, unionid):
+    '''
+
+    :param child_df: 运营中心下级DataFrame
+    :param operatename: 运营中心名称
+    :param name: 运营中心负责人名称
+    :param phone: 运营中心负责人手机号
+    :param unionid: 运营中心负责人unionid
+    :return: 运营中心统计结果数据
+    '''
+    notice_data = {
+        'operatename': operatename,  # 运营中心名
+        'operate_leader_name': name,  # 运营中心负责人
+        'operate_leader_phone': phone,  # 手机号
+        'operate_leader_unionid': str(int(unionid)),  # unionID
+        'buy_order': int(child_df['buy_order'].sum()),  # 采购订单数量
+        'buy_count': int(child_df['buy_count'].sum()),  # 采购靓号数量
+        'buy_price': str(round(child_df['buy_price'].sum(), 2)),  # 采购金额
+        'publish_total_count': int(child_df['publish_total_count'].sum()),  # 发布靓号
+        'publish_sell_count': int(child_df['publish_sell_count'].sum()),  # 发布订单
+        'publish_total_price': str(round(child_df['publish_total_price'].sum(), 2)),  # 发布金额
+        'sell_order': int(child_df['sell_order'].sum()),  # 出售订单数
+        'sell_price': str(round(child_df['sell_price'].sum(), 2)),  # 出售金额
+        'sell_count': int(child_df['sell_count'].sum()),  # 出售靓号数
+        'true_price': str(round(child_df['true_price'].sum(), 2)),  # 出售时实收金额
+        'sell_fee': str(round(child_df['sell_fee'].sum(), 2)),  # 出售手续费
+    }
+    return notice_data
 
 # 返回所有用户运营中心
 def get_all_user_operationcenter():

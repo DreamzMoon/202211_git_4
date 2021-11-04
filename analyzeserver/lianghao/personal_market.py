@@ -8,6 +8,7 @@ father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
 from flask import *
 from config import *
+from analyzeserver.common import *
 import traceback
 from util.help_fun import *
 import time
@@ -37,6 +38,30 @@ def personal_order_flow():
     order_flow_data = pd.read_sql(order_flow_sql, conn_lh)
 
     # 获取用户数据
+    user_data_df = get_all_user_operationcenter()
+
+
+
+    # 返回用户数据
+    return_data = {
+        "order_sn": "", # 订单编码
+        "name": "", # 名称
+        "buyer_phone": "", # 买方手机号
+        "buyer_unionid": "", # 买方unionid
+        "operatename": "", # 归属运营中心
+        "parentid": "", # 归属上级
+        "count": "", # 靓号数量
+        "buy_price": "", # 购买金额
+        "transfer_type" # 转让类型
+        "pay_type": "", # 支付类型
+        "sell_unionid": "", # 卖方unionid
+        "sell_phone": "", # 卖方手机号
+        "sell_price": "", # 出售金额
+        "true_price": "", # 到账金额
+        "sell_fee": "", # 手续费
+        "order_time": "", # 交易时间
+    }
+
 
     # 买方数据
     # buyer_df = crm_user_df.merge(fina_df.loc[:, ['phone', 'operatename']], how='left', on='phone')
