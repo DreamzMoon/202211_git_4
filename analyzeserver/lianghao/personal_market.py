@@ -89,40 +89,40 @@ def personal_total():
         size = request.json["size"]
 
         # 可以是用户名称 手机号 unionid 模糊的
-        # keyword = request.json["keyword"]
-        #
-        # # 查询归属上级 精准的
-        # parent = request.json["parent"]
-        # bus = request.json["bus"]
-        #
-        # # 字符串拼接的手机号码
-        # query_phone = ""
-        #
-        # if parent:
-        #     if len(parent) == 11:
-        #         query_phone = parent
-        #     else:
-        #         result = get_phone_by_unionid(parent)
-        #         if result[0] == 1:
-        #             query_phone = result[1]
-        #         else:
-        #             return {"code":"11014","status":"failed","msg":message["code"]}
-        #
-        # if bus:
-        #     result = get_lukebus_phone([bus])
-        #     if result[0] == 1:
-        #         query_phone = result[1]
-        #     else:
-        #         return {"code":"11015","status":"failed","msg":message["11015"]}
-        #
-        # if keyword:
-        #     result = get_phone_by_keyword(keyword)
-        #     if result[0] == 1:
-        #         query_phone = result[1]
-        #     else:
-        #         return {"code":"11016","status":"failed","msg":message["11016"]}
-        #
-        # logger.info(query_phone)
+        keyword = request.json["keyword"]
+
+        # 查询归属上级 精准的
+        parent = request.json["parent"]
+        bus = request.json["bus"]
+
+        # 字符串拼接的手机号码
+        query_phone = ""
+
+        if parent:
+            if len(parent) == 11:
+                query_phone = parent
+            else:
+                result = get_phone_by_unionid(parent)
+                if result[0] == 1:
+                    query_phone = result[1]
+                else:
+                    return {"code":"11014","status":"failed","msg":message["code"]}
+
+        if bus:
+            result = get_lukebus_phone([bus])
+            if result[0] == 1:
+                query_phone = result[1]
+            else:
+                return {"code":"11015","status":"failed","msg":message["11015"]}
+
+        if keyword:
+            result = get_phone_by_keyword(keyword)
+            if result[0] == 1:
+                query_phone = result[1]
+            else:
+                return {"code":"11016","status":"failed","msg":message["11016"]}
+
+        logger.info(query_phone)
 
         code_page = (page - 1) * 10
         code_size = page * size
