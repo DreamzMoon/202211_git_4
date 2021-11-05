@@ -170,7 +170,6 @@ def personal_total():
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
 
         logger.info(request.json)
-        time.sleep(2)
         page = request.json["page"]
         size = request.json["size"]
 
@@ -183,63 +182,141 @@ def personal_total():
 
         # 字符串拼接的手机号码
         query_phone = ""
+        keyword_phone = []
+        parent_phone = []
+        bus_phone = []
 
-        if parent:
-            if len(parent) == 11:
-                query_phone = parent
-            else:
-                result = get_phone_by_unionid(parent)
-                if result[0] == 1:
-                    query_phone = result[1]
-                else:
-                    return {"code":"11014","status":"failed","msg":message["code"]}
-
-        if bus:
-            result = get_lukebus_phone([bus])
-            if result[0] == 1:
-                query_phone = result[1]
-            else:
-                return {"code":"11015","status":"failed","msg":message["11015"]}
-
+        # 模糊查询
         if keyword:
             result = get_phone_by_keyword(keyword)
+            logger.info(result)
             if result[0] == 1:
-                query_phone = result[1]
+                keyword_phone = result[1]
             else:
                 return {"code":"11016","status":"failed","msg":message["11016"]}
 
-        logger.info(query_phone)
+        # 只查一个
+        if parent:
+            if len(parent) == 11:
+                parent_phone.append(parent)
+            else:
+                result = get_phone_by_unionid(parent)
+                if result[0] == 1:
+                    parent_phone.append(result[1])
+                else:
+                    return {"code":"11014","status":"failed","msg":message["code"]}
+        # 查禄可商务的
+        if bus:
+            result = get_lukebus_phone([bus])
+            if result[0] == 1:
+                bus_phone = result[1].split(",")
+            else:
+                return {"code":"11015","status":"failed","msg":message["11015"]}
+
+        # 对手机号码差交集
+        if keyword_phone and parent_phone and bus_phone:
+            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
+        elif keyword_phone and parent_phone:
+            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
+        elif keyword_phone and bus_phone:
+            query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+        elif parent_phone and bus_phone:
+            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
+        elif keyword_phone:
+            query_phone = keyword_phone
+        elif parent_phone:
+            query_phone = parent_phone
+        elif bus_phone:
+            query_phone = bus_phone
+        else:
+            query_phone = ""
 
         code_page = (page - 1) * 10
         code_size = page * size
 
-        sql = '''select count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price,
-        count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,
-        sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee 
-        from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) '''
-        all_data = pd.read_sql(sql,conn_read)
-        logger.info(all_data)
-        logger.info("-----------------")
-        all_data = all_data.to_dict("records")
-        logger.info(all_data)
 
-        order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by phone'''
+        # 如果没有手机号码可以一起查 如果有手机号码要分成三个sql
+        # sql = '''select count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price,
+        #         count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,
+        #         sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee
+        #         from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) '''
+        # logger.info(sql)
+        # last_all_data = pd.read_sql(sql,conn_read).to_dict("records")
+
+
+        order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+        group_sql = ''' group by phone'''
+        if query_phone:
+            condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
+            order_sql = order_sql+condition_sql+group_sql
+        else:
+            order_sql = order_sql +group_sql
+        logger.info("order_sql:%s" %order_sql)
         order_data = pd.read_sql(order_sql,conn_read)
         logger.info(order_data.shape)
 
-        sell_sql = '''select sell_phone phone,count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) group by sell_phone'''
+        sell_sql = '''select sell_phone phone,count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+        group_sql = ''' group by sell_phone'''
+        if query_phone:
+            condition_sql = ''' and sell_phone in (%s)''' % (",".join(query_phone))
+            sell_sql = sell_sql + condition_sql + group_sql
+        else:
+            sell_sql = sell_sql + group_sql
+        logger.info("sell_sql:%s" %sell_sql)
         sell_order = pd.read_sql(sell_sql,conn_read)
         logger.info(sell_order.shape)
 
-        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 group by sell_phone '''
+        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
+        group_sql = ''' group by sell_phone '''
+        if query_phone:
+            condition_sql = ''' and sell_phone in (%s)''' % (",".join(query_phone))
+            public_sql = public_sql + condition_sql + group_sql
+        else:
+            public_sql = public_sql + group_sql
+        logger.info("public_sql:%s" %public_sql)
         public_order = pd.read_sql(public_sql,conn_read)
         logger.info(public_order.shape)
+
+
 
         df_list = []
         df_list.append(order_data)
         df_list.append(sell_order)
         df_list.append(public_order)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
+
+        all_data = {"buy_count": 0, "buy_total_count": 0, "buy_total_price": 0, "sell_count": 0, "sell_fee": 0,
+                    "sell_real_money": 0, "sell_total_count": 0, "sell_total_price": 0}
+
+
+        #把nan都填充0
+        df_merged["buy_count"].fillna(0,inplace=True)
+        df_merged["buy_total_count"].fillna(0,inplace=True)
+        df_merged["buy_total_price"].fillna(0,inplace=True)
+        df_merged["sell_count"].fillna(0,inplace=True)
+        df_merged["sell_fee"].fillna(0,inplace=True)
+        df_merged["sell_real_money"].fillna(0,inplace=True)
+        df_merged["sell_total_count"].fillna(0,inplace=True)
+        df_merged["sell_total_count"].fillna(0,inplace=True)
+
+        all_df = df_merged.to_dict("records")
+
+        for i in range(0,len(all_df)):
+
+            all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
+            all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
+            all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
+            all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
+            all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
+            all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
+            all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
+            all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+
+        all_data["buy_total_price"] = round(all_data["buy_total_price"],2)
+        all_data["sell_fee"] = round(all_data["sell_fee"],2)
+        all_data["sell_real_money"] = round(all_data["sell_real_money"],2)
+        all_data["sell_total_price"] = round(all_data["sell_total_price"],2)
+
 
         logger.info("code_page:%s" %code_page)
         logger.info("code_size:%s" %code_size)
@@ -253,10 +330,14 @@ def personal_total():
 
         if result[0] == 1:
             last_data = result[1]
+            logger.info(last_data)
         else:
             return {"code":"10006","status":"failed","msg":message["10006"]}
-        return {"code":"0000","status":"success","msg":last_data,"count":len(df_merged)}
-    except:
+        msg_data = {"data":last_data,"all_data":all_data}
+        logger.info("msg_data:%s" %msg_data)
+        return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
+    except Exception as e:
+        logger.error(e)
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
