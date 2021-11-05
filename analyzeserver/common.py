@@ -361,12 +361,13 @@ def user_belong_bus(need_data):
                     ''' % pl
             operate_data = pd.read_sql(operate_sql, conn_crm)
             # logger.info(operate_data)
-            logger.info("----------------")
+            # logger.info("----------------")
+            current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
 
-            if len(operate_data) > 0:
+            if len(current_operate_data)>1:
                 # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
-                current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)].iloc[0, :]
-                pl_op_dict["operate_name"] = current_operate_data["operatename"]
+
+                pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
             else:

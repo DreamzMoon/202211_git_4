@@ -231,9 +231,10 @@ def personal_total():
         df_list.append(public_order)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
-
+        logger.info("code_page:%s" %code_page)
+        logger.info("code_size:%s" %code_size)
         if page and size:
-            need_data = df_merged.loc[code_page:code_size]
+            need_data = df_merged[code_page:code_size]
         else:
             need_data = df_merged.copy()
         logger.info(need_data)
