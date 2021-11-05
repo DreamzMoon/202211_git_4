@@ -30,8 +30,25 @@ def personal_order_flow():
     try:
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) !=2:
+        if len(request.json) !=10:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        # 购买人信息
+        buyer_info = request.json['buyer_info'].strip()
+        # 表单选择operatename
+        form_operatename = request.json['operatename']
+        # 归属上级
+        parentid = request.json['parentid'].strip()
+        # 订单编码
+        order_sn = request.json['order_sn'].strip()
+        # 出售人信息
+        sell_info = request.json['sell_info'].strip()
+        # 交易时间
+        order_time = request.json['order_time']
+        # 支付类型
+        pay_type = request.json['pay_type']
+        # 转让类型
+        transfer_type = request.json['transfer_type']
+
         # 每页显示条数
         num = request.json['num']
         # 页码
@@ -49,18 +66,19 @@ def personal_order_flow():
         return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
     order_flow_sql = '''
-        select order_sn, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time
+        select order_sn, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time, sell_id
         from lh_pretty_client.lh_order
         where `status`  = 1
         and del_flag = 0
         and type in (1, 4)
         and sell_phone is not null
-        order by order_time desc
         '''
     conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+    if not conn_lh:
+        return {"code": "10008", "status": "failed", "msg": message["10008"]}
     order_flow_data = pd.read_sql(order_flow_sql, conn_lh)
-    logger.info('order_flow_data shape')
-    logger.info(order_flow_data.shape)
+
+    order_flow_data = order_flow_data[order_flow_data['']]
 
     start_index = (page - 1) * num
     end_index = page * num
@@ -69,14 +87,11 @@ def personal_order_flow():
     logger.info('start_index: %s' % start_index)
     logger.info('end_index: %s' % end_index)
     part_user = order_flow_data.loc[start_index:end_index-1, :]
-    logger.info('part_user shape')
-    logger.info(part_user.shape)
     order_buyer_list = part_user['buyer_phone'].tolist()
-    logger.info(len(order_buyer_list))
     logger.info(order_buyer_list)
 
     operate_sql = '''
-        select a.*,b.operatename from 
+        select a.*,b.operatename, b.crm from 
         (WITH RECURSIVE temp as (
                 SELECT t.id,t.pid,t.phone,t.nickname FROM luke_sincerechat.user t WHERE phone = %s
                 UNION ALL
@@ -94,29 +109,20 @@ def personal_order_flow():
     crm_cursor = conn_crm.cursor()
 
     user_data_list = []
-    for phone in order_buyer_list:
+    for phone in set(order_buyer_list):
         logger.info('phone: %s' % phone)
         crm_cursor.execute(operate_sql, phone)
         operate_data = pd.DataFrame(crm_cursor.fetchall())
-        operatename = operate_data.loc[operate_data['operatename'].notna(), 'operatename'].tolist()
+        operatename = operate_data.loc[(operate_data['operatename'].notna()) & (operate_data['crm'] == 1), 'operatename'].tolist()
         if operatename:
             operate_data.loc[0, 'operatename'] = operatename[0]
         user_data = operate_data.loc[:0, :]
-        logger.info(user_data)
-        logger.info('-*' * 50)
         user_data_list.append(user_data)
-    logger.info(len(user_data_list))
-    logger.info('-' * 60)
-    df_merged = pd.concat(user_data_list)
-    logger.info(df_merged.shape)
-    logger.info(df_merged)
-    df_merged.columns = ['buyer_unionid', 'parentid', 'buyer_phone', 'name', 'operatename']
+    df_merged = pd.concat(user_data_list, ignore_index=True)
+    df_merged.columns = ['buyer_unionid', 'parentid', 'buyer_phone', 'name', 'operatename', 'crm']
     logger.info('获取用户数据完成')
     # 买方信息
     part_user = part_user.merge(df_merged, how='left', on='buyer_phone')
-    logger.info(part_user)
-    logger.info(part_user.shape)
-    logger.info('-' * 60)
     # 卖方信息
     sell_data = crm_user_data.loc[:, ['unionid', 'phone']]
     sell_data.columns = ['sell_unionid', 'sell_phone']
@@ -139,9 +145,13 @@ def personal_order_flow():
     part_user['pay_type'] = part_user['pay_type'].map(pay_type)
     logger.info(part_user)
     logger.info(part_user.shape)
-
-    part_user.drop_duplicates('order_sn', inplace=True)
-
+    # 数据库默认为1
+    part_user['transfer_type'] = 1
+    for index, row in part_user.iterrows():
+        transfer_type_sql = '''select price_status from lh_pretty_client.lh_sell where id="%s"''' % row['sell_id']
+        transfer_type_data = pd.read_sql(transfer_type_sql, conn_lh)
+        part_user.loc[index, 'transfer_type'] = transfer_type_data['price_status'].values[0]
+    part_user.drop(['sell_id', 'crm'], axis=1, inplace=True)
     result = part_user.to_dict('records')
     logger.info(result)
     return_data = {
@@ -149,7 +159,7 @@ def personal_order_flow():
         'order_flow': result
     }
     conn_crm.close()
-    return {"code": "0000", "status": "success", "data": return_data}
+    return {"code": "0000", "status": "success", "msg": return_data}
 
 
 
