@@ -326,6 +326,242 @@ def get_all_user_operationcenter():
         logger.info(e)
         return False, e
 
+# 根据运营中心名字返回下级手机号列表
+def get_operationcenter_child(conn_crm, operateid):
+    '''
+    :param conn_crm: crm数据库连接
+    :param operatename: 运营中心名称
+    :return: 下级手机号列表
+    '''
+    # 查找运营中心手机号
+    try:
+        search_operate_phone = '''select telephone, operatename from luke_lukebus.operationcenter where id = %s''' % operateid
+        search_operate_result = pd.read_sql(search_operate_phone, conn_crm)
+        if search_operate_result.shape[0] == 0:
+            return False, "10010"
+        logger.info(search_operate_result)
+        operate_phone = search_operate_result['telephone'].values[0]
+        operatename = search_operate_result['operatename'].values[0]
+
+        # 运营中心归属下级（不包含下级运营中心）
+        supervisor_sql = '''
+               select a.*,b.operatename,b.crm from 
+               (WITH RECURSIVE temp as (
+                   SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+                   UNION ALL
+                   SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+               )
+               SELECT * FROM temp
+               )a left join luke_lukebus.operationcenter b
+               on a.id = b.unionid
+               '''
+        crm_cursor = conn_crm.cursor()
+        crm_cursor.execute(supervisor_sql, operate_phone)
+        operate_df = pd.DataFrame(crm_cursor.fetchall())
+        operate_df.dropna(subset=['phone'], axis=0, inplace=True)
+        operate_df_phone_list = operate_df['phone'].tolist()
+        # 子运营中心-->包含本身
+        center_phone_list = operate_df.loc[operate_df['operatename'].notna(), :]['phone'].tolist()
+        child_center_phone_list = []  # 子运营中心所有下级
+        # 2、得到运营中心下所有归属下级
+        for i in center_phone_list[1:]:
+            # 剔除下级的下级运营中心
+            if i in child_center_phone_list:
+                continue
+            crm_cursor.execute(supervisor_sql, i)
+            child_center_df = pd.DataFrame(crm_cursor.fetchall())
+            child_center_df.dropna(subset=['phone'], axis=0, inplace=True)
+            child_center_phone_list.extend(child_center_df['phone'].tolist())
+        child_phone_list = list(set(operate_df_phone_list) - set(child_center_phone_list))
+        child_phone_list.append(operatename)
+        return True, child_phone_list
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, "10011"
+
+# 订单流水数据处理
+def order_and_user_merge(order_df, user_df):
+    '''
+
+    :param order_df: 订单表
+    :param user_df: 用户表
+    :return:
+    '''
+    try:
+        # 买方
+        fina_df = order_df.merge(
+            user_df.loc[:, ['buyer_unionid', 'buyer_phone', 'parentid', 'buyer_name', 'parent_phone']], how='left',
+            on='buyer_phone')
+        # 卖方
+        fina_df = fina_df.merge(user_df.loc[:, ['sell_unionid', 'sell_phone', 'sell_name']], how='left',
+                                on='sell_phone')
+        fina_df.reset_index(drop=True, inplace=True)
+
+        # 类型转换、填补空值
+        fina_df['buyer_unionid'] = fina_df['buyer_unionid'].astype(str)
+        fina_df['parentid'] = fina_df['parentid'].astype(str)
+        fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
+        fina_df['transfer_type'].fillna(3, inplace=True)
+        fina_df['transfer_type'] = (fina_df['transfer_type'].astype(int)).astype(str)
+        fina_df['pay_type'] = fina_df['pay_type'].astype(str)
+        fina_df['strf_order_time'] = fina_df['order_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
+
+        # map_pay_type = {
+        #     "-1": "未知",
+        #     "0": "信用点支付",
+        #     "1": "诚聊余额支付",
+        #     "2": "诚聊通余额支付",
+        #     "3": "微信支付",
+        #     "4": "支付宝支付",
+        #     "5": "后台系统支付",
+        #     "6": "银行卡支付",
+        #     "7": "诚聊通佣金支付",
+        #     "8": "诚聊通红包支付"
+        # }
+        #
+        # # 转让类型映射
+        # map_transfer_type = {
+        #     "0": "自主",
+        #     "1": "市场",
+        #     "3": "未知"
+        # }
+        # fina_df['pay_type'] = fina_df['pay_type'].map(map_pay_type)
+        # fina_df['transfer_type'] = fina_df['transfer_type'].map(map_transfer_type)
+
+
+        return True,fina_df
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, '10000'
+
+# 订单数据框匹配
+def match_attribute(data_df, request):
+    '''
+
+    :param data_df: 需要匹配的DataFrame
+    :param request: 请求
+    :return:
+    '''
+    try:
+        match_df = data_df.loc[
+            ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (
+                data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (
+                 data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
+            & ((data_df['parentid'].str.contains(request.json['parent'])) | (
+                data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
+            & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
+            & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (
+                data_df['sell_phone'].str.contains(request.json['sell_info'])) | (
+                   data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
+            & (data_df['strf_order_time'].str.contains(request.json['order_time']))  # 交易时间
+            & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
+            & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
+            ]
+        if match_df.shape[0] > 0:
+            return True, match_df
+        else:
+            return False, "10010"
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, "10011"
+
+# 如果存在运营中心参数
+def exist_operationcenter(fina_df, child_phone_list, request):
+    '''
+
+    :param fina_df: 由order_and_user_merge处理后的数据
+    :param child_phone_list: 下级手机列表
+    :param request: 请求
+    :return:
+    '''
+    logger.info(child_phone_list)
+    logger.info('----------------------')
+    try:
+        part_user_df = fina_df.loc[fina_df['buyer_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+        flag, match_df = match_attribute(part_user_df, request)
+        if not flag:
+            return False, match_df
+        # 匹配到数据
+        if match_df.shape[0] > 0:
+            match_df['operatename'] = child_phone_list[-1]
+            # 删除多余列
+            match_df.drop(['parent_phone', 'sell_name', 'strf_order_time'], axis=1, inplace=True)
+            match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            match_df = map_type(match_df)
+            return True, match_df
+        else:
+            return False, "10010"
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, "10011"
+
+# 不存在运营中心参数时，匹配用户运营中心
+def match_user_operate(conn_crm, user_df):
+    '''
+
+    :param conn_crm: crm连接
+    :param user_df: 用户数据DataFrame
+    :return:
+    '''
+    try:
+        operate_sql = '''
+            select a.phone, b.operatename, b.crm from 
+            (WITH RECURSIVE temp as (
+                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
+                    UNION ALL
+                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+            )
+            SELECT * FROM temp 
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid
+            '''
+        crm_cursor = conn_crm.cursor()
+        match_buyer_list = user_df['buyer_phone'].tolist()
+        match_user_data_list = []
+        for buyer in set(match_buyer_list):
+            crm_cursor.execute(operate_sql, buyer)
+            match_operate_data = pd.DataFrame(crm_cursor.fetchall())
+            match_operatename = match_operate_data.loc[(match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+            if match_operatename:
+                match_operate_data.loc[0, 'operatename'] = match_operatename[0]
+            match_user_data = match_operate_data.loc[:0, :]
+            match_user_data_list.append(match_user_data)
+        df_merged = pd.concat(match_user_data_list, ignore_index=True)
+        df_merged.columns = ['buyer_phone', 'operatename', 'crm']
+        match_df = user_df.merge(df_merged, how='left', on='buyer_phone')
+        match_df.drop(['parent_phone', 'sell_name', 'strf_order_time', 'crm'], axis=1, inplace=True)
+        match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        match_df = map_type(match_df)
+        return True, match_df
+    except Exception as e:
+        logger.error(e)
+        return False, "10011"
+
+# 关系映射
+def map_type(df):
+    map_pay_type = {
+        "-1": "未知",
+        "0": "信用点支付",
+        "1": "诚聊余额支付",
+        "2": "诚聊通余额支付",
+        "3": "微信支付",
+        "4": "支付宝支付",
+        "5": "后台系统支付",
+        "6": "银行卡支付",
+        "7": "诚聊通佣金支付",
+        "8": "诚聊通红包支付"
+    }
+
+    # 转让类型映射
+    map_transfer_type = {
+        "0": "自主",
+        "1": "市场",
+        "3": "未知"
+    }
+    df['pay_type'] = df['pay_type'].map(map_pay_type)
+    df['transfer_type'] = df['transfer_type'].map(map_transfer_type)
+    return df
+
 def user_belong_bus(need_data):
     '''
 

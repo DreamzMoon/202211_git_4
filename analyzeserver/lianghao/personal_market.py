@@ -46,9 +46,9 @@ def personal_order_flow():
             # 交易时间
             order_time = request.json['order_time']
             # 支付类型
-            pay_type = request.json['pay_type']
+            pay_id = request.json['pay_id']
             # 转让类型
-            transfer_type = request.json['transfer_type']
+            transfer_id = request.json['transfer_id']
 
             # 每页显示条数
             num = request.json['num']
@@ -68,6 +68,8 @@ def personal_order_flow():
 
         # crm用户数据
         conn_crm = direct_get_conn(crm_mysql_conf)
+        if not conn_crm:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
         crm_user_sql = '''select t1.*, t2.parent_phone from 
             (select id buyer_unionid, id sell_unionid, pid parentid,phone buyer_phone, phone sell_phone, nickname buyer_name, nickname sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
             left join
@@ -88,6 +90,8 @@ def personal_order_flow():
             on t1.sell_id = t2.id
             '''
         conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
         order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
 
         flag_1, fina_df = order_and_user_merge(order_flow_df, crm_user_df)
@@ -118,11 +122,11 @@ def personal_order_flow():
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
-            if not buyer_info and not parent and not sell_info and not order_time and not order_sn and not transfer_type and not pay_type:
+            if not buyer_info and not parent and not sell_info and not order_time and not order_sn and not transfer_id and not pay_id:
                 # 根据页码和显示条数返回数据
                 if end_index > len(fina_df):
                     end_index = len(fina_df)
-                flag_4, match_df = match_use_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
+                flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
                 if not flag_4:
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
                 match_dict_list = match_df.to_dict('records')
@@ -138,7 +142,7 @@ def personal_order_flow():
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
                 if end_index > len(match_df):
                     end_index = len(match_df)
-                flag_6, match_df_1 = match_use_operate(conn_crm, match_df.iloc[start_index:end_index, :])
+                flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :])
                 if not flag_6:
                     return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
                 match_dict_list = match_df_1.to_dict('records')
@@ -149,7 +153,7 @@ def personal_order_flow():
                 }
                 return {"code": "0000", "status": "success", "msg": return_data}
     except Exception as e:
-        logger.error(e)
+        logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_crm.close()
