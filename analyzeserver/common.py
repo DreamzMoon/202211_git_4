@@ -404,7 +404,7 @@ def order_and_user_merge(order_df, user_df):
         fina_df['transfer_type'].fillna(3, inplace=True)
         fina_df['transfer_type'] = (fina_df['transfer_type'].astype(int)).astype(str)
         fina_df['pay_type'] = fina_df['pay_type'].astype(str)
-        fina_df['strf_order_time'] = fina_df['order_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
+        fina_df['order_time'] = fina_df['order_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
 
         # map_pay_type = {
         #     "-1": "未知",
@@ -435,7 +435,7 @@ def order_and_user_merge(order_df, user_df):
         return False, '10000'
 
 # 订单数据框匹配
-def match_attribute(data_df, request):
+def match_attribute(data_df, request, mode='order'):
     '''
 
     :param data_df: 需要匹配的DataFrame
@@ -443,20 +443,26 @@ def match_attribute(data_df, request):
     :return:
     '''
     try:
-        match_df = data_df.loc[
-            ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (
-                data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (
-                 data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
-            & ((data_df['parentid'].str.contains(request.json['parent'])) | (
-                data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
-            & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
-            & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (
-                data_df['sell_phone'].str.contains(request.json['sell_info'])) | (
-                   data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-            & (data_df['strf_order_time'].str.contains(request.json['order_time']))  # 交易时间
-            & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
-            & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
-            ]
+        if mode == 'order':
+            match_df = data_df.loc[
+                ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
+                & ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
+                & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
+                & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
+                & (data_df['order_time'].str.contains(request.json['order_time']))  # 交易时间
+                & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
+                & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
+                ]
+        else:
+            match_df = data_df.loc[
+                   ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
+                   & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
+                   & (data_df['pulish_time'].str.contains(request.json['pulish_time']))  # 发布时间
+                   & (data_df['up_time'].str.contains(request.json['up_time']))  # 上架时间
+                   & (data_df['sell_time'].str.contains(request.json['sell_time']))  # 出售时间
+                   & (data_df['status'].str.contains(request.json['status']))  # 支付类型
+                   & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
+            , :]
         if match_df.shape[0] > 0:
             return True, match_df
         else:
@@ -465,8 +471,10 @@ def match_attribute(data_df, request):
         logger.error(traceback.format_exc())
         return False, "10011"
 
-# 如果存在运营中心参数
-def exist_operationcenter(fina_df, child_phone_list, request):
+
+
+# 如果订单流水存在运营中心参数
+def order_exist_operationcenter(fina_df, child_phone_list, request):
     '''
 
     :param fina_df: 由order_and_user_merge处理后的数据
@@ -485,9 +493,10 @@ def exist_operationcenter(fina_df, child_phone_list, request):
         if match_df.shape[0] > 0:
             match_df['operatename'] = child_phone_list[-1]
             # 删除多余列
-            match_df.drop(['parent_phone', 'sell_name', 'strf_order_time'], axis=1, inplace=True)
-            match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
+            # match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S")) # 可优化
             match_df = map_type(match_df)
+            match_df.fillna("", inplace=True)
             return True, match_df
         else:
             return False, "10010"
@@ -495,8 +504,38 @@ def exist_operationcenter(fina_df, child_phone_list, request):
         logger.error(traceback.format_exc())
         return False, "10011"
 
+# 发布订单流水存在运营中心
+def pulish_exist_operationcenter(fina_df, child_phone_list, request):
+    '''
+
+        :param fina_df:
+        :param child_phone_list: 下级手机列表
+        :param request: 请求
+        :return:
+        '''
+    logger.info(child_phone_list)
+    logger.info('----------------------')
+    try:
+        part_user_df = fina_df.loc[fina_df['sell_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+        flag, match_df = match_attribute(part_user_df, request, mode='pulish')
+        if not flag:
+            return False, match_df
+        # 匹配到数据
+        if match_df.shape[0] > 0:
+            match_df['operatename'] = child_phone_list[-1]
+            # 删除多余列
+            match_df.drop(['parent_phone'], axis=1, inplace=True)
+            match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+            match_df = map_type(match_df)
+            match_df.fillna("", inplace=True)
+            return True, match_df
+        else:
+            return False, "10010"
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, "10011"
 # 不存在运营中心参数时，匹配用户运营中心
-def match_user_operate(conn_crm, user_df):
+def match_user_operate(conn_crm, user_df, mode="order"):
     '''
 
     :param conn_crm: crm连接
@@ -516,7 +555,13 @@ def match_user_operate(conn_crm, user_df):
             on a.id = b.unionid
             '''
         crm_cursor = conn_crm.cursor()
-        match_buyer_list = user_df['buyer_phone'].tolist()
+        if mode == "order":
+            tag = 'buyer_phone'
+            user_df.drop(['sell_name'], axis=1, inplace=True)
+        else:
+            tag = 'sell_phone'
+            user_df['sell_time'] = user_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+        match_buyer_list = user_df[tag].tolist()
         match_user_data_list = []
         for buyer in set(match_buyer_list):
             crm_cursor.execute(operate_sql, buyer)
@@ -527,14 +572,15 @@ def match_user_operate(conn_crm, user_df):
             match_user_data = match_operate_data.loc[:0, :]
             match_user_data_list.append(match_user_data)
         df_merged = pd.concat(match_user_data_list, ignore_index=True)
-        df_merged.columns = ['buyer_phone', 'operatename', 'crm']
-        match_df = user_df.merge(df_merged, how='left', on='buyer_phone')
-        match_df.drop(['parent_phone', 'sell_name', 'strf_order_time', 'crm'], axis=1, inplace=True)
-        match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        df_merged.columns = [tag, 'operatename', 'crm']
+        match_df = user_df.merge(df_merged, how='left', on=tag)
+        match_df.drop(['parent_phone', 'crm'], axis=1, inplace=True)
+        # match_df['order_time'] = match_df['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         match_df = map_type(match_df)
+        match_df.fillna("", inplace=True)
         return True, match_df
     except Exception as e:
-        logger.error(e)
+        logger.error(traceback.format_exc())
         return False, "10011"
 
 # 关系映射
@@ -558,8 +604,17 @@ def map_type(df):
         "1": "市场",
         "3": "未知"
     }
-    df['pay_type'] = df['pay_type'].map(map_pay_type)
+    map_status = {
+        "0": "上架",
+        "1": "下架",
+        "2": "已出售",
+        "3": "已下单"
+    }
     df['transfer_type'] = df['transfer_type'].map(map_transfer_type)
+    try:
+        df['pay_type'] = df['pay_type'].map(map_pay_type)
+    except:
+        df['status'] = df['status'].map(map_status)
     return df
 
 def user_belong_bus(need_data):

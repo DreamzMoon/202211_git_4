@@ -35,7 +35,7 @@ def personal_order_flow():
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
             # 购买人信息
             buyer_info = request.json['buyer_info'].strip()
-            # 表单选择operatename
+            # 表单选择operateid
             operateid = request.json['operateid']
             # 归属上级
             parent = request.json['parent'].strip()
@@ -106,7 +106,7 @@ def personal_order_flow():
             flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_2:
                 return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
-            flag_3, match_df = exist_operationcenter(fina_df, child_phone_list, request)
+            flag_3, match_df = order_exist_operationcenter(fina_df, child_phone_list, request)
             if not flag_3:
                 return {"code": match_df, "status": "failed", "msg": message[match_df]}
 
@@ -158,7 +158,125 @@ def personal_order_flow():
     finally:
         conn_crm.close()
 
+@pmbp.route('/pulishflow', methods=["POST"])
 # 个人转卖市场发布出售订单流水
+def personal_pulish_order_flow():
+    try:
+        logger.info(request.json)
+        # 参数个数错误
+        if len(request.json) != 10:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        # 表单选择operateid
+        operateid = request.json['operateid']
+        # 出售人信息
+        sell_info = request.json['sell_info'].strip()
+        # 归属上级
+        parent = request.json['parent'].strip()
+        # 交易时间
+        pulish_time = request.json['pulish_time']
+        # 上架时间
+        up_time = request.json['up_time']
+        # 出售时间
+        sell_time = request.json['sell_time']
+        # 支付类型
+        status = request.json['status']
+        # 转让类型
+        transfer_id = request.json['transfer_id']
+
+        # 每页显示条数
+        num = request.json['num']
+        # 页码
+        page = request.json['page']
+        # isdigit()可以判断是否为正整数
+        if not num.isdigit() or int(num) < 1:
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        elif not page.isdigit() or int(page) < 1:
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        else:
+            num = int(num)
+            page = int(page)
+    except:
+        # 参数名错误
+        return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+    pulish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, price_status transfer_type, `status`, create_time pulish_time, up_time, sell_time
+    from lh_pretty_client.lh_sell
+    where del_flag = 0'''
+
+    conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+    pulish_order_df = pd.read_sql(pulish_sql, conn_lh)
+
+    conn_crm = direct_get_conn(crm_mysql_conf)
+    crm_user_sql = '''select t1.*, t2.parent_phone from 
+        (select id sell_unionid, pid parentid, phone sell_phone, nickname sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
+        left join
+        (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
+        on t1.parentid = t2.id'''
+    crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
+    fina_df = pulish_order_df.merge(crm_user_df, how='left', on='sell_phone')
+    fina_df['status'] = fina_df['status'].astype(str)
+    fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
+    fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
+    fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
+    fina_df['parentid'] = fina_df['parentid'].astype(str)
+    fina_df['pulish_time'] = fina_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+    fina_df['sell_time'] = fina_df['sell_time'].astype(str)
+
+    start_index = (page - 1) * num
+    end_index = page * num
+    if operateid:
+        flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
+        if not flag_2:
+            return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
+        flag_3, match_df = pulish_exist_operationcenter(fina_df, child_phone_list, request)
+        if not flag_3:
+            return {"code": match_df, "status": "failed", "msg": message[match_df]}
+
+        match_dict_list = match_df.to_dict('records')
+        logger.info(match_dict_list)
+        if end_index > len(match_dict_list):
+            end_index = len(match_dict_list)
+        return_data = {
+            "count": match_df.shape[0],
+            "data": match_dict_list[start_index: end_index]
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    # 如果不存在运营中心参数
+    else:
+        # 判断是否为无参
+        if not parent and not sell_info and not pulish_time and not up_time and not transfer_id and not sell_time:
+            # 根据页码和显示条数返回数据
+            if end_index > len(fina_df):
+                end_index = len(fina_df)
+            flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="pulish")
+            if not flag_4:
+                return {"code": match_df, "status": "failed", "msg": message[match_df]}
+            match_dict_list = match_df.to_dict('records')
+            return_data = {
+                "count": match_df.shape[0],
+                "data": match_dict_list
+            }
+            return {"code": "0000", "status": "success", "msg": return_data}
+
+        else:
+            flag_5, match_df = match_attribute(fina_df, request, mode="pulish")
+            if not flag_5:
+                return {"code": match_df, "status": "failed", "msg": message[match_df]}
+            if end_index > len(match_df):
+                end_index = len(match_df)
+            flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="pulish")
+            if not flag_6:
+                return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
+            match_dict_list = match_df_1.to_dict('records')
+            logger.info(match_dict_list)
+            return_data = {
+                "count": match_df.shape[0],
+                "data": match_dict_list
+            }
+            return {"code": "0000", "status": "success", "msg": return_data}
 
 
 
