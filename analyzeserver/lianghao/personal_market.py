@@ -19,148 +19,142 @@ from analyzeserver.common import *
 
 pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 
-# 个人转卖市场顶发布数据分析
+# 个人转卖市场发布数据分析
 @pmbp.route('/publish', methods=["POST"])
 def personal_publish():
     pass
 
-
+# 个人转卖市场订单流水
 @pmbp.route('/orderflow', methods=["POST"])
 def personal_order_flow():
     try:
-        logger.info(request.json)
-        # 参数个数错误
-        if len(request.json) !=10:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-        # 购买人信息
-        buyer_info = request.json['buyer_info'].strip()
-        # 表单选择operatename
-        form_operatename = request.json['operatename']
-        # 归属上级
-        parentid = request.json['parentid'].strip()
-        # 订单编码
-        order_sn = request.json['order_sn'].strip()
-        # 出售人信息
-        sell_info = request.json['sell_info'].strip()
-        # 交易时间
-        order_time = request.json['order_time']
-        # 支付类型
-        pay_type = request.json['pay_type']
-        # 转让类型
-        transfer_type = request.json['transfer_type']
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) !=10:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+            # 购买人信息
+            buyer_info = request.json['buyer_info'].strip()
+            # 表单选择operatename
+            form_operatename = request.json['operatename']
+            # 归属上级
+            parent = request.json['parent'].strip()
+            # 订单编码
+            order_sn = request.json['order_sn'].strip()
+            # 出售人信息
+            sell_info = request.json['sell_info'].strip()
+            # 交易时间
+            order_time = request.json['order_time']
+            # 支付类型
+            pay_type = request.json['pay_type']
+            # 转让类型
+            transfer_type = request.json['transfer_type']
 
-        # 每页显示条数
-        num = request.json['num']
-        # 页码
-        page = request.json['page']
-        # isdigit()可以判断是否为正整数
-        if not num.isdigit() or int(num) < 1:
+            # 每页显示条数
+            num = request.json['num']
+            # 页码
+            page = request.json['page']
+            # isdigit()可以判断是否为正整数
+            if not num.isdigit() or int(num) < 1:
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            elif not page.isdigit() or int(page) < 1:
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            else:
+                num = int(num)
+                page = int(page)
+        except:
+            # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        elif not page.isdigit() or int(page) < 1:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        # crm用户数据
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        crm_user_sql = '''select t1.*, t2.parent_phone from 
+            (select id buyer_unionid, id sell_unionid, pid parentid,phone buyer_phone, phone sell_phone, nickname buyer_name, nickname sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
+            left join
+            (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
+            on t1.parentid = t2.id'''
+        crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
+
+        # 订单流水数据
+        order_flow_sql = '''
+            select t1.order_sn, t1.buyer_phone, t1.pay_type, t1.count, t1.buy_price, t1.sell_phone, t1.sell_price, t1.true_price, t1.sell_fee, t1.order_time, t2.transfer_type from
+            (select order_sn, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time, sell_id
+            from lh_pretty_client.lh_order
+            where `status`  = 1
+            and type in (1, 4)
+            and sell_phone is not null) t1
+            left join
+            (select id, price_status transfer_type from lh_pretty_client.lh_sell) t2
+            on t1.sell_id = t2.id
+            '''
+        conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
+
+        flag_1, fina_df = order_and_user_merge(order_flow_df, crm_user_df)
+        if not flag_1:
+            # 10000
+            return {"code": fina_df, "status": "failed", "msg": message[fina_df]}
+
+        start_index = (page - 1) * num
+        end_index = page * num
+        # 如果存在运营中心参数
+        if form_operatename:
+            flag_2, child_phone_list = get_operationcenter_child(conn_crm, form_operatename)
+            if not flag_2:
+                return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
+            flag_3, match_df = exist_operationcenter(fina_df, child_phone_list, request)
+            if not flag_3:
+                return {"code": match_df, "status": "failed", "msg": message[match_df]}
+
+            match_dict_list = match_df.to_dict('records')
+            logger.info(match_dict_list)
+            if end_index > len(match_dict_list):
+                end_index = len(match_dict_list)
+            return_data = {
+                "count": match_df.shape[0],
+                "data": match_dict_list[start_index: end_index]
+            }
+            return {"code": "0000", "status": "success", "msg": return_data}
+        # 如果不存在运营中心参数
         else:
-            num = int(num)
-            page = int(page)
-    except:
-        # 参数名错误
-        return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            # 判断是否为无参
+            if not buyer_info and not parent and not sell_info and not order_time and not order_sn and not transfer_type and not pay_type:
+                # 根据页码和显示条数返回数据
+                if end_index > len(fina_df):
+                    end_index = len(fina_df)
+                flag_4, match_df = match_use_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
+                if not flag_4:
+                    return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                match_dict_list = match_df.to_dict('records')
+                return_data = {
+                    "count": match_df.shape[0],
+                    "data": match_dict_list
+                }
+                return {"code": "0000", "status": "success", "msg": return_data}
 
-    order_flow_sql = '''
-        select order_sn, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time, sell_id
-        from lh_pretty_client.lh_order
-        where `status`  = 1
-        and del_flag = 0
-        and type in (1, 4)
-        and sell_phone is not null
-        '''
-    conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-    if not conn_lh:
-        return {"code": "10008", "status": "failed", "msg": message["10008"]}
-    order_flow_data = pd.read_sql(order_flow_sql, conn_lh)
+            else:
+                flag_5, match_df = match_attribute(fina_df, request)
+                if not flag_5:
+                    return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                if end_index > len(match_df):
+                    end_index = len(match_df)
+                flag_6, match_df_1 = match_use_operate(conn_crm, match_df.iloc[start_index:end_index, :])
+                if not flag_6:
+                    return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
+                match_dict_list = match_df_1.to_dict('records')
+                logger.info(match_dict_list)
+                return_data = {
+                    "count": match_df.shape[0],
+                    "data": match_dict_list
+                }
+                return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(e)
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_crm.close()
 
-    order_flow_data = order_flow_data[order_flow_data['']]
-
-    start_index = (page - 1) * num
-    end_index = page * num
-    if end_index > order_flow_data.shape[0]:
-        end_index = len(order_flow_data.shape[0])
-    logger.info('start_index: %s' % start_index)
-    logger.info('end_index: %s' % end_index)
-    part_user = order_flow_data.loc[start_index:end_index-1, :]
-    order_buyer_list = part_user['buyer_phone'].tolist()
-    logger.info(order_buyer_list)
-
-    operate_sql = '''
-        select a.*,b.operatename, b.crm from 
-        (WITH RECURSIVE temp as (
-                SELECT t.id,t.pid,t.phone,t.nickname FROM luke_sincerechat.user t WHERE phone = %s
-                UNION ALL
-                SELECT t.id,t.pid,t.phone,t.nickname FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-        )
-        SELECT * FROM temp 
-        )a left join luke_lukebus.operationcenter b
-        on a.id = b.unionid
-        '''
-
-    conn_crm = direct_get_conn(crm_mysql_conf)
-    crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
-    crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
-
-    crm_cursor = conn_crm.cursor()
-
-    user_data_list = []
-    for phone in set(order_buyer_list):
-        logger.info('phone: %s' % phone)
-        crm_cursor.execute(operate_sql, phone)
-        operate_data = pd.DataFrame(crm_cursor.fetchall())
-        operatename = operate_data.loc[(operate_data['operatename'].notna()) & (operate_data['crm'] == 1), 'operatename'].tolist()
-        if operatename:
-            operate_data.loc[0, 'operatename'] = operatename[0]
-        user_data = operate_data.loc[:0, :]
-        user_data_list.append(user_data)
-    df_merged = pd.concat(user_data_list, ignore_index=True)
-    df_merged.columns = ['buyer_unionid', 'parentid', 'buyer_phone', 'name', 'operatename', 'crm']
-    logger.info('获取用户数据完成')
-    # 买方信息
-    part_user = part_user.merge(df_merged, how='left', on='buyer_phone')
-    # 卖方信息
-    sell_data = crm_user_data.loc[:, ['unionid', 'phone']]
-    sell_data.columns = ['sell_unionid', 'sell_phone']
-    part_user['order_time'] = part_user['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-    part_user = part_user.merge(sell_data, how='left', on='sell_phone')
-    part_user['pay_type'] = part_user['pay_type'].astype(str)
-    # 支付类型映射
-    pay_type = {
-        "-1": "未知",
-        "0": "信用点支付",
-        "1": "诚聊余额支付",
-        "2": "诚聊通余额支付",
-        "3": "微信支付",
-        "4": "支付宝支付",
-        "5": "后台系统支付",
-        "6": "银行卡支付",
-        "7": "诚聊通佣金支付",
-        "8": "诚聊通红包支付"
-    }
-    part_user['pay_type'] = part_user['pay_type'].map(pay_type)
-    logger.info(part_user)
-    logger.info(part_user.shape)
-    # 数据库默认为1
-    part_user['transfer_type'] = 1
-    for index, row in part_user.iterrows():
-        transfer_type_sql = '''select price_status from lh_pretty_client.lh_sell where id="%s"''' % row['sell_id']
-        transfer_type_data = pd.read_sql(transfer_type_sql, conn_lh)
-        part_user.loc[index, 'transfer_type'] = transfer_type_data['price_status'].values[0]
-    part_user.drop(['sell_id', 'crm'], axis=1, inplace=True)
-    result = part_user.to_dict('records')
-    logger.info(result)
-    return_data = {
-        'count': len(order_flow_data),
-        'order_flow': result
-    }
-    conn_crm.close()
-    return {"code": "0000", "status": "success", "msg": return_data}
-
+# 个人转卖市场发布出售订单流水
 
 
 
