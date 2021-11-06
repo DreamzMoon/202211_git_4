@@ -36,7 +36,7 @@ def personal_order_flow():
             # 购买人信息
             buyer_info = request.json['buyer_info'].strip()
             # 表单选择operatename
-            form_operatename = request.json['operatename']
+            operateid = request.json['operateid']
             # 归属上级
             parent = request.json['parent'].strip()
             # 订单编码
@@ -98,8 +98,8 @@ def personal_order_flow():
         start_index = (page - 1) * num
         end_index = page * num
         # 如果存在运营中心参数
-        if form_operatename:
-            flag_2, child_phone_list = get_operationcenter_child(conn_crm, form_operatename)
+        if operateid:
+            flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_2:
                 return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
             flag_3, match_df = exist_operationcenter(fina_df, child_phone_list, request)
