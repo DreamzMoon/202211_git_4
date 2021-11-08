@@ -246,8 +246,8 @@ def operations_order_count():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
         search_key = request.json['key']
         operateid = request.json['operateid']
-        num = request.json['num']
-        page = request.json['page']
+        num = str(request.json['num'])
+        page = str(request.json['page'])
         # isdigit()可以判断是否为正整数
         if not num.isdigit() or int(num) < 1:
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
