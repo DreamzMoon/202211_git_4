@@ -21,15 +21,11 @@ import base64
 
 sysuserbp = Blueprint('sysuser', __name__, url_prefix='/user')
 
+r = ssh_redis()
 
-if redis_password:
-    r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
-else:
-    r = redis.Redis(host=redis_host, port=redis_port)
 
 def check_token(token,user_id):
   logger.info(token)
-
   try:
     conn = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
     with conn.cursor() as cursor:

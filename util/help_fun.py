@@ -130,13 +130,17 @@ def ssh_redis():
             remote_bind_address=(yun_redis_host, yun_redis_port)
         )
         server.start()
-
-        rclient = redis.Redis(host="127.0.0.1",
-                              port=server.local_bind_port,
-                              password=yun_redis_password,
-                              db=yun_redis_db,
-                              decode_responses=True)
-
+        if yun_redis_password:
+            rclient = redis.Redis(host="127.0.0.1",
+                                  port=server.local_bind_port,
+                                  password=yun_redis_password,
+                                  db=yun_redis_db,
+                                  decode_responses=True)
+        else:
+            rclient = redis.Redis(host="127.0.0.1",
+                                  port=server.local_bind_port,
+                                  db=yun_redis_db,
+                                  decode_responses=True)
         return rclient
     except:
         return None
