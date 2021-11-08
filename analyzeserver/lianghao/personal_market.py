@@ -180,7 +180,7 @@ def personal_pulish_order_flow():
             up_time = request.json['up_time']
             # 出售时间
             sell_time = request.json['sell_time']
-            # 支付类型
+            # 状态
             status = request.json['status']
             # 转让类型
             transfer_id = request.json['transfer_id']
@@ -220,7 +220,9 @@ def personal_pulish_order_flow():
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
+        fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
         fina_df['parentid'] = fina_df['parentid'].astype(str)
+        fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
         fina_df['pulish_time'] = fina_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")

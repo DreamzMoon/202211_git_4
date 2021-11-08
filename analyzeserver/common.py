@@ -483,12 +483,15 @@ def order_and_user_merge(order_df, user_df):
 
         # 类型转换、填补空值
         fina_df['buyer_unionid'] = fina_df['buyer_unionid'].astype(str)
+        fina_df['buyer_unionid'] = fina_df['buyer_unionid'].apply(lambda x: del_point(x))
         fina_df['parentid'] = fina_df['parentid'].astype(str)
+        fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
+        fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
         fina_df['transfer_type'].fillna(3, inplace=True)
         fina_df['transfer_type'] = (fina_df['transfer_type'].astype(int)).astype(str)
         fina_df['pay_type'] = fina_df['pay_type'].astype(str)
-        fina_df['order_time'] = fina_df['order_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
+        fina_df['order_time'] = fina_df['order_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
 
         # map_pay_type = {
         #     "-1": "未知",
@@ -555,8 +558,6 @@ def match_attribute(data_df, request, mode='order'):
         logger.error(traceback.format_exc())
         return False, "10011"
 
-
-
 # 如果订单流水存在运营中心参数
 def order_exist_operationcenter(fina_df, child_phone_list, request):
     '''
@@ -618,6 +619,7 @@ def pulish_exist_operationcenter(fina_df, child_phone_list, request):
     except Exception as e:
         logger.error(traceback.format_exc())
         return False, "10011"
+
 # 不存在运营中心参数时，匹配用户运营中心
 def match_user_operate(conn_crm, user_df, mode="order"):
     '''
@@ -644,7 +646,7 @@ def match_user_operate(conn_crm, user_df, mode="order"):
             user_df.drop(['sell_name'], axis=1, inplace=True)
         else:
             tag = 'sell_phone'
-            user_df['sell_time'] = user_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+            user_df['sell_time'] = user_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
         match_buyer_list = user_df[tag].tolist()
         match_user_data_list = []
         for buyer in set(match_buyer_list):
@@ -700,6 +702,14 @@ def map_type(df):
     except:
         df['status'] = df['status'].map(map_status)
     return df
+
+# id去小数点
+def del_point(data):
+    try:
+        return data.split(".")[0]
+    except:
+        return data
+
 
 def user_belong_bus(need_data):
     '''
