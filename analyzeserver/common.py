@@ -97,7 +97,7 @@ def get_lukebus_phone(bus_lists):
         conn_crm.close()
 
 # 通过运营中心手机号查询对应运营中心数据
-def get_operationcenter_data(user_order_df, search_key, search_operatename,):
+def get_operationcenter_data(user_order_df, search_key, search_operateid):
     '''
     :param user_order_df: 用户订单DataFrame
     :param search_key: 搜索关键字
@@ -121,7 +121,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operatename,):
             return False, '10002' # 数据库连接失败
         crm_cursor = conn_crm.cursor()
 
-        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
@@ -142,6 +142,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operatename,):
             'true_price': 0,  # 出售时实收金额
             'sell_fee': 0,  # 出售手续费
         }
+        logger.info('search_operateid:%s' % search_operateid)
         fina_center_data_list = []
         for phone in operate_telephone_list:
             logger.info(phone)
@@ -153,6 +154,8 @@ def get_operationcenter_data(user_order_df, search_key, search_operatename,):
             all_data_phone = all_data['phone'].tolist()
             # 运营中心名称
             operate_data = operate_df.loc[operate_df['telephone'] == phone, :]
+            operateid = str(operate_data['id'].values[0])
+            logger.info('operateid: %s' % operateid)
             operatename = operate_data['operatename'].values[0]
             operate_leader_unionid = operate_data['unionid'].values[0]
             operate_leader_name = operate_data['name'].values[0]
@@ -175,17 +178,16 @@ def get_operationcenter_data(user_order_df, search_key, search_operatename,):
             ret.extend(first_child_center)
             # 每个运营中心的收入df
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
-            if search_key and not search_operatename:  # 搜索不为空，运营中心为空
+            if search_key and not search_operateid:  # 搜索不为空，运营中心为空
                 if search_key in operatename or search_key in phone or search_key in operate_leader_name:
                     notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
                     fina_center_data_list.append(notice_data)
-            elif not search_key and search_operatename:  # 搜索为空，运营中心不为空
-                if search_operatename == operatename:
+            elif not search_key and search_operateid:  # 搜索为空，运营中心不为空
+                if search_operateid == operateid:
                     notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
                     fina_center_data_list.append(notice_data)
-            elif search_key and search_operatename:  # 都不为空
-                if (
-                        search_key in operatename or search_key in phone or search_key in operate_leader_name) and search_operatename == operatename:
+            elif search_key and search_operateid:  # 都不为空
+                if (search_key in operatename or search_key in phone or search_key in operate_leader_name) and search_operateid == operateid:
                     notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
                     fina_center_data_list.append(notice_data)
             else:

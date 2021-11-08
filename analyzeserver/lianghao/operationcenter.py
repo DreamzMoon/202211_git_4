@@ -245,7 +245,7 @@ def operations_order_count():
         if len(request.json) != 4:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
         search_key = request.json['key']
-        form_operatename = request.json['operatename']
+        operateid = request.json['operateid']
         num = request.json['num']
         page = request.json['page']
         # isdigit()可以判断是否为正整数
@@ -285,7 +285,7 @@ def operations_order_count():
     user_order_df = pd.read_sql(lh_count_sql, conn_lh)
 
     # 获取运营中心数据
-    result = get_operationcenter_data(user_order_df, search_key, form_operatename)
+    result = get_operationcenter_data(user_order_df, search_key, operateid)
     if not result[0]: # 不成功
         return {"code": result[1], "status": "failed", "msg": message[result[1]]}
     start_num = (page - 1) * num
