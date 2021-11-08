@@ -248,14 +248,17 @@ def operations_order_count():
         operateid = request.json['operateid']
         num = str(request.json['num'])
         page = str(request.json['page'])
-        # isdigit()可以判断是否为正整数
-        if not num.isdigit() or int(num) < 1:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        elif not page.isdigit() or int(page) < 1:
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        if num and page:
+            # isdigit()可以判断是否为正整数
+            if not num.isdigit() or int(num) < 1:
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            elif not page.isdigit() or int(page) < 1:
+                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            else:
+                num = int(num)
+                page = int(page)
         else:
-            num = int(num)
-            page = int(page)
+            pass
     except:
         # 参数名错误
         return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -288,10 +291,14 @@ def operations_order_count():
     result = get_operationcenter_data(user_order_df, search_key, operateid)
     if not result[0]: # 不成功
         return {"code": result[1], "status": "failed", "msg": message[result[1]]}
-    start_num = (page - 1) * num
-    end_num = page * num
-    # 如果num超过数据条数
-    if end_num > len(result[1]):
+    if num and page:
+        start_num = (page - 1) * num
+        end_num = page * num
+        # 如果num超过数据条数
+        if end_num > len(result[1]):
+            end_num = len(result[1])
+    else:
+        start_num = 0
         end_num = len(result[1])
     return_data = {
         'count': len(result[1]),

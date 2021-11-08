@@ -158,8 +158,8 @@ def personal_order_flow():
     finally:
         conn_crm.close()
 
-@pmbp.route('/pulishflow', methods=["POST"])
 # 个人转卖市场发布出售订单流水
+@pmbp.route('/pulishflow', methods=["POST"])
 def personal_pulish_order_flow():
     try:
         try:
@@ -282,6 +282,8 @@ def personal_pulish_order_flow():
                 return {"code": "0000", "status": "success", "msg": return_data}
     except Exception as e:
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_crm.close()
 
 
 
