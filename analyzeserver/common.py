@@ -98,7 +98,7 @@ def get_lukebus_phone(bus_lists):
 
 
 
-#通过禄可运营中心查询对应的手机号码
+#通过禄可运营中心id查询对应的手机号码
 def get_busphne_by_id(bus_id):
     '''
     :param bus_lists: 传入运营中心的列表
