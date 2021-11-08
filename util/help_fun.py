@@ -14,6 +14,7 @@ from sshtunnel import SSHTunnelForwarder
 from sqlalchemy import create_engine
 import pandas as pd
 import sqlalchemy as sa
+import redis
 
 
 def ssh_get_conn(ssh_conf,mysql_conf):
@@ -42,6 +43,9 @@ def ssh_get_conn(ssh_conf,mysql_conf):
         return client
     except:
         return None
+
+
+
 
 
 def ssh_get_sqlalchemy_conn(ssh_conf,mysql_conf):
@@ -117,8 +121,33 @@ def sqlalchemy_conn(sql_conf):
         return None
 
 
+def ssh_redis():
+    try:
+        server = SSHTunnelForwarder(
+            (lianghao_ssh_conf["host"], lianghao_ssh_conf["port"]),
+            ssh_password=lianghao_ssh_conf["ssh_password"],
+            ssh_username=lianghao_ssh_conf["ssh_username"],
+            remote_bind_address=(yun_redis_host, yun_redis_port)
+        )
+        server.start()
+
+        rclient = redis.Redis(host="127.0.0.1",
+                              port=server.local_bind_port,
+                              password=yun_redis_password,
+                              db=yun_redis_db,
+                              decode_responses=True)
+
+        return rclient
+    except:
+        return None
+
+
 if __name__ == "__main__":
     logger.info("start")
+
+    rclient = ssh_redis()
+    logger.info(rclient)
+    logger.info(rclient.get("hello"))
 
     # 跳板机连接
     # conn = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
@@ -126,8 +155,8 @@ if __name__ == "__main__":
     #     # sql = "select * from lh_user where phone = 13559436425"
     #     sql = 'show tables'
     #     cursor.execute(sql)
-    #     data = cursor.fetchone()
-    #     logger.info("data:%s" %data)
+    #     data = cursor.fetchall()
+    #     logger.info(data)
     # conn.close()
 
 
@@ -159,8 +188,8 @@ if __name__ == "__main__":
     # logger.info(data)
 
     #crm
-    conn_engine = pd_conn(crm_mysql_conf)
-    sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
-    data = pd.read_sql(sql,conn_engine)
-    logger.info(data)
+    # conn_engine = pd_conn(crm_mysql_conf)
+    # sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
+    # data = pd.read_sql(sql,conn_engine)
+    # logger.info(data)
 

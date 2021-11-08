@@ -41,6 +41,12 @@ redis_port = 6379
 redis_password = ""
 # redis_password = "_3:wOk!:)W]sak0EcWYYang"
 
+
+yun_redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+yun_redis_port = 6379
+yun_redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
+yun_redis_db = 71
+
 lianghao_ssh_conf = {
     "host":"47.117.125.39",
     "ssh_username":"office",
