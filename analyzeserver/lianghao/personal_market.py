@@ -31,7 +31,7 @@ def personal_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) !=10:
+            if len(request.json) !=11:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
             # 购买人信息
             buyer_info = request.json['buyer_info'].strip()
@@ -44,7 +44,8 @@ def personal_order_flow():
             # 出售人信息
             sell_info = request.json['sell_info'].strip()
             # 交易时间
-            order_time = request.json['order_time']
+            start_order_time = request.json['start_order_time']
+            end_order_time = request.json['end_order_time']
             # 支付类型
             pay_id = request.json['pay_id']
             # 转让类型
@@ -54,17 +55,12 @@ def personal_order_flow():
             num = request.json['num']
             # 页码
             page = request.json['page']
-        #     if num and page:
-        #         # isdigit()可以判断是否为正整数
-        #         if not num.isdigit() or int(num) < 1:
-        #             return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        #         elif not page.isdigit() or int(page) < 1:
-        #             return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        #         else:
-        #             num = int(num)
-        #             page = int(page)
-        #     else:
-        #         pass
+            if start_order_time and end_order_time:
+                order_time_result = judge_start_and_end_time(start_order_time, end_order_time)
+                if not order_time_result[0]:
+                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+                request.json['start_order_time'] = order_time_result[0]
+                request.json['end_order_time'] = order_time_result[1]
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -130,7 +126,7 @@ def personal_order_flow():
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
-            if not buyer_info and not parent and not sell_info and not order_time and not order_sn and not transfer_id and not pay_id:
+            if not buyer_info and not parent and not sell_info and not start_order_time and not end_order_time and not order_sn and not transfer_id and not pay_id:
                 # 根据页码和显示条数返回数据
                 if num and page:
                     start_index = (page - 1) * num
@@ -149,6 +145,7 @@ def personal_order_flow():
                     match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['buyer_phone', 'operatename']], how='left', on='buyer_phone')
                     match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
                 # flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
+                match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
                     "count": match_df.shape[0],
@@ -172,6 +169,7 @@ def personal_order_flow():
                 flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :])
                 if not flag_6:
                     return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
+                match_df_1['order_time'] = match_df_1['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df_1.to_dict('records')
                 logger.info(match_dict_list)
                 return_data = {
@@ -182,8 +180,11 @@ def personal_order_flow():
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
-    # finally:
-    #     conn_crm.close()
+    finally:
+        try:
+            conn_crm.close()
+        except:
+            pass
 
 # 个人转卖市场发布出售订单流水
 @pmbp.route('/pulishflow', methods=["POST"])
@@ -192,7 +193,7 @@ def personal_pulish_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 10:
+            if len(request.json) != 13:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             # 表单选择operateid
@@ -202,11 +203,14 @@ def personal_pulish_order_flow():
             # 归属上级
             parent = request.json['parent'].strip()
             # 交易时间
-            pulish_time = request.json['pulish_time']
+            start_pulish_time = request.json['start_pulish_time']
+            end_pulish_time = request.json['end_pulish_time']
             # 上架时间
-            up_time = request.json['up_time']
+            start_up_time = request.json['start_up_time']
+            end_up_time = request.json['end_up_time']
             # 出售时间
-            sell_time = request.json['sell_time']
+            start_sell_time = request.json['start_sell_time']
+            end_sell_time = request.json['end_sell_time']
             # 状态
             status = request.json['status']
             # 转让类型
@@ -224,6 +228,26 @@ def personal_pulish_order_flow():
             # else:
             #     num = int(num)
             #     page = int(page)
+
+            # 时间判断
+            if start_pulish_time and end_pulish_time:
+                order_time_result = judge_start_and_end_time(start_pulish_time, end_pulish_time)
+                if not order_time_result[0]:
+                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+                request.json['start_pulish_time'] = order_time_result[0]
+                request.json['end_pulish_time'] = order_time_result[1]
+            if start_up_time and end_up_time:
+                order_time_result = judge_start_and_end_time(start_up_time, end_up_time)
+                if not order_time_result[0]:
+                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+                request.json['start_order_time'] = order_time_result[0]
+                request.json['end_order_time'] = order_time_result[1]
+            if start_sell_time and end_sell_time:
+                order_time_result = judge_start_and_end_time(start_sell_time, end_sell_time)
+                if not order_time_result[0]:
+                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+                request.json['start_order_time'] = order_time_result[0]
+                request.json['end_order_time'] = order_time_result[1]
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -250,10 +274,11 @@ def personal_pulish_order_flow():
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
         fina_df['parentid'] = fina_df['parentid'].astype(str)
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
-        fina_df['pulish_time'] = fina_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-        fina_df['sell_time'] = fina_df['sell_time'].astype(str)
+        # 最终返回结果时处理
+        # fina_df['pulish_time'] = fina_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        # fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        # fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        # fina_df['sell_time'] = fina_df['sell_time'].astype(str)
 
 
         if operateid:
@@ -277,13 +302,14 @@ def personal_pulish_order_flow():
                 end_index = len(match_df)
             return_data = {
                 "count": match_df.shape[0],
+
                 "data": match_dict_list[start_index: end_index]
             }
             return {"code": "0000", "status": "success", "msg": return_data}
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
-            if not parent and not sell_info and not pulish_time and not up_time and not transfer_id and not sell_time:
+            if not parent and not sell_info and not start_pulish_time and not start_up_time and not transfer_id and not start_sell_time:
                 # 根据页码和显示条数返回数据
                 if num and page:
                     start_index = (page - 1) * num
@@ -297,11 +323,15 @@ def personal_pulish_order_flow():
                 else:
                     all_user_operate_result = get_all_user_operationcenter()
                     if not all_user_operate_result[0]:
-                        return {"code": "10000", "status": "success", "msg": message["10000"]}
+                        return {"code": "10000", "status": "failed", "msg": message["10000"]}
                     all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
                     match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left', on='sell_phone')
                     match_df.drop(['parent_phone'], axis=1, inplace=True)
-                    match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
+                match_df['pulish_time'] = match_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                match_df['sell_time'] = match_df['sell_time'].astype(str)
+                match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
                     "count": match_df.shape[0],
@@ -325,6 +355,11 @@ def personal_pulish_order_flow():
                 flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="pulish")
                 if not flag_6:
                     return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
+                match_df_1['pulish_time'] = match_df_1['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                match_df_1['up_time'] = match_df_1['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                # match_df_1['sell_time'] = match_df_1['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                match_df_1['sell_time'] = match_df_1['sell_time'].astype(str)
+                match_df_1['sell_time'] = match_df_1['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df_1.to_dict('records')
                 logger.info(match_dict_list)
                 return_data = {
@@ -336,11 +371,13 @@ def personal_pulish_order_flow():
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_crm.close()
+        try:
+            conn_crm.close()
+        except:
+            pass
 
-
-@pmbp.route("total",methods=["POST"])
 # 个人转卖市场订单数据统计分析
+@pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
@@ -527,7 +564,6 @@ def personal_total():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_read.close()
-
 
 
 '''个人转卖市场采购数据分析总'''
