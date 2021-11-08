@@ -15,7 +15,7 @@ import pandas as pd
 
 typebp = Blueprint('type', __name__, url_prefix='/lh/personal')
 
-@typebp.route("/pay_type/list",methods=["GET"])
+@typebp.route("/pay_type/list", methods=["GET"])
 def pay_type_list():
     try:
         map_pay_type = [
@@ -34,7 +34,7 @@ def pay_type_list():
     except:
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
-@typebp.route("/transfer_type/list",methods=["GET"])
+@typebp.route("/transfer_type/list", methods=["GET"])
 def transfer_type():
     try:
         map_transfer_type = [
@@ -43,5 +43,18 @@ def transfer_type():
             {"transfer_id": "3", "transfer_name": "未知"}
         ]
         return {"code": "0000", "status": "success", "msg": map_transfer_type}
+    except:
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+@ typebp.route("status_type/list", methods=["GET"])
+def status_type():
+    try:
+        map_status = [
+            {"status_id": "0", "status_name": "上架"},
+            {"status_id": "1", "status_name": "下架"},
+            {"status_id": "2", "status_name": "已出售"},
+            {"status_id": "3", "status_name": "已下单"}
+        ]
+        return {"code": "0000", "status": "success", "msg": map_status}
     except:
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
