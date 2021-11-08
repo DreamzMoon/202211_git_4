@@ -51,17 +51,20 @@ def personal_order_flow():
             transfer_id = request.json['transfer_id']
 
             # 每页显示条数
-            num = str(request.json['num'])
+            num = request.json['num']
             # 页码
-            page = str(request.json['page'])
-            # isdigit()可以判断是否为正整数
-            if not num.isdigit() or int(num) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            elif not page.isdigit() or int(page) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            else:
-                num = int(num)
-                page = int(page)
+            page = request.json['page']
+        #     if num and page:
+        #         # isdigit()可以判断是否为正整数
+        #         if not num.isdigit() or int(num) < 1:
+        #             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        #         elif not page.isdigit() or int(page) < 1:
+        #             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        #         else:
+        #             num = int(num)
+        #             page = int(page)
+        #     else:
+        #         pass
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -99,8 +102,6 @@ def personal_order_flow():
             # 10000
             return {"code": fina_df, "status": "failed", "msg": message[fina_df]}
 
-        start_index = (page - 1) * num
-        end_index = page * num
         # 如果存在运营中心参数
         if operateid:
             flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
@@ -112,7 +113,14 @@ def personal_order_flow():
 
             match_dict_list = match_df.to_dict('records')
             logger.info(match_dict_list)
-            if end_index > len(match_dict_list):
+            if num and page:
+                start_index= (page - 1) * num
+                end_index = page * num
+                # 如果num超过数据条数
+                if end_index > len(match_dict_list):
+                    end_index = len(match_dict_list)
+            else:
+                start_index = 0
                 end_index = len(match_dict_list)
             return_data = {
                 "count": match_df.shape[0],
@@ -124,11 +132,23 @@ def personal_order_flow():
             # 判断是否为无参
             if not buyer_info and not parent and not sell_info and not order_time and not order_sn and not transfer_id and not pay_id:
                 # 根据页码和显示条数返回数据
-                if end_index > len(fina_df):
-                    end_index = len(fina_df)
-                flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
-                if not flag_4:
-                    return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                if num and page:
+                    start_index = (page - 1) * num
+                    end_index = page * num
+                    # 如果num超过数据条数
+                    if end_index > len(fina_df):
+                        end_index = len(fina_df)
+                    flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
+                    if not flag_4:
+                        return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                else:
+                    all_user_operate_result = get_all_user_operationcenter()
+                    if not all_user_operate_result[0]:
+                        return {"code": "10000", "status": "success", "msg": message["10000"]}
+                    all_user_operate_result[1].rename(columns={"phone": 'buyer_phone'}, inplace=True)
+                    match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['buyer_phone', 'operatename']], how='left', on='buyer_phone')
+                    match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
+                # flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :])
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
                     "count": match_df.shape[0],
@@ -140,7 +160,14 @@ def personal_order_flow():
                 flag_5, match_df = match_attribute(fina_df, request)
                 if not flag_5:
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
-                if end_index > len(match_df):
+                if num and page:
+                    start_index = (page - 1) * num
+                    end_index = page * num
+                    # 如果num超过数据条数
+                    if end_index > len(match_df):
+                        end_index = len(match_df)
+                else:
+                    start_index = 0
                     end_index = len(match_df)
                 flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :])
                 if not flag_6:
@@ -155,8 +182,8 @@ def personal_order_flow():
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
-    finally:
-        conn_crm.close()
+    # finally:
+    #     conn_crm.close()
 
 # 个人转卖市场发布出售订单流水
 @pmbp.route('/pulishflow', methods=["POST"])
@@ -186,17 +213,17 @@ def personal_pulish_order_flow():
             transfer_id = request.json['transfer_id']
 
             # 每页显示条数
-            num = str(request.json['num'])
+            num = request.json['num']
             # 页码
-            page = str(request.json['page'])
+            page = request.json['page']
             # isdigit()可以判断是否为正整数
-            if not num.isdigit() or int(num) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            elif not page.isdigit() or int(page) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            else:
-                num = int(num)
-                page = int(page)
+            # if not num.isdigit() or int(num) < 1:
+            #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            # elif not page.isdigit() or int(page) < 1:
+            #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            # else:
+            #     num = int(num)
+            #     page = int(page)
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
@@ -228,8 +255,7 @@ def personal_pulish_order_flow():
         fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
         fina_df['sell_time'] = fina_df['sell_time'].astype(str)
 
-        start_index = (page - 1) * num
-        end_index = page * num
+
         if operateid:
             flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_2:
@@ -240,8 +266,15 @@ def personal_pulish_order_flow():
 
             match_dict_list = match_df.to_dict('records')
             logger.info(match_dict_list)
-            if end_index > len(match_dict_list):
-                end_index = len(match_dict_list)
+            if num and page:
+                start_index = (page - 1) * num
+                end_index = page * num
+                # 如果num超过数据条数
+                if end_index > len(match_df):
+                    end_index = len(match_df)
+            else:
+                start_index = 0
+                end_index = len(match_df)
             return_data = {
                 "count": match_df.shape[0],
                 "data": match_dict_list[start_index: end_index]
@@ -252,11 +285,23 @@ def personal_pulish_order_flow():
             # 判断是否为无参
             if not parent and not sell_info and not pulish_time and not up_time and not transfer_id and not sell_time:
                 # 根据页码和显示条数返回数据
-                if end_index > len(fina_df):
-                    end_index = len(fina_df)
-                flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="pulish")
-                if not flag_4:
-                    return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                if num and page:
+                    start_index = (page - 1) * num
+                    end_index = page * num
+                    # 如果num超过数据条数
+                    if end_index > len(fina_df):
+                        end_index = len(fina_df)
+                    flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="pulish")
+                    if not flag_4:
+                        return {"code": match_df, "status": "failed", "msg": message[match_df]}
+                else:
+                    all_user_operate_result = get_all_user_operationcenter()
+                    if not all_user_operate_result[0]:
+                        return {"code": "10000", "status": "success", "msg": message["10000"]}
+                    all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
+                    match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left', on='sell_phone')
+                    match_df.drop(['parent_phone'], axis=1, inplace=True)
+                    match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
                     "count": match_df.shape[0],
@@ -268,7 +313,14 @@ def personal_pulish_order_flow():
                 flag_5, match_df = match_attribute(fina_df, request, mode="pulish")
                 if not flag_5:
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
-                if end_index > len(match_df):
+                if num and page:
+                    start_index = (page - 1) * num
+                    end_index = page * num
+                    # 如果num超过数据条数
+                    if end_index > len(match_df):
+                        end_index = len(match_df)
+                else:
+                    start_index = 0
                     end_index = len(match_df)
                 flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="pulish")
                 if not flag_6:
@@ -281,10 +333,10 @@ def personal_pulish_order_flow():
                 }
                 return {"code": "0000", "status": "success", "msg": return_data}
     except Exception as e:
+        logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_crm.close()
-
 
 
 @pmbp.route("total",methods=["POST"])

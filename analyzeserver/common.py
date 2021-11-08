@@ -610,7 +610,7 @@ def pulish_exist_operationcenter(fina_df, child_phone_list, request):
             match_df['operatename'] = child_phone_list[-1]
             # 删除多余列
             match_df.drop(['parent_phone'], axis=1, inplace=True)
-            match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+            match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
             match_df = map_type(match_df)
             match_df.fillna("", inplace=True)
             return True, match_df
