@@ -493,10 +493,12 @@ def personal_buy():
 
         # 查询归属上级 精准的
         parent = request.json["parent"]
-        # bus = request.json["bus"]
+
         bus_id = request.json["bus_id"]
-        start_time = request.json["start_time"]
-        end_time = request.json["end_time"]
+        first_start_time = request.json["first_start_time"]
+        first_end_time = request.json["first_end_time"]
+        last_start_time = request.json["last_start_time"]
+        last_end_time = request.json["last_end_time"]
 
         # 字符串拼接的手机号码
         query_phone = ""
@@ -504,9 +506,14 @@ def personal_buy():
         parent_phone = []
         bus_phone = []
 
-        # if start_time and end_time:
-        #     if (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")).days > 360:
-        #         return {"code":"11017","status":"failed","msg":message["11017"]}
+        time_condition_sql = ""
+        if first_start_time and first_end_time and last_start_time and last_end_time:
+            if first_start_time >= last_start_time and last_end_time >= last_start_time:
+                time_condition_sql = ''' and create_time>=%s and create_time <= %s''' %(first_start_time,first_end_time)
+                pass
+            else:
+                return {"code":"11019","status":"failed","msg":message[["11019"]]}
+
 
         # 模糊查询
         if keyword:
@@ -559,7 +566,8 @@ def personal_buy():
             code_size = page * size
 
         buy_sql = '''select phone,total_price,create_time from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
-
+        if time_condition_sql:
+            buy_sql = buy_sql+time_condition_sql
 
         group_sql = ''' group by phone'''
         # limit_sql = ''' limit %s,%s''' %(code_page,code_size)
