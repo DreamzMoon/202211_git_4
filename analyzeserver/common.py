@@ -724,7 +724,7 @@ def user_belong_bus(need_data):
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
         user_data = need_data.merge(crm_user_data, how="left", on="phone")
-
+        logger.info(user_data)
         phone_list = user_data.to_dict('list')['phone']
         logger.info(len(phone_list))
 
@@ -748,10 +748,11 @@ def user_belong_bus(need_data):
             # logger.info(operate_data)
             # logger.info("----------------")
             current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
-
-            if len(current_operate_data)>1:
+            logger.info(current_operate_data)
+            logger.info("--------------------")
+            if len(current_operate_data)>0:
                 # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
-
+                logger.info("有值")
                 pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
@@ -759,10 +760,10 @@ def user_belong_bus(need_data):
                 pl_op_dict["operate_name"] = ""
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
-        # logger.info(all_operate)
+        logger.info(all_operate)
 
         all_operate = pd.DataFrame(all_operate)
-        # logger.info(all_operate)
+        logger.info(all_operate)
 
         user_data = user_data.merge(all_operate, how="left", on="phone")
         # logger.info(user_data.loc[0])
@@ -835,5 +836,5 @@ if __name__ == "__main__":
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    result = get_busphne_by_id(157)
+    result = get_busphne_by_id(208)
     logger.info(result)

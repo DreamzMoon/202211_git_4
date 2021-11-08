@@ -288,6 +288,7 @@ def personal_pulish_order_flow():
 
 
 @pmbp.route("total",methods=["POST"])
+# 个人转卖市场订单数据统计分析
 def personal_total():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
@@ -362,8 +363,9 @@ def personal_total():
         else:
             query_phone = ""
 
-        code_page = (page - 1) * 10
-        code_size = page * size
+        if page and size:
+            code_page = (page - 1) * 10
+            code_size = page * size
 
 
         # 如果没有手机号码可以一起查 如果有手机号码要分成三个sql
@@ -467,6 +469,159 @@ def personal_total():
         msg_data = {"data":last_data,"all_data":all_data}
         logger.info("msg_data:%s" %msg_data)
         return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_read.close()
+
+
+
+
+@pmbp.route("buy",methods=["POST"])
+def personal_buy():
+    try:
+        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+
+        logger.info(request.json)
+        page = request.json["page"]
+        size = request.json["size"]
+
+        # 可以是用户名称 手机号 unionid 模糊的
+        keyword = request.json["keyword"]
+
+        # 查询归属上级 精准的
+        parent = request.json["parent"]
+        # bus = request.json["bus"]
+        bus_id = request.json["bus_id"]
+        start_time = request.json["start_time"]
+        end_time = request.json["end_time"]
+
+        # 字符串拼接的手机号码
+        query_phone = ""
+        keyword_phone = []
+        parent_phone = []
+        bus_phone = []
+
+        # if start_time and end_time:
+        #     if (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")).days > 360:
+        #         return {"code":"11017","status":"failed","msg":message["11017"]}
+
+        # 模糊查询
+        if keyword:
+            result = get_phone_by_keyword(keyword)
+            logger.info(result)
+            if result[0] == 1:
+                keyword_phone = result[1]
+            else:
+                return {"code":"11016","status":"failed","msg":message["11016"]}
+
+        # 只查一个
+        if parent:
+            if len(parent) == 11:
+                parent_phone.append(parent)
+            else:
+                result = get_phone_by_unionid(parent)
+                if result[0] == 1:
+                    parent_phone.append(result[1])
+                else:
+                    return {"code":"11014","status":"failed","msg":message["code"]}
+
+
+        if bus_id:
+            result = get_busphne_by_id(bus_id)
+            if result[0] == 1:
+                bus_phone = result[1].split(",")
+            else:
+                return {"code":"11015","status":"failed","msg":message["11015"]}
+
+        # 对手机号码差交集
+        if keyword_phone and parent_phone and bus_phone:
+            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
+        elif keyword_phone and parent_phone:
+            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
+        elif keyword_phone and bus_phone:
+            query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+        elif parent_phone and bus_phone:
+            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
+        elif keyword_phone:
+            query_phone = keyword_phone
+        elif parent_phone:
+            query_phone = parent_phone
+        elif bus_phone:
+            query_phone = bus_phone
+        else:
+            query_phone = ""
+
+        if page and size:
+            code_page = (page - 1) * 10
+            code_size = page * size
+
+        buy_sql = '''select phone,total_price,create_time from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+
+
+        group_sql = ''' group by phone'''
+        # limit_sql = ''' limit %s,%s''' %(code_page,code_size)
+        if query_phone:
+            condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
+            # order_sql = buy_sql+condition_sql+group_sql + limit_sql
+            order_sql = buy_sql+condition_sql
+        else:
+            # order_sql = buy_sql +group_sql + limit_sql
+            order_sql = buy_sql
+
+        #返回条数
+
+
+        logger.info("order_sql:%s" %order_sql)
+        order_data = pd.read_sql(order_sql,conn_read)
+        order_data_group = order_data.groupby("phone")
+
+        #排序取出按时间第一条和最后一条的
+        first_data = order_data.sort_values("create_time", ascending=True).groupby("phone").first().reset_index()
+        first_data.rename(columns={"phone":"phone","create_time":"first_time","total_price":"first_total_price"},inplace=True)
+        first_data["first_time"] = first_data['first_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+
+
+        last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
+        last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},inplace=True)
+        # last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
+        count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop("create_time",axis=1)
+        count_data.rename(columns={"phone":"phone","total_price":"count"},inplace=True)
+
+        df_list = []
+        df_list.append(first_data)
+        df_list.append(last_data)
+        df_list.append(sum_data)
+        df_list.append(count_data)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
+        # df_merged["unionid"] = df_merged["unionid"].astype(int)
+
+        logger.info(df_merged.shape)
+        if page and size:
+            df_merged = df_merged[code_page:code_size]
+
+        crm_data_result = get_all_user_operationcenter()
+        if crm_data_result[0] ==  True:
+            crm_data = crm_data_result[1]
+
+            result = df_merged.merge(crm_data,how="left",on="phone")
+            # result["id"] = result[(result["id"] != "") | (result["id"].notna())].astype(int)
+            last_data = result.to_dict("records")
+        else:
+            return {"code":"10006","status":"failed","msg":message["10006"]}
+
+
+        for d in last_data:
+            # logger.info(d)
+            if not pd.isnull(d["id"]):
+                d["id"] = int(d["id"])
+
+        return {"code":"0000","status":"success","msg":last_data,"count":len(order_data_group)}
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())

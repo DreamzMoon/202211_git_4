@@ -32,14 +32,12 @@ def ssh_get_conn(ssh_conf,mysql_conf):
             remote_bind_address=(mysql_conf["host"], mysql_conf["port"])
         )
         server.start()
-
         client = pymysql.connect(host='127.0.0.1',  # 此处必须是是127.0.0.1
                                     port=server.local_bind_port,
                                     user=mysql_conf["user"],
                                     passwd=mysql_conf["password"],
                                     db=mysql_conf["db"],
                                     charset="utf8mb4")
-
         return client
     except:
         return None
