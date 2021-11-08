@@ -297,7 +297,8 @@ def personal_total():
 
         # 查询归属上级 精准的
         parent = request.json["parent"]
-        bus = request.json["bus"]
+        # bus = request.json["bus"]
+        bus_id = request.json["bus_id"]
 
         # 字符串拼接的手机号码
         query_phone = ""
@@ -325,8 +326,15 @@ def personal_total():
                 else:
                     return {"code":"11014","status":"failed","msg":message["code"]}
         # 查禄可商务的
-        if bus:
-            result = get_lukebus_phone([bus])
+        # if bus:
+        #     result = get_lukebus_phone([bus])
+        #     if result[0] == 1:
+        #         bus_phone = result[1].split(",")
+        #     else:
+        #         return {"code":"11015","status":"failed","msg":message["11015"]}
+
+        if bus_id:
+            result = get_busphne_by_id(bus_id)
             if result[0] == 1:
                 bus_phone = result[1].split(",")
             else:

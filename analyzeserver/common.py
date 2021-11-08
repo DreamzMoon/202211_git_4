@@ -96,6 +96,88 @@ def get_lukebus_phone(bus_lists):
     finally:
         conn_crm.close()
 
+
+
+#通过禄可运营中心查询对应的手机号码
+def get_busphne_by_id(bus_id):
+    '''
+    :param bus_lists: 传入运营中心的列表
+    :return:返回手机号码
+    '''
+    try:
+        phone_lists = []
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        crm_cursor = conn_crm.cursor()
+        sql = '''select * from luke_lukebus.operationcenter where id = %s'''
+        crm_cursor.execute(sql, (bus_id))
+        operate_datas = crm_cursor.fetchall()
+        logger.info("operate_datas:%s" % operate_datas)
+        filter_phone_lists = []
+        all_phone_lists = []
+        for operate_data in operate_datas:
+            below_person_sql = '''
+            select a.*,b.operatename from 
+            (WITH RECURSIVE temp as (
+                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                UNION ALL
+                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id)
+            SELECT * FROM temp
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid where a.phone != ""
+            '''
+            logger.info(operate_data)
+            crm_cursor.execute(below_person_sql, operate_data["telephone"])
+            below_datas = crm_cursor.fetchall()
+            logger.info(len(below_datas))
+            # 找运营中心
+            other_operatecenter_phone_list = []
+
+
+            # 直接下级的运营中心
+            all_phone_lists.append(below_datas[0]["phone"])
+
+            for i in range(0, len(below_datas)):
+                if i == 0:
+                    continue
+                if below_datas[i]["operatename"]:
+                    other_operatecenter_phone_list.append(below_datas[i]["phone"])
+                all_phone_lists.append(below_datas[i]["phone"])
+
+            logger.info("other_operatecenter_phone_list:%s" % other_operatecenter_phone_list)
+            # 对这些手机号码进行下级查询
+            for center_phone in other_operatecenter_phone_list:
+                logger.info(center_phone)
+                if center_phone in filter_phone_lists:
+                    continue
+                filter_sql = '''
+                select a.*,b.operatename from 
+                (WITH RECURSIVE temp as (
+                    SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                    UNION ALL
+                    SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id)
+                SELECT * FROM temp
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid 
+                    where a.phone != "" and phone != %s
+                '''
+                crm_cursor.execute(filter_sql, (center_phone, center_phone))
+                filter_data = crm_cursor.fetchall()
+                for k in range(0, len(filter_data)):
+                    filter_phone_lists.append(filter_data[k]["phone"])
+
+        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists))
+        logger.info(len(phone_lists))
+        args_phone_lists = ",".join(phone_lists)
+        if args_phone_lists:
+            return 1,args_phone_lists
+        else:
+            return 0,"暂无数据"
+    except Exception as e:
+        logger.exception(e)
+        return 0,e
+    finally:
+        conn_crm.close()
+
 # 通过运营中心手机号查询对应运营中心数据
 def get_operationcenter_data(user_order_df, search_key, search_operateid):
     '''
@@ -740,5 +822,8 @@ def get_phone_by_unionid(unionid):
 if __name__ == "__main__":
     # result = get_lukebus_phone(["四川成都天府新区运营中心"])
     # logger.info(result)
-    result = get_phone_by_keyword("6425")
+    # result = get_phone_by_keyword("6425")
+    # logger.info(result)
+
+    result = get_busphne_by_id(157)
     logger.info(result)
