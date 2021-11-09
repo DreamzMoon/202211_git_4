@@ -684,7 +684,11 @@ def personal_total():
         df_merged["sell_fee"].fillna(0,inplace=True)
         df_merged["sell_real_money"].fillna(0,inplace=True)
         df_merged["sell_total_count"].fillna(0,inplace=True)
-        df_merged["sell_total_count"].fillna(0,inplace=True)
+        df_merged["sell_total_price"].fillna(0,inplace=True)
+        df_merged["publish_sell_count"].fillna(0,inplace=True)
+        df_merged["publish_total_count"].fillna(0,inplace=True)
+        df_merged["publish_total_price"].fillna(0,inplace=True)
+
 
         all_df = df_merged.to_dict("records")
 
@@ -703,7 +707,12 @@ def personal_total():
         all_data["sell_fee"] = round(all_data["sell_fee"],2)
         all_data["sell_real_money"] = round(all_data["sell_real_money"],2)
         all_data["sell_total_price"] = round(all_data["sell_total_price"],2)
+        all_data["buy_total_count"] = int(all_data["buy_total_count"])
+        all_data["sell_total_count"] = int(all_data["sell_total_count"])
 
+        df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
+        df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
+        df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
 
         logger.info("code_page:%s" %code_page)
         logger.info("code_size:%s" %code_size)
