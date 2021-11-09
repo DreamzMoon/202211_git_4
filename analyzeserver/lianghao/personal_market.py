@@ -22,7 +22,167 @@ pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 # 个人转卖市场发布数据分析
 @pmbp.route('/publish', methods=["POST"])
 def personal_publish():
-    pass
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 9:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            # 表单选择operateid
+            operateid = request.json['operateid']
+            # 出售人信息
+            search_key = request.json['key'].strip()
+            # 归属上级
+            parent = request.json['parent'].strip()
+            # 首次发布时间
+            start_first_time = request.json['start_first_time']
+            end_first_time = request.json['end_first_time']
+            # 最近发布时间
+            start_near_time = request.json['start_near_time']
+            end_near_time = request.json['end_near_time']
+
+            page = request.json['page']
+            num = request.json['num']
+
+            # 时间判断
+            if start_first_time or end_first_time:
+                first_time_result = judge_start_and_end_time(start_first_time, end_first_time)
+                if not first_time_result[0]:
+                    return {"code": first_time_result[1], "status": "failed", "msg": message[first_time_result[1]]}
+                request.json['start_publish_time'] = first_time_result[0]
+                request.json['end_publish_time'] = first_time_result[1]
+            if start_near_time or end_near_time:
+                near_time_result = judge_start_and_end_time(start_near_time, end_near_time)
+                if not near_time_result[0]:
+                    return {"code": near_time_result[1], "status": "failed", "msg": message[near_time_result[1]]}
+                request.json['start_near_publish_time'] = near_time_result[0]
+                request.json['end_near_publish_time'] = near_time_result[1]
+            if start_first_time and end_first_time and start_near_time and end_near_time:
+                # 最近发布结束 > 首次发布起始
+                if start_first_time > end_near_time:
+                    return {"code": "10013", "status": "failed", "msg": message["10013"]}
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        # 发布数据
+        conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        data_sql = '''
+            select sell_phone publish_phone, total_price, create_time from lh_pretty_client.lh_sell where del_flag = 0 and (sell_phone is not null or sell_phone != '')
+        '''
+        publish_df = pd.read_sql(data_sql, conn_lh)
+
+        df_list = []
+        first_df = publish_df.sort_values("create_time", ascending=True).groupby("publish_phone").first().reset_index()
+        first_df.columns = ['publish_phone', 'first_price', 'first_time']
+        last_df = publish_df.sort_values("create_time", ascending=True).groupby("publish_phone").last().reset_index()
+        last_df.columns = ['publish_phone', 'near_price', 'near_time']
+        price_count_df = publish_df.groupby("publish_phone")['total_price'].sum().reset_index()
+        publish_count_df = publish_df.groupby("publish_phone")['total_price'].count().reset_index()
+        publish_count_df.rename(columns={"total_price": "publish_count"}, inplace=True)
+
+        df_list.append(first_df)
+        df_list.append(last_df)
+        df_list.append(price_count_df)
+        df_list.append(publish_count_df)
+
+        df_merge = reduce(lambda left, right: pd.merge(left, right, how='left', on='publish_phone'), df_list)
+
+        # 用户数据
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        crm_user_sql = '''select id publish_unionid, pid parentid, phone publish_phone, nickname publish_name from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
+        crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
+        crm_user_df['publish_unionid'] = crm_user_df['publish_unionid'].astype(str)
+        crm_user_df['parentid'] = crm_user_df['parentid'].astype(str)
+
+        if operateid:
+            flag_1, child_phone_list = get_operationcenter_child(conn_crm, operateid)
+            if not flag_1:
+                return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
+            part_user_df = df_merge.loc[df_merge['publish_phone'].isin(child_phone_list[:-1]), :]
+            part_user_df['operatename'] = child_phone_list[-1]
+            part_user_df = part_user_df.merge(crm_user_df, how='left', on='publish_phone')
+            # 匹配数据
+            match_df = part_user_df.loc[((part_user_df['publish_name'].str.contains(search_key)) | (part_user_df['publish_unionid'].str.contains(search_key)) | (part_user_df['publish_phone'].str.contains(search_key)))
+                                        & ((part_user_df['parentid']).str.contains(parent) | (part_user_df['parent_phone']).str.contains(parent))]
+            if request.json['start_first_time']:
+                match_df = match_df.loc[(part_user_df['first_time'] >= request.json['start_first_time']) & (
+                            part_user_df['near_time'] <= (request.json['end_first_time'])), :]
+            if request.json['start_near_time']:
+                match_df = match_df.loc[(part_user_df['near_time'] >= request.json['start_near_time']) & (
+                            part_user_df['near_time'] <= (request.json['end_near_time'])), :]
+        else:
+            fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
+            if not search_key and not parent and not start_first_time and not end_first_time and not start_near_time and not end_near_time and not page and not num:
+                all_user_operate_result = get_all_user_operationcenter()
+                if not all_user_operate_result[0]:
+                    return {"code": "10000", "status": "success", "msg": message["10000"]}
+                all_user_operate_result[1].rename(columns={"phone": 'publish_phone'}, inplace=True)
+                match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['publish_phone', 'operatename']], how='left', on='publish_phone')
+                # match_df.drop('parent_phone', axis=1, inplace=True)
+            elif not search_key and not parent and not start_first_time and not end_first_time and not start_near_time and not end_near_time and page and num:
+                start_index = (page - 1) * num
+                end_index = page * num
+                if end_index > len(fina_df):
+                    end_index = len(fina_df)
+                child_df = fina_df.loc[start_index:end_index, :]
+                child_phone_list = child_df['publish_phone'].tolist()
+                match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
+                if not match_result[0]:
+                    return {"code": match_result[1], "status": "failed", "msg": message[match_result[1]]}
+                match_df = child_df.merge(match_result[1], how='left', on='publish_phone')
+            else:
+                match_df = fina_df.loc[((fina_df['publish_name'].str.contains(search_key)) | (fina_df['publish_unionid'].str.contains(search_key)) | (fina_df['publish_phone'].str.contains(search_key)))
+                                        & ((fina_df['parentid']).str.contains(parent) | (fina_df['parent_phone']).str.contains(parent))]
+                if request.json['start_first_time']:
+                    match_df = match_df.loc[(fina_df['first_time'] >= request.json['start_first_time']) & (
+                            fina_df['near_time'] <= (request.json['end_first_time'])), :]
+                if request.json['start_near_time']:
+                    match_df = match_df.loc[(fina_df['near_time'] >= request.json['start_near_time']) & (
+                            fina_df['near_time'] <= (request.json['end_near_time'])), :]
+                child_phone_list = match_df['publish_phone'].tolist()
+                match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
+                if not match_result[0]:
+                    return {"code": match_result[1], "status": "success", "msg": message[match_result[1]]}
+                match_df = match_df.merge(match_result[1], how='left', on='publish_phone')
+                # 如果没有页码
+                # match_df.drop('parent_phone', axis=1, inplace=True)
+        if match_df.shape[0] == 0:
+            return {"code": "10010", "status": "failed", "msg": message["10010"]}
+        match_df.drop('parent_phone', axis=1, inplace=True)
+
+        if page and num:
+            start_index = (page - 1) * num
+            if num > match_df.shape[0]:
+                end_index = len(match_df)
+            else:
+                end_index = page * num
+        else:
+            start_index = 0
+            end_index = len(match_df)
+        match_df['first_time'] = match_df['first_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        match_df['near_time'] = match_df['near_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # 价钱圆整
+        match_df['total_price'] = match_df['total_price'].apply(lambda x: round(float(x), 2))
+        match_df.fillna("", inplace=True)
+        match_dict_list = match_df.loc[start_index: end_index - 1, :].to_dict('records')
+        return_data = {
+            'count': len(match_dict_list),
+            'search_data': match_dict_list
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_crm.close()
+        except:
+            pass
+
 
 # 个人转卖市场订单流水
 @pmbp.route('/orderflow', methods=["POST"])
@@ -55,7 +215,7 @@ def personal_order_flow():
             num = request.json['num']
             # 页码
             page = request.json['page']
-            if start_order_time and end_order_time:
+            if start_order_time or end_order_time:
                 order_time_result = judge_start_and_end_time(start_order_time, end_order_time)
                 if not order_time_result[0]:
                     return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
@@ -83,7 +243,7 @@ def personal_order_flow():
             from lh_pretty_client.lh_order
             where `status`  = 1
             and type in (1, 4)
-            and sell_phone is not null) t1
+            and phone is not null) t1
             left join
             (select id, price_status transfer_type from lh_pretty_client.lh_sell) t2
             on t1.sell_id = t2.id
@@ -171,7 +331,6 @@ def personal_order_flow():
                     return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
                 match_df_1['order_time'] = match_df_1['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df_1.to_dict('records')
-                logger.info(match_dict_list)
                 return_data = {
                     "count": match_df.shape[0],
                     "data": match_dict_list
@@ -187,8 +346,8 @@ def personal_order_flow():
             pass
 
 # 个人转卖市场发布出售订单流水
-@pmbp.route('/pulishflow', methods=["POST"])
-def personal_pulish_order_flow():
+@pmbp.route('/publishflow', methods=["POST"])
+def personal_publish_order_flow():
     try:
         try:
             logger.info(request.json)
@@ -203,8 +362,8 @@ def personal_pulish_order_flow():
             # 归属上级
             parent = request.json['parent'].strip()
             # 交易时间
-            start_pulish_time = request.json['start_pulish_time']
-            end_pulish_time = request.json['end_pulish_time']
+            start_publish_time = request.json['start_publish_time']
+            end_publish_time = request.json['end_publish_time']
             # 上架时间
             start_up_time = request.json['start_up_time']
             end_up_time = request.json['end_up_time']
@@ -230,19 +389,19 @@ def personal_pulish_order_flow():
             #     page = int(page)
 
             # 时间判断
-            if start_pulish_time and end_pulish_time:
-                order_time_result = judge_start_and_end_time(start_pulish_time, end_pulish_time)
+            if start_publish_time or end_publish_time:
+                order_time_result = judge_start_and_end_time(start_publish_time, end_publish_time)
                 if not order_time_result[0]:
                     return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
-                request.json['start_pulish_time'] = order_time_result[0]
-                request.json['end_pulish_time'] = order_time_result[1]
-            if start_up_time and end_up_time:
+                request.json['start_publish_time'] = order_time_result[0]
+                request.json['end_publish_time'] = order_time_result[1]
+            if start_up_time or end_up_time:
                 order_time_result = judge_start_and_end_time(start_up_time, end_up_time)
                 if not order_time_result[0]:
                     return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
                 request.json['start_order_time'] = order_time_result[0]
                 request.json['end_order_time'] = order_time_result[1]
-            if start_sell_time and end_sell_time:
+            if start_sell_time or end_sell_time:
                 order_time_result = judge_start_and_end_time(start_sell_time, end_sell_time)
                 if not order_time_result[0]:
                     return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
@@ -252,12 +411,12 @@ def personal_pulish_order_flow():
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        pulish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, price_status transfer_type, `status`, create_time pulish_time, up_time, sell_time
+        publish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, price_status transfer_type, `status`, create_time publish_time, up_time, sell_time
         from lh_pretty_client.lh_sell
         where del_flag = 0'''
 
         conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-        pulish_order_df = pd.read_sql(pulish_sql, conn_lh)
+        publish_order_df = pd.read_sql(publish_sql, conn_lh)
 
         conn_crm = direct_get_conn(crm_mysql_conf)
         crm_user_sql = '''select t1.*, t2.parent_phone from 
@@ -266,7 +425,7 @@ def personal_pulish_order_flow():
             (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
             on t1.parentid = t2.id'''
         crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
-        fina_df = pulish_order_df.merge(crm_user_df, how='left', on='sell_phone')
+        fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
         fina_df['status'] = fina_df['status'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
@@ -275,7 +434,7 @@ def personal_pulish_order_flow():
         fina_df['parentid'] = fina_df['parentid'].astype(str)
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
         # 最终返回结果时处理
-        # fina_df['pulish_time'] = fina_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        # fina_df['publish_time'] = fina_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         # fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         # fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
         # fina_df['sell_time'] = fina_df['sell_time'].astype(str)
@@ -285,7 +444,7 @@ def personal_pulish_order_flow():
             flag_2, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_2:
                 return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
-            flag_3, match_df = pulish_exist_operationcenter(fina_df, child_phone_list, request)
+            flag_3, match_df = publish_exist_operationcenter(fina_df, child_phone_list, request)
             if not flag_3:
                 return {"code": match_df, "status": "failed", "msg": message[match_df]}
 
@@ -309,7 +468,7 @@ def personal_pulish_order_flow():
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
-            if not parent and not sell_info and not start_pulish_time and not start_up_time and not transfer_id and not start_sell_time:
+            if not parent and not sell_info and not start_publish_time and not start_up_time and not transfer_id and not start_sell_time:
                 # 根据页码和显示条数返回数据
                 if num and page:
                     start_index = (page - 1) * num
@@ -317,7 +476,7 @@ def personal_pulish_order_flow():
                     # 如果num超过数据条数
                     if end_index > len(fina_df):
                         end_index = len(fina_df)
-                    flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="pulish")
+                    flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="publish")
                     if not flag_4:
                         return {"code": match_df, "status": "failed", "msg": message[match_df]}
                 else:
@@ -327,9 +486,12 @@ def personal_pulish_order_flow():
                     all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
                     match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left', on='sell_phone')
                     match_df.drop(['parent_phone'], axis=1, inplace=True)
-                match_df['pulish_time'] = match_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
                 match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                try:
+                    match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                except:
+                    pass
                 match_df['sell_time'] = match_df['sell_time'].astype(str)
                 match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
@@ -340,7 +502,7 @@ def personal_pulish_order_flow():
                 return {"code": "0000", "status": "success", "msg": return_data}
 
             else:
-                flag_5, match_df = match_attribute(fina_df, request, mode="pulish")
+                flag_5, match_df = match_attribute(fina_df, request, mode="publish")
                 if not flag_5:
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
                 if num and page:
@@ -352,12 +514,15 @@ def personal_pulish_order_flow():
                 else:
                     start_index = 0
                     end_index = len(match_df)
-                flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="pulish")
+                flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="publish")
                 if not flag_6:
                     return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
-                match_df_1['pulish_time'] = match_df_1['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+                match_df_1['publish_time'] = match_df_1['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
                 match_df_1['up_time'] = match_df_1['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                # match_df_1['sell_time'] = match_df_1['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                try:
+                    match_df_1['sell_time'] = match_df_1['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+                except:
+                    pass
                 match_df_1['sell_time'] = match_df_1['sell_time'].astype(str)
                 match_df_1['sell_time'] = match_df_1['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df_1.to_dict('records')

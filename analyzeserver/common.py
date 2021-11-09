@@ -532,19 +532,22 @@ def match_attribute(data_df, request, mode='order'):
     try:
         if mode == 'order':
             match_df = data_df.loc[
+
                 ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
                 & ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
                 & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
                 & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                & ((data_df['order_time']>=request.json['start_order_time']) & (data_df['order_time']<=(request.json['end_order_time'])))  # 交易时间
+                # & ((data_df['order_time']>=request.json['start_order_time']) & (data_df['order_time']<=(request.json['end_order_time'])))  # 交易时间
                 & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
                 & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
                 ]
+            if request.json['start_order_time']:
+                match_df = match_df.loc[(data_df['order_time']>=request.json['start_order_time']) & (data_df['order_time']<=(request.json['end_order_time'])), :]
         else:
             match_df = data_df.loc[
                    ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
                    & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                   # & ((data_df['pulish_time'] >= request.json['start_pulish_time']) & (data_df['pulish_time'] <= request.json['end_pulish_time']))  # 发布时间
+                   # & ((data_df['publish_time'] >= request.json['start_publish_time']) & (data_df['publish_time'] <= request.json['end_publish_time']))  # 发布时间
                    # & ((data_df['up_time'] >= request.json['start_up_time']) & (data_df['up_time'] <= request.json['end_up_time']))  # 上架时间
                    # & ((data_df['sell_time'] >= request.json['start_sell_time']) & (data_df['sell_time'] <= request.json['end_sell_time']))  # 出售时间
                    & (data_df['status'].str.contains(request.json['status']))  # 支付类型
@@ -552,8 +555,8 @@ def match_attribute(data_df, request, mode='order'):
             , :]
             if match_df.shape[0] == 0:
                 return False, "10010"
-            if request.json['start_pulish_time']:
-                match_df = match_df.loc[(data_df['pulish_time'] >= request.json['start_pulish_time']) & (data_df['pulish_time'] <= request.json['end_pulish_time']), :]
+            if request.json['start_publish_time']:
+                match_df = match_df.loc[(data_df['publish_time'] >= request.json['start_publish_time']) & (data_df['publish_time'] <= request.json['end_publish_time']), :]
             elif request.json['start_up_time']:
                 match_df = match_df.loc[(data_df['up_time'] >= request.json['start_up_time']) & (data_df['up_time'] <= request.json['end_up_time']), :]
             elif request.json['start_sell_time']:
@@ -575,8 +578,6 @@ def order_exist_operationcenter(fina_df, child_phone_list, request):
     :param request: 请求
     :return:
     '''
-    logger.info(child_phone_list)
-    logger.info('----------------------')
     try:
         part_user_df = fina_df.loc[fina_df['buyer_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
         flag, match_df = match_attribute(part_user_df, request)
@@ -598,7 +599,7 @@ def order_exist_operationcenter(fina_df, child_phone_list, request):
         return False, "10011"
 
 # 发布订单流水存在运营中心
-def pulish_exist_operationcenter(fina_df, child_phone_list, request):
+def publish_exist_operationcenter(fina_df, child_phone_list, request):
     '''
 
         :param fina_df:
@@ -610,14 +611,14 @@ def pulish_exist_operationcenter(fina_df, child_phone_list, request):
     logger.info('----------------------')
     try:
         part_user_df = fina_df.loc[fina_df['sell_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
-        flag, match_df = match_attribute(part_user_df, request, mode='pulish')
+        flag, match_df = match_attribute(part_user_df, request, mode='publish')
         if not flag:
             return False, match_df
         # 匹配到数据
         if match_df.shape[0] > 0:
             match_df['operatename'] = child_phone_list[-1]
             # 最终返回结果时处理
-            match_df['pulish_time'] = match_df['pulish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
             match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
             match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
             match_df['sell_time'] = match_df['sell_time'].astype(str)
@@ -681,6 +682,39 @@ def match_user_operate(conn_crm, user_df, mode="order"):
         logger.error(traceback.format_exc())
         return False, "10011"
 
+def match_user_operate1(child_phone_list, crm_conn, field):
+    try:
+        operate_sql = '''
+            select a.phone, b.operatename, b.crm from 
+            (WITH RECURSIVE temp as (
+                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
+                    UNION ALL
+                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+            )
+            SELECT * FROM temp 
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid
+            '''
+        crm_cursor = crm_conn.cursor()
+        match_user_data_list = []
+        for child in set(child_phone_list):
+            crm_cursor.execute(operate_sql, child)
+            match_operate_data = pd.DataFrame(crm_cursor.fetchall())
+            match_operatename = match_operate_data.loc[
+                (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+            if match_operatename:
+                match_operate_data.loc[0, 'operatename'] = match_operatename[0]
+            match_user_data = match_operate_data.loc[:0, :]
+            match_user_data_list.append(match_user_data)
+        df_concat = pd.concat(match_user_data_list, ignore_index=True)
+        df_concat.columns = [field, 'operatename', 'crm']
+        df_concat.drop('crm', axis=1, inplace=True)
+        return True, df_concat
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, "10011"
+
+
 # 关系映射
 def map_type(df):
     map_pay_type = {
@@ -733,7 +767,7 @@ def judge_start_and_end_time(start, end):
             return start_time, end_time
     except:
         logger.error(traceback.format_exc())
-        return False, "11009"
+        return False, "10013"
 
 def user_belong_bus(need_data):
     '''
