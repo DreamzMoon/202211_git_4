@@ -14,6 +14,7 @@ from util.help_fun import *
 import pandas as pd
 
 
+
 opbp = Blueprint('operations', __name__, url_prefix='/lh/operations')
 
 
@@ -303,7 +304,7 @@ def operations_order_count():
     return_data = {
         'count': len(result[1]),
         'title_data': result[2],
-        'search_data': result[1][start_num:end_num]
+        'data': result[1][start_num:end_num]
     }
     end_time = time.time()
     logger.info(end_time - start_time)

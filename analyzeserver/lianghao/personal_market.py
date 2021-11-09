@@ -14,6 +14,7 @@ from util.help_fun import *
 import time
 import pandas as pd
 import datetime
+from datetime import timedelta
 from functools import reduce
 from analyzeserver.common import *
 
@@ -97,7 +98,6 @@ def personal_publish():
         crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
         crm_user_df['publish_unionid'] = crm_user_df['publish_unionid'].astype(str)
         crm_user_df['parentid'] = crm_user_df['parentid'].astype(str)
-
         if operateid:
             flag_1, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_1:
@@ -171,7 +171,7 @@ def personal_publish():
         match_dict_list = match_df.loc[start_index: end_index - 1, :].to_dict('records')
         return_data = {
             'count': len(match_dict_list),
-            'search_data': match_dict_list
+            'data': match_dict_list
         }
         return {"code": "0000", "status": "success", "msg": return_data}
     except Exception as e:
@@ -182,6 +182,250 @@ def personal_publish():
             conn_crm.close()
         except:
             pass
+
+# 个人转卖市场发布数据分析详情
+@pmbp.route('/publish/detail', methods=["POST"])
+def personal_publish_detail():
+    try:
+        logger.info(request.json)
+        # 参数个数错误
+        if len(request.json) != 4:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        # 手机号
+        phone = request.json['phone'].strip()
+        # 1今日 2本周 3本月 4自定义-->必须传起始和结束时间
+        type = request.json['type']
+        # 首次发布时间
+        start_time = request.json['start_time']
+        end_time = request.json['end_time']
+
+        if type != 4 and start_time and end_time:
+            return {"code": "10014", "status": "failed", "msg": message["10014"]}
+        # 时间判断
+        elif start_time or end_time:
+            first_time_result = judge_start_and_end_time(start_time, end_time)
+            if not first_time_result[0]:
+                return {"code": first_time_result[1], "status": "failed", "msg": message[first_time_result[1]]}
+            request.json['start_publish_time'] = first_time_result[0]
+            request.json['end_publish_time'] = first_time_result[1]
+    except Exception as e:
+        # 参数名错误
+        logger.error(e)
+        return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+    # 1.根据手机号查找名称，id，归属运营中心，归属上级手机号
+    conn_crm = direct_get_conn(crm_mysql_conf)
+    if not conn_crm:
+        return {"code": "10002", "status": "failed", "msg": message["10002"]}
+    conn_crm = direct_get_conn(crm_mysql_conf)
+    # 用户基础信息
+    search_user_info_sql = '''select nickname name, id unionid, pid parentid from luke_sincerechat.user where phone=%s''' % phone
+    user_info_df = pd.read_sql(search_user_info_sql, conn_crm)
+    parent_info_sql = '''select id parentid, phone parent_phone from luke_sincerechat.user where id=%s''' % \
+                      user_info_df['parentid'].values[0]
+    parent_df = pd.read_sql(parent_info_sql, conn_crm)
+
+    # 存储总数据
+    fina_data = {}
+
+    # 合并上级手机号
+    user_base_info_df = user_info_df.merge(parent_df, how='left', on='parentid')
+
+    # 查找运营中心
+    operate_sql = '''
+        select a.phone, b.operatename, b.crm from 
+        (WITH RECURSIVE temp as (
+                SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
+                UNION ALL
+                SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+        )
+        SELECT * FROM temp 
+        )a left join luke_lukebus.operationcenter b
+        on a.id = b.unionid
+        ''' % phone
+    match_operate_data = pd.read_sql(operate_sql, conn_crm)
+    match_operatename = match_operate_data.loc[
+        (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+    if match_operatename:
+        match_operate_data.loc[0, 'operatename'] = match_operatename[0]
+    match_user_data = match_operate_data.loc[:0, :]
+
+    user_base_info_df['operatename'] = match_user_data['operatename']
+
+    publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
+    conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+    user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
+
+    # order_sql = '''select sell_id, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and type in (1, 4)''' % phone
+    order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null''' % phone
+    user_order_df = pd.read_sql(order_sql, conn_lh)
+    user_publish_df = user_publish_base_df.merge(user_order_df, how='left', on='sell_id')
+    user_publish_df.sort_values('create_time', inplace=True)
+    user_publish_df.reset_index(drop=True)
+    conn_crm.close()
+
+    title_data = {}
+
+    pay_type_df = pd.DataFrame(user_publish_df.groupby('pay_type')['pay_type'].count()).rename(
+        columns={'pay_type': "count"}).reset_index()
+    pay_type_df['pay_type'] = pay_type_df['pay_type'].astype(int)
+    title_data['pay_type_count'] = pay_type_df.to_dict('records')
+
+    title_data_count = user_publish_df.groupby('publish_phone').agg(
+        {"total_price": "sum", "count": "sum", "sell_id": "count"}).reset_index()
+    title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count', 'publish_count']
+    title_data['total_price'] = round(title_data_count['total_price'].values[0], 2)
+    title_data['pretty_count'] = int(title_data_count['pretty_count'].values[0])
+    title_data['publish_count'] = int(title_data_count['publish_count'].values[0])
+
+    fina_data['title_data'] = title_data
+
+    publish_info = {}
+
+    first_time = {}
+    second_time = {}
+    near_time = {}
+
+    publish_mode_data = {
+        'publish_time': '暂无数据',
+        'total_price': '暂无数据',
+        'pay_type': '暂无数据',
+        'pretty_type': '暂无数据',
+        'count': '暂无数据'
+    }
+
+    if user_publish_df.shape[0] >= 3:
+        first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        first_df.fillna('暂无数据', inplace=True)
+        first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        first_time['total_price'] = first_df['total_price']
+        try:
+            first_time['pay_type'] = int(first_df['pay_type'])
+        except:
+            first_time['pay_type'] = first_df['pay_type']
+        first_time['pretty_type'] = first_df['pretty_type']
+        first_time['count'] = int(first_df['count'])
+        publish_info['first_time'] = first_time
+
+        second_df = user_publish_df.loc[1, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        second_df.fillna('暂无数据', inplace=True)
+        second_time['publish_time'] = second_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        second_time['total_price'] = second_df['total_price']
+        try:
+            second_time['pay_type'] = int(second_df['pay_type'])
+        except:
+            second_time['pay_type'] = second_df['pay_type']
+        second_time['pretty_type'] = second_df['pretty_type']
+        second_time['count'] = int(second_df['count'])
+        publish_info['second_time'] = second_time
+
+        near_df = user_publish_df[-1:].reset_index(drop=True).loc[
+            0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        near_df.fillna('暂无数据', inplace=True)
+        near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        near_time['total_price'] = near_df['total_price']
+        try:
+            near_time['pay_type'] = int(near_df['pay_type'])
+        except:
+            near_time['pay_type'] = near_df['pay_type']
+        near_time['pretty_type'] = near_df['pretty_type']
+        near_time['count'] = int(near_df['count'])
+        publish_info['near_time'] = near_time
+    elif user_publish_df.shape[0] == 2:
+        first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        first_df.fillna('暂无数据', inplace=True)
+        first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        first_time['total_price'] = first_df['total_price']
+        try:
+            first_time['pay_type'] = int(first_df['pay_type'])
+        except:
+            first_time['pay_type'] = first_df['pay_type']
+        first_time['pretty_type'] = first_df['pretty_type']
+        first_time['count'] = int(first_df['count'])
+        publish_info['first_time'] = first_time
+
+        publish_info['second_time'] = publish_mode_data
+
+        near_df = user_publish_df[-1:].reset_index(drop=True).loc[
+            0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        near_df.fillna('暂无数据', inplace=True)
+        near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        near_time['total_price'] = near_df['total_price']
+        try:
+            near_time['pay_type'] = int(near_df['pay_type'])
+        except:
+            near_time['pay_type'] = near_df['pay_type']
+        near_time['pretty_type'] = near_df['pretty_type']
+        near_time['count'] = int(near_df['count'])
+        publish_info['near_time'] = near_time
+    elif user_publish_df.shape[0] == 1:
+        first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
+        first_df.fillna('暂无数据', inplace=True)
+        first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        first_time['total_price'] = first_df['total_price']
+        try:
+            first_time['pay_type'] = int(first_df['pay_type'])
+        except:
+            first_time['pay_type'] = first_df['pay_type']
+        first_time['pretty_type'] = first_df['pretty_type']
+        first_time['count'] = int(first_df['count'])
+        publish_info['first_time'] = first_time
+
+        publish_info['second_time'] = publish_mode_data
+
+        publish_info['near_time'] = publish_mode_data
+
+    fina_data['publish_info'] = publish_info
+
+    to_day = datetime.datetime.now()
+    zero_today = to_day - datetime.timedelta(hours=to_day.hour, minutes=to_day.minute, seconds=to_day.second,
+                                             microseconds=to_day.microsecond)
+    time_data_df = user_publish_df.loc[
+                   (user_publish_df['create_time'] > zero_today) & (user_publish_df['create_time'] < to_day), :]
+    # 如果匹配到数据大于0，再进行统计
+    if time_data_df.shape[0] > 0:
+        time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%m-%d')
+
+    time_info = {}
+
+    if type == 1:
+        to_day = datetime.datetime.now()
+        zero_today = to_day - datetime.timedelta(hours=to_day.hour, minutes=to_day.minute, seconds=to_day.second,
+                                                 microseconds=to_day.microsecond)
+        time_data_df = user_publish_df.loc[
+                       (user_publish_df['create_time'] > zero_today) & (user_publish_df['create_time'] < to_day), :]
+        # 如果匹配到数据大于0，再进行统计
+        if time_data_df.shape[0] > 0:
+            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%m-%d')
+            time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
+            time_info['publish_count'] = int(time_data_df['sell_id'].count())
+            # 中间数据
+            grouped = time_data_df.groupby('strf_time').agg(
+                {"total_price": "sum", "sell_id": "count", "count": "sum"}).reset_index()
+            grouped.columns = ['day', 'day_total_price', 'day_count', 'day_pretty_count']
+            grouped['day_total_price'] = grouped['day_total_price'].apply(lambda x: round(float(x), 2))
+            grouped['day_count'] = grouped['day_count'].astype(int)
+            grouped['day_pretty_count'] = grouped['day_pretty_count'].astype(int)
+            day_data = grouped.to_dict('records')
+            time_info['day_data'] = day_data
+
+            # 同比时间
+            to_day_ratio = to_day + timedelta(days=-1)
+            zero_today_ration = zero_today + timedelta(days=-1)
+            # 同比数据
+            time_data_ration_df = user_publish_df.loc[(user_publish_df['create_time'] > zero_today_ration) & (
+                        user_publish_df['create_time'] < to_day_ratio), :]
+            if time_data_ration_df.shape[0] == 0:
+                time_info['total_price_ration'] = '100%'
+                time_info['publish_count_ration'] = '100%'
+            else:
+                time_info['total_price_ration'] = round((time_info['total_price'] / round(time_data_ration_df['total_price'].sum(), 2) - 1) * 100, 2)
+                time_info['publish_count_ration'] = round((time_info['publish_count'] / time_data_ration_df['sell_id'].count() - 1) * 100, 2)
+    fina_data['time_data'] = time_info
+
+    return {"code": "0000", "status": "success", "msg": fina_data}
+
 
 
 # 个人转卖市场订单流水
