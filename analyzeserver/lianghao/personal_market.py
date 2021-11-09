@@ -731,9 +731,11 @@ def personal_total():
         conn_read.close()
 
 
+
+
 '''个人转卖市场采购数据分析总'''
-@pmbp.route("buy",methods=["POST"])
-def personal_buy():
+@pmbp.route("buy/all",methods=["POST"])
+def personal_buy_all():
     try:
         conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
 
@@ -748,6 +750,7 @@ def personal_buy():
         parent = request.json["parent"]
 
         bus_id = request.json["bus_id"]
+        # 必须传年月日时分秒
         first_start_time = request.json["first_start_time"]
         first_end_time = request.json["first_end_time"]
         last_start_time = request.json["last_start_time"]
@@ -760,9 +763,20 @@ def personal_buy():
         bus_phone = []
 
         time_condition_sql = ""
+
+        if first_start_time and first_end_time:
+            if first_start_time >= first_end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+        if last_start_time and last_end_time:
+            if last_start_time >= last_end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+
+
+        time_condition_sql = ""
         if first_start_time and first_end_time and last_start_time and last_end_time:
-            if first_start_time >= last_start_time and last_end_time >= last_start_time:
-                time_condition_sql = ''' and create_time>=%s and create_time <= %s''' %(first_start_time,first_end_time)
+
+            # 11.2 11.5 10.31-11.1 no
+            if last_end_time > first_start_time:
                 pass
             else:
                 return {"code":"11019","status":"failed","msg":message[["11019"]]}
@@ -860,29 +874,701 @@ def personal_buy():
         df_list.append(sum_data)
         df_list.append(count_data)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
-        # df_merged["unionid"] = df_merged["unionid"].astype(int)
+
+        if first_start_time and first_end_time:
+            df_merged = df_merged[(df_merged["first_time"] >= first_start_time) & (df_merged["first_time"] <= first_end_time)]
+            logger.info(df_merged.shape)
+        if last_start_time and last_end_time:
+            df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
+        df_merged_count = len(df_merged)
+        logger.info(df_merged.shape)
+        if page and size:
+            df_merged = df_merged[code_page:code_size]
+
+        logger.info("当前查询的个数:%s" %len(df_merged))
+
+
+        logger.info(len(df_merged))
+        if len(df_merged) > 70:
+            crm_data_result = get_all_user_operationcenter()
+            if crm_data_result[0] ==  True:
+                crm_data = crm_data_result[1]
+                result = df_merged.merge(crm_data,how="left",on="phone")
+                last_data = result.to_dict("records")
+            else:
+                return {"code":"10006","status":"failed","msg":message["10006"]}
+
+            for d in last_data:
+                if not pd.isnull(d["unionid"]):
+                    d["unionid"] = int(d["unionid"])
+        else:
+            crm_data_result = user_belong_bus(df_merged)
+            if crm_data_result[0] == 1:
+                last_data = crm_data_result[1]
+                for d in last_data:
+                    d["total_price"] = round(d["total_price"],2)
+            else:
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+
+        return {"code":"0000","status":"success","msg":last_data,"count":df_merged_count}
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_read.close()
+
+
+
+'''个人转卖市场采购数据分析--个人'''
+@pmbp.route("buy",methods=["POST"])
+def person_buy():
+    try:
+        logger.info(request.json)
+        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        phone = request.json["phone"]
+
+        # 1 今日 2 本周 3 本月  4 可选择区域
+        time_type = int(request.json["time_type"])
+        start_time = request.json["start_time"]
+        end_time = request.json["end_time"]
+
+
+        if time_type == 4:
+            if not start_time or not end_time:
+                return {"code":"10001","status":"failed","msg":message["10001"]}
+            if start_time >= end_time:
+                return {"code":"11020","status":"failed","msg":message["11020"]}
+            datetime_start_time = datetime.datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")
+            datetime_end_time = datetime.datetime.strptime(end_time,"%Y-%m-%d %H:%M:%S")
+            daysss = datetime_end_time-datetime_start_time
+            if daysss.days+ daysss.seconds/(24.0*60.0*60.0) > 30:
+                return {"code":"11018","status":"failed","msg":message["11018"]}
+
+
+        if not phone:
+            return {"code":"10001","status":"failed","msg":message["10001"]}
+
+        cursor = conn_read.cursor()
+        sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from lh_order o 
+        left join lh_sell s on o.sell_id = s.id
+        where o.phone = %s and o.del_flag = 0 and o.type in (1,4)  and o.`status` = 1
+        order by create_time asc'''
+        cursor.execute(sql,(phone))
+        datas = cursor.fetchall()
+
+        # logger.info(datas)
+
+        first_data={"order_time":"","order_total_price":"","order_pay":"","order_type":"","order_count":""}
+        second_data={"order_time":"","order_total_price":"","order_pay":"","order_type":"","order_count":""}
+        last_data={"order_time":"","order_total_price":"","order_pay":"","order_type":"","order_count":""}
+
+        personal_datas = {"first":first_data,"second":second_data,"last":last_data,"person":{}}
+        try:
+            first_data["order_time"] = datetime.datetime.strftime(datas[0][0], "%Y-%m-%d %H:%M:%S")
+            first_data["order_total_price"] = datas[0][1]
+            first_data["order_pay"] = datas[0][2]
+            first_data["order_type"] = datas[0][3]
+            first_data["order_count"] = datas[0][4]
+        except:
+            pass
+
+        try:
+            second_data["order_time"] = datetime.datetime.strftime(datas[1][0], "%Y-%m-%d %H:%M:%S")
+            second_data["order_total_price"] = datas[1][1]
+            second_data["order_pay"] = datas[1][2]
+            second_data["order_type"] = datas[1][3]
+            second_data["order_count"] = datas[1][4]
+        except:
+            pass
+
+        try:
+            if len(datas)>2:
+                last_data["order_time"] = datetime.datetime.strftime(datas[-1][0], "%Y-%m-%d %H:%M:%S")
+                last_data["order_total_price"] = datas[-1][1]
+                last_data["order_pay"] = datas[-1][2]
+                last_data["order_type"] = datas[-1][3]
+                last_data["order_count"] = datas[-1][4]
+        except:
+            pass
+
+
+
+        user_data_result = one_belong_bus(phone)
+        if user_data_result[0] == 1:
+            user_data = user_data_result[1]
+        else:
+            return {"code":"11016","status":"failed","msg":message["11016"]}
+
+        personal_datas["person"] = user_data
+
+
+        #获取所有的数据
+
+        all_sql = '''select count(*) order_count,sum(count) total_count,sum(total_price) total_price,GROUP_CONCAT(pay_type) sum_pay_type from lh_order where del_flag = 0 and type in (1,4) and `status`=1 group by phone having phone = %s'''
+        cursor.execute(all_sql,(phone))
+        datas = cursor.fetchone()
+        user_order_data = {"order_total_price":datas[2],"order_count":datas[0],"total_count":datas[1],"pay_type":datas[3]}
+        order_data = {"user_order_data":user_order_data}
+
+        # 今天
+        last_data = {}
+        if time_type == 1:
+            #先查询今天的
+            circle_sql1 = '''select if(DATE_FORMAT(create_time, '%%Y-%%m-%%d'),DATE_FORMAT(create_time, '%%Y-%%m-%%d'),date_add(CURRENT_DATE(),INTERVAL -1 day)) statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = CURRENT_DATE()
+            and phone = %s'''
+            circle_conn = " union all"
+            circle_sql2 = ''' select if(DATE_FORMAT(create_time, '%%Y-%%m-%%d'),DATE_FORMAT(create_time, '%%Y-%%m-%%d'),date_add(CURRENT_DATE(),INTERVAL -1 day)) statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)
+            and phone = %s'''
+
+            # #直接拼接sql 不然会有很多重复的代码 很烦人
+
+            circle_sql = circle_sql1 + circle_conn + circle_sql2
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql,(phone,phone))
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+            today_sql = '''select  DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,sum(total_price) total_price,count total_count,count(*) order_count from lh_order 
+            where phone = %s and del_flag = 0 and type in (1,4)  and `status` = 1 
+            and DATE_FORMAT(create_time,"%%Y%%m%%d") = CURRENT_DATE()
+            group by statistic_time order by statistic_time asc'''
+
+            cursor.execute(today_sql,(phone))
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        elif time_type == 2 or time_type == 3:
+            query_range = []
+            if time_type == 2:
+                query_range = ["-0","-6","-7","-13"]
+            elif time_type == 3:
+                query_range = ["-0","-29","-30","-59"]
+            circle_sql = '''
+            select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) group by statistic_time order by statistic_time asc) a
+            union all
+            select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)   group by statistic_time order by statistic_time asc) b ''' %(phone,query_range[0],query_range[1],phone,query_range[2],query_range[3])
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+            # 查询近七天的
+            today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) group by statistic_time order by statistic_time asc ''' %(phone,query_range[0],query_range[1])
+            logger.info(today_sql)
+            cursor.execute(today_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        elif time_type == 4:
+            sub_day = int(daysss.days+1)
+            before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+            before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+            logger.info(start_time)
+            logger.info(end_time)
+            logger.info(before_start_time)
+            logger.info(before_end_time)
+            circle_sql = '''
+                        select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
+                        union all
+                        select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b ''' %(phone,end_time,start_time,phone,before_end_time,before_start_time)
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+
+            today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone = %s and create_time <= "%s" and create_time >= "%s" group by statistic_time order by statistic_time asc ''' %(phone,end_time,start_time)
+
+            cursor.execute(today_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        else:
+            return {"code":"11009","status":"failed","msg":message["11009"]}
+
+        datas = {"person":personal_datas,"order_data":order_data}
+        return {"code":"0000","status":"success","msg":datas}
+
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_read.close()
+
+
+'''个人转卖市场出售数据分析总'''
+@pmbp.route("sell/all", methods=["POST"])
+def personal_sell_all():
+    try:
+        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+
+        logger.info(request.json)
+        page = request.json["page"]
+        size = request.json["size"]
+
+        # 可以是用户名称 手机号 unionid 模糊的
+        keyword = request.json["keyword"]
+
+        # 查询归属上级 精准的
+        parent = request.json["parent"]
+
+        bus_id = request.json["bus_id"]
+        # 必须传年月日时分秒
+        first_start_time = request.json["first_start_time"]
+        first_end_time = request.json["first_end_time"]
+        last_start_time = request.json["last_start_time"]
+        last_end_time = request.json["last_end_time"]
+
+        # 字符串拼接的手机号码
+        query_phone = ""
+        keyword_phone = []
+        parent_phone = []
+        bus_phone = []
+
+        time_condition_sql = ""
+
+        if first_start_time and first_end_time:
+            if first_start_time >= first_end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+        if last_start_time and last_end_time:
+            if last_start_time >= last_end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+
+        if first_start_time and first_end_time and last_start_time and last_end_time:
+
+            # 11.2 11.5 10.31-11.1 no
+            if last_end_time > first_start_time:
+                pass
+            else:
+                return {"code": "11019", "status": "failed", "msg": message[["11019"]]}
+
+        # 模糊查询
+        if keyword:
+            result = get_phone_by_keyword(keyword)
+            logger.info(result)
+            if result[0] == 1:
+                keyword_phone = result[1]
+            else:
+                return {"code": "11016", "status": "failed", "msg": message["11016"]}
+
+        # 只查一个
+        if parent:
+            if len(parent) == 11:
+                parent_phone.append(parent)
+            else:
+                result = get_phone_by_unionid(parent)
+                if result[0] == 1:
+                    parent_phone.append(result[1])
+                else:
+                    return {"code": "11014", "status": "failed", "msg": message["code"]}
+
+        if bus_id:
+            result = get_busphne_by_id(bus_id)
+            if result[0] == 1:
+                bus_phone = result[1].split(",")
+            else:
+                return {"code": "11015", "status": "failed", "msg": message["11015"]}
+
+        # 对手机号码差交集
+        if keyword_phone and parent_phone and bus_phone:
+            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
+        elif keyword_phone and parent_phone:
+            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
+        elif keyword_phone and bus_phone:
+            query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+        elif parent_phone and bus_phone:
+            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
+        elif keyword_phone:
+            query_phone = keyword_phone
+        elif parent_phone:
+            query_phone = parent_phone
+        elif bus_phone:
+            query_phone = bus_phone
+        else:
+            query_phone = ""
+
+        if page and size:
+            code_page = (page - 1) * 10
+            code_size = page * size
+
+        buy_sql = '''select sell_phone phone,total_price,create_time from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+        if time_condition_sql:
+            buy_sql = buy_sql + time_condition_sql
+
+        group_sql = ''' group by sell_phone'''
+        if query_phone:
+            condition_sql = ''' and sell_phone in (%s)''' % (",".join(query_phone))
+            order_sql = buy_sql + condition_sql
+        else:
+            order_sql = buy_sql
+
+        # 返回条数
+
+        logger.info("order_sql:%s" % order_sql)
+        order_data = pd.read_sql(order_sql, conn_read)
+        order_data_group = order_data.groupby("phone")
+
+        # 排序取出按时间第一条和最后一条的
+        first_data = order_data.sort_values("create_time", ascending=True).groupby("phone").first().reset_index()
+        first_data.rename(columns={"phone": "phone", "create_time": "first_time", "total_price": "first_total_price"},
+                          inplace=True)
+        first_data["first_time"] = first_data['first_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+
+        last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
+        last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},
+                         inplace=True)
+        # last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum(
+            "total_price").reset_index()
+        count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop(
+            "create_time", axis=1)
+        count_data.rename(columns={"phone": "phone", "total_price": "count"}, inplace=True)
+
+        df_list = []
+        df_list.append(first_data)
+        df_list.append(last_data)
+        df_list.append(sum_data)
+        df_list.append(count_data)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
+
+        if first_start_time and first_end_time:
+            df_merged = df_merged[(df_merged["first_time"] >= first_start_time) & (df_merged["first_time"] <= first_end_time)]
+            logger.info(df_merged.shape)
+        if last_start_time and last_end_time:
+            df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
+
+        result_count = len(df_merged)
 
         logger.info(df_merged.shape)
         if page and size:
             df_merged = df_merged[code_page:code_size]
 
-        crm_data_result = get_all_user_operationcenter()
-        if crm_data_result[0] ==  True:
-            crm_data = crm_data_result[1]
+        logger.info("当前查询的个数:%s" % len(df_merged))
+        logger.info(df_merged["total_price"])
+        if len(df_merged) > 70:
+            crm_data_result = get_all_user_operationcenter()
+            if crm_data_result[0] == True:
+                crm_data = crm_data_result[1]
+                result = df_merged.merge(crm_data, how="left", on="phone")
 
-            result = df_merged.merge(crm_data,how="left",on="phone")
-            # result["id"] = result[(result["id"] != "") | (result["id"].notna())].astype(int)
-            last_data = result.to_dict("records")
+                last_data = result.to_dict("records")
+            else:
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+            for d in last_data:
+                if not pd.isnull(d["unionid"]):
+                    d["unionid"] = int(d["unionid"])
         else:
-            return {"code":"10006","status":"failed","msg":message["10006"]}
+            crm_data_result = user_belong_bus(df_merged)
+            if crm_data_result[0] == 1:
+                last_data = crm_data_result[1]
+                for d in last_data:
+                    d["total_price"] = round(d["total_price"],2)
+            else:
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+        return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_read.close()
 
 
-        for d in last_data:
-            # logger.info(d)
-            if not pd.isnull(d["id"]):
-                d["id"] = int(d["id"])
 
-        return {"code":"0000","status":"success","msg":last_data,"count":len(order_data_group)}
+'''个人转卖市场出售数据分析--个人'''
+@pmbp.route("sell", methods=["POST"])
+def person_sell():
+    try:
+        logger.info(request.json)
+        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        sell_phone = request.json["sell_phone"]
+
+        # 1 今日 2 本周 3 本月  4 可选择区域
+        time_type = int(request.json["time_type"])
+        start_time = request.json["start_time"]
+        end_time = request.json["end_time"]
+
+        if time_type == 4:
+            if not start_time or not end_time:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+            if start_time >= end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+            datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+            datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+            daysss = datetime_end_time - datetime_start_time
+            if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
+                return {"code": "11018", "status": "failed", "msg": message["11018"]}
+
+        if not sell_phone:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        cursor = conn_read.cursor()
+        sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from lh_order o 
+        left join lh_sell s on o.sell_id = s.id
+        where o.sell_phone = %s and o.del_flag = 0 and o.type in (1,4)  and o.`status` = 1
+        order by create_time asc'''
+        cursor.execute(sql, (sell_phone))
+        datas = cursor.fetchall()
+
+        # logger.info(datas)
+
+        first_data = {"order_time": "", "order_total_price": "", "order_pay": "", "order_type": "", "order_count": ""}
+        second_data = {"order_time": "", "order_total_price": "", "order_pay": "", "order_type": "", "order_count": ""}
+        last_data = {"order_time": "", "order_total_price": "", "order_pay": "", "order_type": "", "order_count": ""}
+
+        personal_datas = {"first": first_data, "second": second_data, "last": last_data, "person": {}}
+        try:
+            first_data["order_time"] = datetime.datetime.strftime(datas[0][0], "%Y-%m-%d %H:%M:%S")
+            first_data["order_total_price"] = datas[0][1]
+            first_data["order_pay"] = datas[0][2]
+            first_data["order_type"] = datas[0][3]
+            first_data["order_count"] = datas[0][4]
+        except:
+            pass
+
+        try:
+            second_data["order_time"] = datetime.datetime.strftime(datas[1][0], "%Y-%m-%d %H:%M:%S")
+            second_data["order_total_price"] = datas[1][1]
+            second_data["order_pay"] = datas[1][2]
+            second_data["order_type"] = datas[1][3]
+            second_data["order_count"] = datas[1][4]
+        except:
+            pass
+
+        try:
+            if len(datas) > 2:
+                last_data["order_time"] = datetime.datetime.strftime(datas[-1][0], "%Y-%m-%d %H:%M:%S")
+                last_data["order_total_price"] = datas[-1][1]
+                last_data["order_pay"] = datas[-1][2]
+                last_data["order_type"] = datas[-1][3]
+                last_data["order_count"] = datas[-1][4]
+        except:
+            pass
+
+        user_data_result = one_belong_bus(sell_phone)
+        if user_data_result[0] == 1:
+            user_data = user_data_result[1]
+        else:
+            return {"code": "11016", "status": "failed", "msg": message["11016"]}
+
+        personal_datas["person"] = user_data
+
+        # 获取所有的数据
+
+        all_sql = '''select count(*) order_count,sum(count) total_count,sum(total_price) total_price,GROUP_CONCAT(pay_type) sum_pay_type from lh_order where del_flag = 0 and type in (1,4) and `status`=1 group by phone having sell_phone = %s'''
+        cursor.execute(all_sql, (sell_phone))
+        datas = cursor.fetchone()
+        user_order_data = {"order_total_price": datas[2], "order_count": datas[0], "total_count": datas[1],
+                           "pay_type": datas[3]}
+        order_data = {"user_order_data": user_order_data}
+
+        # 今天
+        last_data = {}
+        if time_type == 1:
+            # 先查询今天的
+            circle_sql1 = '''select if(DATE_FORMAT(create_time, '%%Y-%%m-%%d'),DATE_FORMAT(create_time, '%%Y-%%m-%%d'),date_add(CURRENT_DATE(),INTERVAL -1 day)) statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = CURRENT_DATE()
+            and sell_phone = %s'''
+            circle_conn = " union all"
+            circle_sql2 = ''' select if(DATE_FORMAT(create_time, '%%Y-%%m-%%d'),DATE_FORMAT(create_time, '%%Y-%%m-%%d'),date_add(CURRENT_DATE(),INTERVAL -1 day)) statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)
+            and sell_phone = %s'''
+
+            # #直接拼接sql 不然会有很多重复的代码 很烦人
+
+            circle_sql = circle_sql1 + circle_conn + circle_sql2
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql, (sell_phone, sell_phone))
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+            today_sql = '''select  DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,sum(total_price) total_price,count total_count,count(*) order_count from lh_order 
+            where sell_phone = %s and del_flag = 0 and type in (1,4)  and `status` = 1 
+            and DATE_FORMAT(create_time,"%%Y%%m%%d") = CURRENT_DATE()
+            group by statistic_time order by statistic_time asc'''
+
+            cursor.execute(today_sql, (sell_phone))
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        elif time_type == 2 or time_type == 3:
+            query_range = []
+            if time_type == 2:
+                query_range = ["-0", "-6", "-7", "-13"]
+            elif time_type == 3:
+                query_range = ["-0", "-29", "-30", "-59"]
+            circle_sql = '''
+            select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) group by statistic_time order by statistic_time asc) a
+            union all
+            select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)   group by statistic_time order by statistic_time asc) b ''' % (
+            sell_phone, query_range[0], query_range[1], sell_phone, query_range[2], query_range[3])
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+            # 查询近七天的
+            today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) group by statistic_time order by statistic_time asc ''' % (
+            sell_phone, query_range[0], query_range[1])
+            logger.info(today_sql)
+            cursor.execute(today_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        elif time_type == 4:
+            sub_day = int(daysss.days + 1)
+            before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+            before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+            logger.info(start_time)
+            logger.info(end_time)
+            logger.info(before_start_time)
+            logger.info(before_end_time)
+            circle_sql = '''
+                        select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
+                        union all
+                        select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b ''' % (
+            sell_phone, end_time, start_time, sell_phone, before_end_time, before_start_time)
+
+            logger.info(circle_sql)
+            cursor.execute(circle_sql)
+            circle_data = cursor.fetchall()
+            logger.info(circle_data)
+
+            circle = {
+                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                "today_buy_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                "yes_buy_order_count": circle_data[1][2]
+            }
+
+            today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone = %s and create_time <= "%s" and create_time >= "%s" group by statistic_time order by statistic_time asc ''' % (
+            sell_phone, end_time, start_time)
+
+            cursor.execute(today_sql)
+            today_data = cursor.fetchall()
+            logger.info(today_data)
+            today = []
+            for td in today_data:
+                td_dict = {}
+                td_dict["statistic_time"] = td[0]
+                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_total_count"] = float(td[2])
+                td_dict["buy_total_price"] = float(td[1])
+                today.append(td_dict)
+            logger.info(today)
+
+            order_data["circle"] = circle
+            order_data["today"] = today
+        else:
+            return {"code": "11009", "status": "failed", "msg": message["11009"]}
+
+        datas = {"person": personal_datas, "order_data": order_data}
+        return {"code": "0000", "status": "success", "msg": datas}
+
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())

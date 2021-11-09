@@ -347,7 +347,7 @@ def get_all_user_operationcenter():
         operate_df = pd.DataFrame(operate_data)
 
         # crm用户数据
-        crm_user_sql = 'select id, pid, phone from luke_sincerechat.user where phone is not null'
+        crm_user_sql = 'select id unionid, pid parentd, phone from luke_sincerechat.user where phone is not null'
         crm_cursor.execute(crm_user_sql)
         crm_user_df = pd.DataFrame(crm_cursor.fetchall())
 
@@ -768,7 +768,7 @@ def judge_start_and_end_time(start, end):
     except:
         logger.error(traceback.format_exc())
         return False, "10013"
-
+#很多用户归属的运营中心
 def user_belong_bus(need_data):
     '''
 
@@ -777,19 +777,19 @@ def user_belong_bus(need_data):
     '''
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
-
-        crm_user_sql = '''select sex,id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
         user_data = need_data.merge(crm_user_data, how="left", on="phone")
         logger.info(user_data)
         phone_list = user_data.to_dict('list')['phone']
-        logger.info(len(phone_list))
+        # logger.info(len(phone_list))
+
 
         # 查运营中心
         all_operate = []
         for pl in phone_list:
-            logger.info("phone:%s" % pl)
+            # logger.info("phone:%s" % pl)
             pl_op_dict = {}
             operate_sql = '''
                     select a.*,b.operatename,b.crm from 
@@ -803,14 +803,16 @@ def user_belong_bus(need_data):
                     on a.id = b.unionid
                     ''' % pl
             operate_data = pd.read_sql(operate_sql, conn_crm)
+
+
             # logger.info(operate_data)
             # logger.info("----------------")
             current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
-            logger.info(current_operate_data)
-            logger.info("--------------------")
+            # logger.info(current_operate_data)
+            # logger.info("--------------------")
             if len(current_operate_data)>0:
                 # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
-                logger.info("有值")
+                # logger.info("有值")
                 pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
@@ -818,6 +820,57 @@ def user_belong_bus(need_data):
                 pl_op_dict["operate_name"] = ""
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
+
+        all_operate = pd.DataFrame(all_operate)
+
+        user_data = user_data.merge(all_operate, how="left", on="phone")
+        last_data = user_data.to_dict("records")
+        return 1, last_data
+    except Exception as e:
+        return 0,e
+    finally:
+        conn_crm.close()
+
+#一个用户归属的运营中心
+def one_belong_bus(phone):
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+
+        crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone = %s''' %phone
+        user_data = pd.read_sql(crm_user_sql,conn_crm)
+
+        # 查运营中心
+        all_operate = []
+
+        pl_op_dict = {}
+        operate_sql = '''
+                select a.*,b.operatename,b.crm from 
+                (WITH RECURSIVE temp as (
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        UNION ALL
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                )
+                SELECT * FROM temp 
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid
+                ''' % phone
+        operate_data = pd.read_sql(operate_sql, conn_crm)
+        # logger.info(operate_data)
+        # logger.info("----------------")
+        current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
+        logger.info(current_operate_data)
+        logger.info("--------------------")
+        if len(current_operate_data)>0:
+            # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
+            pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
+            pl_op_dict["phone"] = phone
+            pl_op_dict["parent_phone"] = current_operate_data.iloc[0, :]["phone"]
+            all_operate.append(pl_op_dict)
+        else:
+            pl_op_dict["operate_name"] = ""
+            pl_op_dict["phone"] = phone
+            pl_op_dict["parent_phone"] = ""
+            all_operate.append(pl_op_dict)
         logger.info(all_operate)
 
         all_operate = pd.DataFrame(all_operate)
@@ -825,13 +878,14 @@ def user_belong_bus(need_data):
 
         user_data = user_data.merge(all_operate, how="left", on="phone")
         # logger.info(user_data.loc[0])
-        last_data = user_data.to_dict("records")
+        last_data = user_data.to_dict("records")[0]
         logger.info(last_data)
         return 1, last_data
     except Exception as e:
         return 0,e
     finally:
         conn_crm.close()
+
 
 def get_phone_by_keyword(keyword):
     '''
@@ -894,5 +948,7 @@ if __name__ == "__main__":
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    result = get_busphne_by_id(208)
-    logger.info(result)
+    # result = get_busphne_by_id(208)
+    # logger.info(result)
+
+    logger.info(one_belong_bus("13559436425"))
