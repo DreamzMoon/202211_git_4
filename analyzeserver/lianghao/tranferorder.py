@@ -25,7 +25,6 @@ def transfer_all():
         bus_lists = request.json["bus_lists"]
 
         #连接靓号数据库 同步
-        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
         conn_read = direct_get_conn(lianghao_mysql_conf)
         logger.info(type(phone_lists))
         with conn_read.cursor() as cursor:
@@ -359,7 +358,8 @@ def transfer_buy_order():
 @tobp.route("sell",methods=["POST"])
 def transfer_sell_order():
     try:
-        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         if not conn_read:
             return {"code":"10008","status":"failed","msg":message["10008"]}
 
@@ -372,7 +372,6 @@ def transfer_sell_order():
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
 
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
         cursor = conn_read.cursor()
 
         #校验参数
@@ -572,7 +571,8 @@ def transfer_sell_order():
 @tobp.route("public",methods=["POST"])
 def transfer_public_order():
     try:
-        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         if not conn_read:
             return {"code":"10008","status":"failed","msg":message["10008"]}
 
@@ -585,7 +585,6 @@ def transfer_public_order():
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
 
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
         cursor = conn_read.cursor()
 
         #校验参数
