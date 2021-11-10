@@ -33,7 +33,7 @@ def personal_publish():
             # 表单选择operateid
             operateid = request.json['operateid']
             # 出售人信息
-            search_key = request.json['key'].strip()
+            search_key = request.json['keyword'].strip()
             # 归属上级
             parent = request.json['parent'].strip()
             # 首次发布时间
@@ -98,6 +98,7 @@ def personal_publish():
         crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
         crm_user_df['publish_unionid'] = crm_user_df['publish_unionid'].astype(str)
         crm_user_df['parentid'] = crm_user_df['parentid'].astype(str)
+        count_len = 0
         if operateid:
             flag_1, child_phone_list = get_operationcenter_child(conn_crm, operateid)
             if not flag_1:
@@ -106,14 +107,17 @@ def personal_publish():
             part_user_df['operatename'] = child_phone_list[-1]
             part_user_df = part_user_df.merge(crm_user_df, how='left', on='publish_phone')
             # 匹配数据
-            match_df = part_user_df.loc[((part_user_df['publish_name'].str.contains(search_key)) | (part_user_df['publish_unionid'].str.contains(search_key)) | (part_user_df['publish_phone'].str.contains(search_key)))
-                                        & ((part_user_df['parentid']).str.contains(parent) | (part_user_df['parent_phone']).str.contains(parent))]
+            match_df = part_user_df.loc[((part_user_df['publish_name'].str.contains(search_key)) | (part_user_df['publish_unionid'].str.contains(search_key)) | (part_user_df['publish_phone'].str.contains(search_key)))]
+            if parent:
+                match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (
+                        match_df['parent_phone'] == request.json['parent']), :]  # 归属上级
             if request.json['start_first_time']:
-                match_df = match_df.loc[(part_user_df['first_time'] >= request.json['start_first_time']) & (
-                            part_user_df['near_time'] <= (request.json['end_first_time'])), :]
+                match_df = match_df.loc[(match_df['first_time'] >= request.json['start_first_time']) & (
+                            match_df['near_time'] <= (request.json['end_first_time'])), :]
             if request.json['start_near_time']:
-                match_df = match_df.loc[(part_user_df['near_time'] >= request.json['start_near_time']) & (
-                            part_user_df['near_time'] <= (request.json['end_near_time'])), :]
+                match_df = match_df.loc[(match_df['near_time'] >= request.json['start_near_time']) & (
+                            match_df['near_time'] <= (request.json['end_near_time'])), :]
+            count_len = len(match_df)
         else:
             fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
             if not search_key and not parent and not start_first_time and not end_first_time and not start_near_time and not end_near_time and not page and not num:
@@ -123,35 +127,40 @@ def personal_publish():
                 all_user_operate_result[1].rename(columns={"phone": 'publish_phone'}, inplace=True)
                 match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['publish_phone', 'operatename']], how='left', on='publish_phone')
                 # match_df.drop('parent_phone', axis=1, inplace=True)
+                count_len = len(fina_df)
             elif not search_key and not parent and not start_first_time and not end_first_time and not start_near_time and not end_near_time and page and num:
                 start_index = (page - 1) * num
                 end_index = page * num
                 if end_index > len(fina_df):
                     end_index = len(fina_df)
-                child_df = fina_df.loc[start_index:end_index, :]
+                child_df = fina_df.loc[start_index:end_index-1, :]
                 child_phone_list = child_df['publish_phone'].tolist()
                 match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
                 if not match_result[0]:
                     return {"code": match_result[1], "status": "failed", "msg": message[match_result[1]]}
                 match_df = child_df.merge(match_result[1], how='left', on='publish_phone')
+                count_len = len(fina_df)
             else:
-                match_df = fina_df.loc[((fina_df['publish_name'].str.contains(search_key)) | (fina_df['publish_unionid'].str.contains(search_key)) | (fina_df['publish_phone'].str.contains(search_key)))
-                                        & ((fina_df['parentid']).str.contains(parent) | (fina_df['parent_phone']).str.contains(parent))]
+                match_df = fina_df.loc[(fina_df['publish_name'].str.contains(search_key)) | (fina_df['publish_unionid'].str.contains(search_key)) | (fina_df['publish_phone'].str.contains(search_key))]
+                if parent:
+                    match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (
+                            match_df['parent_phone'] == request.json['parent']), :]  # 归属上级
                 if request.json['start_first_time']:
-                    match_df = match_df.loc[(fina_df['first_time'] >= request.json['start_first_time']) & (
-                            fina_df['near_time'] <= (request.json['end_first_time'])), :]
+                    match_df = match_df.loc[(match_df['first_time'] >= request.json['start_first_time']) & (
+                            match_df['near_time'] <= (request.json['end_first_time'])), :]
                 if request.json['start_near_time']:
-                    match_df = match_df.loc[(fina_df['near_time'] >= request.json['start_near_time']) & (
-                            fina_df['near_time'] <= (request.json['end_near_time'])), :]
+                    match_df = match_df.loc[(match_df['near_time'] >= request.json['start_near_time']) & (
+                            match_df['near_time'] <= (request.json['end_near_time'])), :]
                 child_phone_list = match_df['publish_phone'].tolist()
                 match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
                 if not match_result[0]:
                     return {"code": match_result[1], "status": "success", "msg": message[match_result[1]]}
                 match_df = match_df.merge(match_result[1], how='left', on='publish_phone')
+                count_len = len(match_df)
                 # 如果没有页码
                 # match_df.drop('parent_phone', axis=1, inplace=True)
-        if match_df.shape[0] == 0:
-            return {"code": "10010", "status": "failed", "msg": message["10010"]}
+        # if match_df.shape[0] == 0:
+        #     return {"code": "10010", "status": "failed", "msg": message["10010"]}
         match_df.drop('parent_phone', axis=1, inplace=True)
 
         if page and num:
@@ -170,7 +179,7 @@ def personal_publish():
         match_df.fillna("", inplace=True)
         match_dict_list = match_df.loc[start_index: end_index - 1, :].to_dict('records')
         return_data = {
-            'count': len(match_dict_list),
+            'count': count_len,
             'data': match_dict_list
         }
         return {"code": "0000", "status": "success", "msg": return_data}
@@ -195,20 +204,24 @@ def personal_publish_detail():
         # 手机号
         phone = request.json['phone'].strip()
         # 1今日 2本周 3本月 4自定义-->必须传起始和结束时间
-        type = request.json['type']
+        time_type = request.json['time_type']
         # 首次发布时间
         start_time = request.json['start_time']
         end_time = request.json['end_time']
 
-        if type != 4 and start_time and end_time:
+        if (time_type != 4 and start_time and end_time) or time_type not in range(1, 5) or (time_type == 4 and not start_time and not end_time):
             return {"code": "10014", "status": "failed", "msg": message["10014"]}
         # 时间判断
         elif start_time or end_time:
-            first_time_result = judge_start_and_end_time(start_time, end_time)
-            if not first_time_result[0]:
-                return {"code": first_time_result[1], "status": "failed", "msg": message[first_time_result[1]]}
-            request.json['start_publish_time'] = first_time_result[0]
-            request.json['end_publish_time'] = first_time_result[1]
+            judge_result = judge_start_and_end_time(start_time, end_time)
+            if not judge_result[0]:
+                return {"code": judge_result[1], "status": "failed", "msg": message[judge_result[1]]}
+            sub_day = judge_result[1] - judge_result[0]
+            if sub_day.days + sub_day.seconds / (24.0 * 60.0 * 60.0) > 30:
+                return {"code": "11018", "status": "failed", "msg": message["11018"]}
+            request.json['start_time'] = judge_result[0]
+            request.json['end_time'] = judge_result[1]
+
     except Exception as e:
         # 参数名错误
         logger.error(e)
@@ -389,15 +402,14 @@ def personal_publish_detail():
 
     time_info = {}
 
-    if type == 1:
-        to_day = datetime.datetime.now()
-        zero_today = to_day - datetime.timedelta(hours=to_day.hour, minutes=to_day.minute, seconds=to_day.second,
-                                                 microseconds=to_day.microsecond)
-        time_data_df = user_publish_df.loc[
-                       (user_publish_df['create_time'] > zero_today) & (user_publish_df['create_time'] < to_day), :]
+    if time_type == 1:
+        to_day = datetime.date.today()
+        # zero_today = to_day - datetime.timedelta(hours=to_day.hour, minutes=to_day.minute, seconds=to_day.second,
+        #                                          microseconds=to_day.microsecond)
+        time_data_df = user_publish_df.loc[user_publish_df['create_time'].dt.date == to_day, :]
         # 如果匹配到数据大于0，再进行统计
         if time_data_df.shape[0] > 0:
-            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%m-%d')
+            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
             time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
             time_info['publish_count'] = int(time_data_df['sell_id'].count())
             # 中间数据
@@ -412,21 +424,117 @@ def personal_publish_detail():
 
             # 同比时间
             to_day_ratio = to_day + timedelta(days=-1)
-            zero_today_ration = zero_today + timedelta(days=-1)
+            logger.info(to_day_ratio)
             # 同比数据
-            time_data_ration_df = user_publish_df.loc[(user_publish_df['create_time'] > zero_today_ration) & (
-                        user_publish_df['create_time'] < to_day_ratio), :]
+            time_data_ration_df = user_publish_df.loc[user_publish_df['create_time'].dt.date == to_day_ratio, :]
             if time_data_ration_df.shape[0] == 0:
-                time_info['total_price_ration'] = '100%'
-                time_info['publish_count_ration'] = '100%'
+                time_info['total_price_ration'] = 0
+                time_info['publish_count_ration'] = 0
             else:
-                time_info['total_price_ration'] = round((time_info['total_price'] / round(time_data_ration_df['total_price'].sum(), 2) - 1) * 100, 2)
-                time_info['publish_count_ration'] = round((time_info['publish_count'] / time_data_ration_df['sell_id'].count() - 1) * 100, 2)
+                time_info['total_price_ration'] = round(time_data_ration_df['total_price'].sum(), 2)
+                time_info['publish_count_ration'] = int(time_data_ration_df['sell_id'].count())
+    elif time_type == 2:
+        to_week_end = datetime.date.today()
+        to_week_start = to_week_end + timedelta(days=-6)
+        time_data_df = user_publish_df.loc[(user_publish_df['create_time'].dt.date >= to_week_start) & (
+                    user_publish_df['create_time'].dt.date <= to_week_end), :]
+        # 如果匹配到数据大于0，再进行统计
+        if time_data_df.shape[0] > 0:
+            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
+            time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
+            time_info['publish_count'] = int(time_data_df['sell_id'].count())
+            # 中间数据
+            grouped = time_data_df.groupby('strf_time').agg(
+                {"total_price": "sum", "sell_id": "count", "count": "sum"}).reset_index()
+            grouped.columns = ['day', 'day_total_price', 'day_count', 'day_pretty_count']
+            grouped['day_total_price'] = grouped['day_total_price'].apply(lambda x: round(float(x), 2))
+            grouped['day_count'] = grouped['day_count'].astype(int)
+            grouped['day_pretty_count'] = grouped['day_pretty_count'].astype(int)
+            day_data = grouped.to_dict('records')
+            time_info['day_data'] = day_data
+
+            # 同比时间
+            to_week_end_ratio = to_week_start + timedelta(days=-1)
+            to_week_start_ratio = to_week_end_ratio + timedelta(days=-6)
+            # 同比数据
+            time_data_ration_df = user_publish_df.loc[(user_publish_df['create_time'].dt.date >= to_week_start_ratio) & (
+                    user_publish_df['create_time'].dt.date <= to_week_end_ratio), :]
+            if time_data_ration_df.shape[0] == 0:
+                time_info['total_price_ration'] = 0
+                time_info['publish_count_ration'] = 0
+            else:
+                time_info['total_price_ration'] = round(time_data_ration_df['total_price'].sum(), 2)
+                time_info['publish_count_ration'] = int(time_data_ration_df['sell_id'].count())
+    elif time_type == 3:
+        to_month_end = datetime.date.today()
+        to_month_start = to_month_end + timedelta(days=-29)
+        time_data_df = user_publish_df.loc[(user_publish_df['create_time'].dt.date >= to_month_start) & (
+                user_publish_df['create_time'].dt.date <= to_month_end), :]
+        # 如果匹配到数据大于0，再进行统计
+        if time_data_df.shape[0] > 0:
+            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
+            time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
+            time_info['publish_count'] = int(time_data_df['sell_id'].count())
+            # 中间数据
+            grouped = time_data_df.groupby('strf_time').agg(
+                {"total_price": "sum", "sell_id": "count", "count": "sum"}).reset_index()
+            grouped.columns = ['day', 'day_total_price', 'day_count', 'day_pretty_count']
+            grouped['day_total_price'] = grouped['day_total_price'].apply(lambda x: round(float(x), 2))
+            grouped['day_count'] = grouped['day_count'].astype(int)
+            grouped['day_pretty_count'] = grouped['day_pretty_count'].astype(int)
+            day_data = grouped.to_dict('records')
+            time_info['day_data'] = day_data
+
+            # 同比时间
+            to_month_end_ratio = to_month_start + timedelta(days=-1)
+            to_month_start_ratio = to_month_end_ratio + timedelta(days=-29)
+            # 同比数据
+            time_data_ration_df = user_publish_df.loc[
+                                  (user_publish_df['create_time'].dt.date >= to_month_start_ratio) & (
+                                          user_publish_df['create_time'].dt.date <= to_month_end_ratio), :]
+            if time_data_ration_df.shape[0] == 0:
+                time_info['total_price_ration'] = 0
+                time_info['publish_count_ration'] = 0
+            else:
+                time_info['total_price_ration'] = round(time_data_ration_df['total_price'].sum(), 2)
+                time_info['publish_count_ration'] = int(time_data_ration_df['sell_id'].count())
+    elif time_type == 4:
+        time_data_df = user_publish_df.loc[(user_publish_df['create_time'] >= request.json['start_time']) & (
+                user_publish_df['create_time'] <= request.json['end_time']), :]
+        # 如果匹配到数据大于0，再进行统计
+        if time_data_df.shape[0] > 0:
+            time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
+            time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
+            time_info['publish_count'] = int(time_data_df['sell_id'].count())
+            # 中间数据
+            grouped = time_data_df.groupby('strf_time').agg(
+                {"total_price": "sum", "sell_id": "count", "count": "sum"}).reset_index()
+            grouped.columns = ['day', 'day_total_price', 'day_count', 'day_pretty_count']
+            grouped['day_total_price'] = grouped['day_total_price'].apply(lambda x: round(float(x), 2))
+            grouped['day_count'] = grouped['day_count'].astype(int)
+            grouped['day_pretty_count'] = grouped['day_pretty_count'].astype(int)
+            day_data = grouped.to_dict('records')
+            time_info['day_data'] = day_data
+
+
+            # 自定义时间间隔
+            sub_day = request.json['end_time'].day -  request.json['start_time'].day + 1
+            # 同比时间
+            custom_end_ratio = request.json['start_time'] + timedelta(days=-sub_day)
+            custom_start_ratio = request.json['end_time'] + timedelta(days=-sub_day)
+            # 同比数据
+            time_data_ration_df = user_publish_df.loc[
+                                  (user_publish_df['create_time'] >= custom_start_ratio) & (
+                                          user_publish_df['create_time'] <= custom_end_ratio), :]
+            if time_data_ration_df.shape[0] == 0:
+                time_info['total_price_ration'] = 0
+                time_info['publish_count_ration'] = 0
+            else:
+                time_info['total_price_ration'] = round(time_data_ration_df['total_price'].sum(), 2)
+                time_info['publish_count_ration'] = int(time_data_ration_df['sell_id'].count())
     fina_data['time_data'] = time_info
 
     return {"code": "0000", "status": "success", "msg": fina_data}
-
-
 
 # 个人转卖市场订单流水
 @pmbp.route('/orderflow', methods=["POST"])
@@ -552,7 +660,7 @@ def personal_order_flow():
                 match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
-                    "count": match_df.shape[0],
+                    "count": fina_df.shape[0],
                     "data": match_dict_list
                 }
                 return {"code": "0000", "status": "success", "msg": return_data}
@@ -617,20 +725,12 @@ def personal_publish_order_flow():
             # 状态
             status = request.json['status']
             # 转让类型
-            transfer_id = request.json['transfer_id']
+            transfer_id = str(request.json['transfer_id'])
 
             # 每页显示条数
             num = request.json['num']
             # 页码
             page = request.json['page']
-            # isdigit()可以判断是否为正整数
-            # if not num.isdigit() or int(num) < 1:
-            #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            # elif not page.isdigit() or int(page) < 1:
-            #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            # else:
-            #     num = int(num)
-            #     page = int(page)
 
             # 时间判断
             if start_publish_time or end_publish_time:
@@ -672,6 +772,7 @@ def personal_publish_order_flow():
         fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
         fina_df['status'] = fina_df['status'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
+        fina_df['transfer_type'].fillna(3, inplace=True)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
@@ -740,7 +841,7 @@ def personal_publish_order_flow():
                 match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
-                    "count": match_df.shape[0],
+                    "count": fina_df.shape[0],
                     "data": match_dict_list
                 }
                 return {"code": "0000", "status": "success", "msg": return_data}

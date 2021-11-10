@@ -19,7 +19,7 @@ typebp = Blueprint('type', __name__, url_prefix='/lh/personal')
 def pay_type_list():
     try:
         map_pay_type = [
-            {"pay_id": "1", "pay_name": "未知"},
+            {"pay_id": "-1", "pay_name": "未知"},
             {"pay_id": "0", "pay_name": "信用点支付"},
             {"pay_id": "1", "pay_name": "诚聊余额支付"},
             {"pay_id": "2", "pay_name": "诚聊通余额支付"},

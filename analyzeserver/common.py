@@ -421,8 +421,6 @@ def get_operationcenter_child(conn_crm, operateid):
     try:
         search_operate_phone = '''select telephone, operatename from luke_lukebus.operationcenter where id = %s''' % operateid
         search_operate_result = pd.read_sql(search_operate_phone, conn_crm)
-        if search_operate_result.shape[0] == 0:
-            return False, "10010"
         logger.info(search_operate_result)
         operate_phone = search_operate_result['telephone'].values[0]
         operatename = search_operate_result['operatename'].values[0]
@@ -532,39 +530,34 @@ def match_attribute(data_df, request, mode='order'):
     try:
         if mode == 'order':
             match_df = data_df.loc[
-
                 ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
-                & ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
                 & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
                 & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                # & ((data_df['order_time']>=request.json['start_order_time']) & (data_df['order_time']<=(request.json['end_order_time'])))  # 交易时间
                 & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
                 & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
                 ]
+            if request.json['parent']:
+                match_df = match_df.loc[(match_df['parentid']==request.json['parent']) | (match_df['parent_phone']==request.json['parent']), :]  # 归属上级]
             if request.json['start_order_time']:
-                match_df = match_df.loc[(data_df['order_time']>=request.json['start_order_time']) & (data_df['order_time']<=(request.json['end_order_time'])), :]
+                match_df = match_df.loc[(match_df['order_time']>=request.json['start_order_time']) & (match_df['order_time']<=(request.json['end_order_time'])), :]
         else:
-            match_df = data_df.loc[
-                   ((data_df['parentid'].str.contains(request.json['parent'])) | (data_df['parent_phone'].str.contains(request.json['parent'])))  # 归属上级
-                   & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                   # & ((data_df['publish_time'] >= request.json['start_publish_time']) & (data_df['publish_time'] <= request.json['end_publish_time']))  # 发布时间
-                   # & ((data_df['up_time'] >= request.json['start_up_time']) & (data_df['up_time'] <= request.json['end_up_time']))  # 上架时间
-                   # & ((data_df['sell_time'] >= request.json['start_sell_time']) & (data_df['sell_time'] <= request.json['end_sell_time']))  # 出售时间
+            match_df = data_df.loc[((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
                    & (data_df['status'].str.contains(request.json['status']))  # 支付类型
                    & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
             , :]
-            if match_df.shape[0] == 0:
-                return False, "10010"
+            if request.json['parent']:
+                match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (match_df['parent_phone'] == request.json['parent']), :]  # 归属上级
             if request.json['start_publish_time']:
-                match_df = match_df.loc[(data_df['publish_time'] >= request.json['start_publish_time']) & (data_df['publish_time'] <= request.json['end_publish_time']), :]
+                match_df = match_df.loc[(match_df['publish_time'] >= request.json['start_publish_time']) & (match_df['publish_time'] <= request.json['end_publish_time']), :]
             elif request.json['start_up_time']:
-                match_df = match_df.loc[(data_df['up_time'] >= request.json['start_up_time']) & (data_df['up_time'] <= request.json['end_up_time']), :]
+                match_df = match_df.loc[(match_df['up_time'] >= request.json['start_up_time']) & (match_df['up_time'] <= request.json['end_up_time']), :]
             elif request.json['start_sell_time']:
-                match_df = match_df.loc[(data_df['sell_time'] >= request.json['start_sell_time']) & (data_df['sell_time'] <= request.json['end_sell_time']), :]
-        if match_df.shape[0] > 0:
-            return True, match_df
-        else:
-            return False, "10010"
+                match_df = match_df.loc[(match_df['sell_time'] >= request.json['start_sell_time']) & (match_df['sell_time'] <= request.json['end_sell_time']), :]
+        # if match_df.shape[0] > 0:
+        #     return True, match_df
+        # else:
+        #     return False, "10010"
+        return True, match_df
     except Exception as e:
         logger.error(traceback.format_exc())
         return False, "10011"
@@ -584,16 +577,16 @@ def order_exist_operationcenter(fina_df, child_phone_list, request):
         if not flag:
             return False, match_df
         # 匹配到数据
-        if match_df.shape[0] > 0:
-            match_df['operatename'] = child_phone_list[-1]
-            # 删除多余列
-            match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
-            match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S") # 可优化
-            match_df = map_type(match_df)
-            match_df.fillna("", inplace=True)
-            return True, match_df
-        else:
-            return False, "10010"
+        # if match_df.shape[0] > 0:
+        match_df['operatename'] = child_phone_list[-1]
+        # 删除多余列
+        match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
+        match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S") # 可优化
+        match_df = map_type(match_df)
+        match_df.fillna("", inplace=True)
+        return True, match_df
+        # else:
+        #     return False, "10010"
     except Exception as e:
         logger.error(traceback.format_exc())
         return False, "10011"
@@ -615,21 +608,21 @@ def publish_exist_operationcenter(fina_df, child_phone_list, request):
         if not flag:
             return False, match_df
         # 匹配到数据
-        if match_df.shape[0] > 0:
-            match_df['operatename'] = child_phone_list[-1]
-            # 最终返回结果时处理
-            match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-            match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-            match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-            match_df['sell_time'] = match_df['sell_time'].astype(str)
-            # 删除多余列
-            match_df.drop(['parent_phone'], axis=1, inplace=True)
-            match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
-            match_df = map_type(match_df)
-            match_df.fillna("", inplace=True)
-            return True, match_df
-        else:
-            return False, "10010"
+        # if match_df.shape[0] > 0:
+        match_df['operatename'] = child_phone_list[-1]
+        # 最终返回结果时处理
+        match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        match_df['sell_time'] = match_df['sell_time'].astype(str)
+        # 删除多余列
+        match_df.drop(['parent_phone'], axis=1, inplace=True)
+        match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
+        match_df = map_type(match_df)
+        match_df.fillna("", inplace=True)
+        return True, match_df
+        # else:
+        #     return False, "10010"
     except Exception as e:
         logger.error(traceback.format_exc())
         return False, "10011"
@@ -643,6 +636,8 @@ def match_user_operate(conn_crm, user_df, mode="order"):
     :return:
     '''
     try:
+        if user_df.shape[0] == 0:
+            return True, user_df
         operate_sql = '''
             select a.phone, b.operatename, b.crm from 
             (WITH RECURSIVE temp as (
