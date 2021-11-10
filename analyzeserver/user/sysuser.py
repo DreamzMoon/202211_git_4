@@ -27,7 +27,8 @@ r = get_redis()
 def check_token(token,user_id):
   logger.info(token)
   try:
-    conn = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    # conn = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    conn = direct_get_conn(lianghao_rw_mysql_conf)
     with conn.cursor() as cursor:
       # 校验前端传来的用户id数据库是否存在
       sql = '''select * from lh_analyze.sys_user where id = %s'''
@@ -81,7 +82,8 @@ def register():
     delflag = 0
 
     # 创建数据库连接
-    conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+    # conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+    conn = direct_get_conn(lianghao_rw_mysql_conf)
     logger.info("conn:%s" %conn)
     if not conn:
         return {"code": 10001, "status": "failed", "msg": message["10001"]}
@@ -125,7 +127,8 @@ def login():
       return {"code": "10005", "msg": message["10005"], "status": "failed"}
 
     #创建数据库连接
-    conn = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    # conn = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    conn = direct_get_conn(lianghao_rw_mysql_conf)
     logger.info("conn:%s" % conn)
     if not conn:
         return {"code": 10001, "status": "failed", "msg": message["10001"]}
@@ -160,7 +163,8 @@ def login():
 @sysuserbp.route("logout",methods=["GET"])
 def logout():
     try:
-        conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        # conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn = direct_get_conn(lianghao_rw_mysql_conf)
         if not conn:
             return {"code": 10001, "status": "failed", "msg": message["10001"]}
 
@@ -184,7 +188,8 @@ def logout():
 @sysuserbp.route("check",methods=["GET"])
 def check():
     try:
-        conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        # conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn = direct_get_conn(lianghao_rw_mysql_conf)
         if not conn:
             return {"code": 10001, "status": "failed", "msg": message["10001"]}
 
