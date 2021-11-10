@@ -125,19 +125,19 @@ def ssh_redis():
             (lianghao_ssh_conf["host"], lianghao_ssh_conf["port"]),
             ssh_password=lianghao_ssh_conf["ssh_password"],
             ssh_username=lianghao_ssh_conf["ssh_username"],
-            remote_bind_address=(yun_redis_host, yun_redis_port)
+            remote_bind_address=(redis_host, redis_port)
         )
         server.start()
-        if yun_redis_password:
+        if redis_password:
             rclient = redis.Redis(host="127.0.0.1",
                                   port=server.local_bind_port,
-                                  password=yun_redis_password,
-                                  db=yun_redis_db,
+                                  password=redis_password,
+                                  db=redis_db,
                                   decode_responses=True)
         else:
             rclient = redis.Redis(host="127.0.0.1",
                                   port=server.local_bind_port,
-                                  db=yun_redis_db,
+                                  db=redis_db,
                                   decode_responses=True)
         return rclient
     except:

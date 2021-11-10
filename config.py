@@ -23,6 +23,13 @@ if ENV == "test":
     intergral_category_ids = 56  # 积分活动栏目id
     discount_category_ids = 'xx'  # 优惠资讯栏目id--测试未给栏目
     financil_activity_category_ids = 'xx'  # 理财生活栏目id--测试未给栏目
+
+    # redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+    # redis_port = 6379
+    # redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
+    # redis_db = 71
+
+
 elif ENV == "pro":
     # 资讯正式
     zx_api_url = 'http://xs.lkkjjt.com/open/content/python'  # api_url
@@ -32,75 +39,60 @@ elif ENV == "pro":
     intergral_category_ids = 87  # 积分活动栏目id
     discount_category_ids = 88  # 优惠资讯栏目id--测试未给栏目
     financil_activity_category_ids = 89  # 理财生活栏目id--测试未给栏目
+
+    redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+    redis_port = 6379
+    redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
+    redis_db = 71
+
+    lianghao_ssh_conf = {
+        "host": "47.117.125.39",
+        "ssh_username": "office",
+        "ssh_password": "luke2020",
+        "port": 22
+    }
+
+    # 公共模块
+    lianghao_mysql_conf = {
+        "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
+        "port": 3306,
+        "user": 'lh_read',
+        "password": 'fBaVM4MMS8Myx9g6',
+        "db": 'lh_pretty_client',
+        "charset": "utf8mb4"
+    }
+
+    lianghao_rw_mysql_conf = {
+        "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
+        "port": 3306,
+        "user": 'lh_analyze',
+        "password": 'Z4qEu8FHaphqMd6i',
+        "db": 'lh_analyze',
+        "charset": "utf8mb4"
+    }
+
+    crm_mysql_conf = {
+        "host": "47.97.115.105",
+        "port": 3308,
+        "user": "copy",
+        "password": "459915476",
+        "db": "luke_crm",
+        "charset": "utf8mb4",
+        "cursorclass": pymysql.cursors.DictCursor
+    }
+
 else:
     pass
 
-# 本地的先做测试 目前的redis要配置通道还未封装
-redis_host = "127.0.0.1"
-redis_port = 6379
-redis_password = ""
-# redis_password = "_3:wOk!:)W]sak0EcWYYang"
 
 
-yun_redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
-yun_redis_port = 6379
-yun_redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
-yun_redis_db = 71
 
-lianghao_ssh_conf = {
-    "host":"47.117.125.39",
-    "ssh_username":"office",
-    "ssh_password":"luke2020",
-    "port":22
-}
-
-#公共模块
-lianghao_mysql_conf = {
-  "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
-  "port": 3306,
-  "user": 'lh_read',
-  "password": 'fBaVM4MMS8Myx9g6',
-  "db": 'lh_pretty_client',
-  "charset": "utf8mb4"
-}
-
-lianghao_rw_mysql_conf = {
-  "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
-  "port": 3306,
-  "user": 'lh_analyze',
-  "password": 'Z4qEu8FHaphqMd6i',
-  "db": 'lh_analyze',
-  "charset": "utf8mb4"
-}
-
-expect3_mysql_conf = {
-    "host":"pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com",
-    "port":3306,
-    "user":"expect3",
-    "password":"beXhrrATb1PmJ541",
-    "db":"expect3",
-    "charset": "utf8mb4"
-}
+# redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+# redis_port = 6379
+# redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
+# redis_db = 71
 
 
-qw3_mysql_conf = {
-    "host":"47.98.131.135",
-    "port":43306,
-    "user":"root",
-    "password":"luke@20193306",
-    "db":"expect_dev",
-    "charset": "utf8mb4"
-}
-
-crm_mysql_conf = {
-    "host":"47.97.115.105",
-    "port":3308,
-    "user":"copy",
-    "password":"459915476",
-    "db":"luke_crm",
-    "charset":"utf8mb4",
-    "cursorclass": pymysql.cursors.DictCursor
-}
 
 
 
