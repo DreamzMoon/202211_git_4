@@ -890,7 +890,8 @@ def personal_publish_order_flow():
 @pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
         page = request.json["page"]
@@ -1091,7 +1092,8 @@ def personal_total():
 @pmbp.route("buy/all",methods=["POST"])
 def personal_buy_all():
     try:
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
         page = request.json["page"]
@@ -1280,7 +1282,8 @@ def personal_buy_all():
 def person_buy():
     try:
         logger.info(request.json)
-        conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         phone = request.json["phone"]
 
         # 1 今日 2 本周 3 本月  4 可选择区域
@@ -1516,7 +1519,8 @@ def person_buy():
 @pmbp.route("sell/all", methods=["POST"])
 def personal_sell_all():
     try:
-        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
         page = request.json["page"]
@@ -1700,7 +1704,8 @@ def personal_sell_all():
 def person_sell():
     try:
         logger.info(request.json)
-        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         sell_phone = request.json["sell_phone"]
 
         # 1 今日 2 本周 3 本月  4 可选择区域
