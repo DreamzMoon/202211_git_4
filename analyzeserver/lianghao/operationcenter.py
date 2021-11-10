@@ -74,7 +74,8 @@ def operations_order_count_drop():
         '''
         # 数据库连接
         conn_crm = direct_get_conn(crm_mysql_conf)
-        conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_crm or not conn_lh:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
@@ -197,7 +198,6 @@ def operations_order_count_drop():
             }
             fina_center_data_list.append(notice_data)
             logger.info(notice_data)
-        conn_crm.close()
         start_num = (page-1) * num
         end_num = page * num
         # 如果num超过数据条数
@@ -235,6 +235,12 @@ def operations_order_count_drop():
     except Exception as e:
         logger.error(e)
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_crm.close()
+            conn_lh.close()
+        except:
+            pass
 
 
 

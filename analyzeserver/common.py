@@ -411,16 +411,18 @@ def get_all_user_operationcenter():
         return False, e
 
 # 根据运营中心名字返回下级手机号列表
-def get_operationcenter_child(conn_crm, operateid):
+def get_operationcenter_child(operateid):
     '''
     :param conn_crm: crm数据库连接
     :param operatename: 运营中心名称
     :return: 下级手机号列表
     '''
+    child_conn_crm = direct_get_conn(crm_mysql_conf)
+
     # 查找运营中心手机号
     try:
         search_operate_phone = '''select telephone, operatename from luke_lukebus.operationcenter where id = %s''' % operateid
-        search_operate_result = pd.read_sql(search_operate_phone, conn_crm)
+        search_operate_result = pd.read_sql(search_operate_phone, child_conn_crm)
         logger.info(search_operate_result)
         operate_phone = search_operate_result['telephone'].values[0]
         operatename = search_operate_result['operatename'].values[0]
@@ -437,7 +439,7 @@ def get_operationcenter_child(conn_crm, operateid):
                )a left join luke_lukebus.operationcenter b
                on a.id = b.unionid
                '''
-        crm_cursor = conn_crm.cursor()
+        crm_cursor = child_conn_crm.cursor()
         crm_cursor.execute(supervisor_sql, operate_phone)
         operate_df = pd.DataFrame(crm_cursor.fetchall())
         operate_df.dropna(subset=['phone'], axis=0, inplace=True)
