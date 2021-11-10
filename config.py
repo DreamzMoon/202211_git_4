@@ -25,10 +25,18 @@ if ENV == "test":
     financil_activity_category_ids = 'xx'  # 理财生活栏目id--测试未给栏目
 
     redis_host = "127.0.0.1"
-    redis_port = 16379
+    redis_port = 6379
     redis_password = ""
     redis_db = 0
 
+    analyze_mysql_conf = {
+        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+        "port": 3306,
+        "user": 'lh_analyze',
+        "password": 'Z4qEu8FHaphqMd6i',
+        "db": 'lh_analyze',
+        "charset": "utf8mb4"
+    }
 
 elif ENV == "pro":
     # 资讯正式
@@ -44,6 +52,15 @@ elif ENV == "pro":
     redis_port = 6379
     redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
     redis_db = 71
+
+    analyze_mysql_conf = {
+        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+        "port": 3306,
+        "user": 'lh_analyze',
+        "password": 'Z4qEu8FHaphqMd6i',
+        "db": 'lh_analyze',
+        "charset": "utf8mb4"
+    }
 
 else:
     pass
@@ -73,14 +90,7 @@ lianghao_mysql_conf = {
     "charset": "utf8mb4"
 }
 
-lianghao_rw_mysql_conf = {
-    "host": 'luke-mc.rwlb.rds.aliyuncs.com',
-    "port": 3306,
-    "user": 'lh_analyze',
-    "password": 'Z4qEu8FHaphqMd6i',
-    "db": 'lh_analyze',
-    "charset": "utf8mb4"
-}
+
 
 crm_mysql_conf = {
     "host": "47.97.115.105",

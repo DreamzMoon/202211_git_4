@@ -64,7 +64,7 @@ def lh_user_add():
         logger.info(param)
 
         #准备插入分析库
-        conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_conn(lianghao_ssh_conf,analyze_mysql_conf)
         with conn_rw.cursor() as cursor:
             insert_sql = '''insert into lh_user values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
             cursor.execute(insert_sql,param)
@@ -121,7 +121,7 @@ def crm_user_add():
         logger.info(param)
 
         # 准备插入分析库
-        conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
         with conn_rw.cursor() as cursor:
             insert_sql = '''insert into crm_user values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
             cursor.execute(insert_sql, param)
@@ -192,7 +192,7 @@ def bus_user_add():
         logger.info(bus_user_param)
 
         # 数据同步
-        conn_bus_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn_bus_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
         with conn_bus_rw.cursor() as cursor:
             bus_user_insert_sql = '''insert into bus_user values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
             cursor.execute(bus_user_insert_sql, bus_user_param)
@@ -242,7 +242,7 @@ def bus_operationcenter_add():
                             bus_center_data['crm'], bus_center_data['addtime'], time.strftime("%Y-%m-%d %H:%M:%S")]
 
         # 数据同步
-        conn_bus_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn_bus_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
         with conn_bus_rw.cursor() as cursor:
             bus_center_insert_sql = '''insert into bus_operationcenter values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
             cursor.execute(bus_center_insert_sql, bus_center_param)

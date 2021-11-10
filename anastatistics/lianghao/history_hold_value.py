@@ -338,7 +338,7 @@ try:
     last_datas = ok_datas.drop(ok_datas[ok_datas["unionid"] == ""].index)
 
     # 因为要实时调用 所以要走查询更新 或者查询插入操作
-    conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    conn_rw = ssh_get_conn(lianghao_ssh_conf,analyze_mysql_conf)
     last_datas = last_datas.values.tolist()
     # logger.info(last_datas[0])
     logger.info(len(last_datas))

@@ -53,7 +53,7 @@ try:
     # logger.info(crm_datas.loc[0])
 
     # 准备入库
-    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
     crm_datas.to_sql("crm_user", con=conn_rw, if_exists="append", index=False)
     logger.info("写入成功")
 

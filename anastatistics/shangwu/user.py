@@ -100,7 +100,7 @@ def luke_business():
 
         # 数据写入
         logger.info('写入用户数据')
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
         logger.info(conn_rw)
         df_merged.to_sql("bus_user", con=conn_rw, if_exists="append", index=False)
         logger.info('写入用户数据完成')

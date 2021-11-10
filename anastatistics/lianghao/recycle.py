@@ -47,7 +47,7 @@ try:
         data = ((date.today()+timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S"),0)
 
 
-    conn_rw = ssh_get_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+    conn_rw = ssh_get_conn(lianghao_ssh_conf,analyze_mysql_conf)
     with conn_rw.cursor() as cursor:
         insert_sql = '''insert into lh_recycle (statistic_time,recycle_count) values (%s,%s)'''
         cursor.execute(insert_sql,data)

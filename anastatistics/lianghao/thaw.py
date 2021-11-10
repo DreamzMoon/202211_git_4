@@ -174,7 +174,7 @@ def thaw_count_data(mode='update'):
         logger.info('=' * 30)
         logger.info("准备写入")
         # 通过sqlclchemy创建的连接无需关闭
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
         logger.info(conn_rw)
         count_data.to_sql("lh_thaw_count", con=conn_rw, if_exists="append", index=False)
         logger.info("解冻靓号统计写入成功")

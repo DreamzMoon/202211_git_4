@@ -67,7 +67,7 @@ try:
 
     logger.info(last_datas.loc[0])
     logger.info("准备写写入")
-    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
     last_datas.to_sql("lh_plat_transfer", con=conn_rw, if_exists="append", index=False)
     logger.info("写入成功")
 

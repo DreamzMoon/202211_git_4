@@ -30,7 +30,7 @@ def init_table(table_name):
             logger.info('%s查询成功' % table_name)
         conn_read.close()
 
-        conn_rw = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
         with conn_rw.cursor() as cursor:
             insert_sql = "insert into {}(`statistic_time`, `order_count`, `total_count`, `sell_fee`, `buyer_fee`, `total_price`) values (%s, %s, %s, %s, %s, %s)".format(table_name)
             cursor.executemany(insert_sql, select_data)
@@ -67,7 +67,7 @@ def count_order_data():
         logger.info("准备写入")
 
         # 通过sqlclchemy创建的连接无需关闭
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,lianghao_rw_mysql_conf)
+        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
         logger.info(conn_rw)
         total_data.to_sql("lh_total_price", con=conn_rw,if_exists="append",index=False)
         logger.info("总费用写入成功")
