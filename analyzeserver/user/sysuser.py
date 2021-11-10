@@ -157,7 +157,29 @@ def login():
     finally:
         conn.close()
 
+@sysuserbp.route("logout",methods=["GET"])
+def logout():
+    try:
+        conn = ssh_get_conn(lianghao_ssh_conf, lianghao_rw_mysql_conf)
+        if not conn:
+            return {"code": 10001, "status": "failed", "msg": message["10001"]}
 
+        request_headers = request.headers
+        logger.info(request_headers)
+        token = request_headers["Token"]
+
+
+        user_id = request.args.get("user_id")
+
+        if not user_id:
+          return {"code": "10005", "msg": message["10005"], "status": "failed"}
+
+        r.delete(token)
+        return {"code":"0000","msg":"用户退出成功","status":"success"}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 @sysuserbp.route("check",methods=["GET"])
 def check():
@@ -175,6 +197,8 @@ def check():
 
         if not user_id:
           return {"code": "10005", "msg": message["10005"], "status": "failed"}
+
+
 
         check_token_result = check_token(token,user_id)
         if check_token_result["code"] == "0000":
