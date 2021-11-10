@@ -21,8 +21,8 @@ import base64
 
 sysuserbp = Blueprint('sysuser', __name__, url_prefix='/user')
 
-r = get_redis()
-
+# r = get_redis()
+r=ssh_redis()
 
 def check_token(token,user_id):
   logger.info(token)
