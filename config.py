@@ -54,7 +54,7 @@ elif ENV == "pro":
 
     # 公共模块
     lianghao_mysql_conf = {
-        "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
+        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
         "port": 3306,
         "user": 'lh_read',
         "password": 'fBaVM4MMS8Myx9g6',
@@ -63,7 +63,7 @@ elif ENV == "pro":
     }
 
     lianghao_rw_mysql_conf = {
-        "host": 'pc-uf6p512w5q51z3k72.rwlb.rds.aliyuncs.com',
+        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
         "port": 3306,
         "user": 'lh_analyze',
         "password": 'Z4qEu8FHaphqMd6i',
