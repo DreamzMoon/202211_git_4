@@ -144,6 +144,23 @@ def ssh_redis():
         return None
 
 
+def get_redis():
+    try:
+        if redis_password:
+            rclient = redis.Redis(host=redis_host,
+                                  port=redis_port,
+                                  password=redis_password,
+                                  db=redis_db,
+                                  decode_responses=True)
+        else:
+            rclient = redis.Redis(host=redis_host,
+                                  port=redis_port,
+                                  db=redis_db,
+                                  decode_responses=True)
+        return rclient
+    except:
+        return None
+
 if __name__ == "__main__":
     logger.info("start")
 

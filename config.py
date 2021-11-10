@@ -24,10 +24,10 @@ if ENV == "test":
     discount_category_ids = 'xx'  # 优惠资讯栏目id--测试未给栏目
     financil_activity_category_ids = 'xx'  # 理财生活栏目id--测试未给栏目
 
-    # redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
-    # redis_port = 6379
-    # redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
-    # redis_db = 71
+    redis_host = "127.0.0.1"
+    redis_port = 16379
+    redis_password = ""
+    redis_db = 0
 
 
 elif ENV == "pro":
@@ -45,42 +45,6 @@ elif ENV == "pro":
     redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
     redis_db = 71
 
-    lianghao_ssh_conf = {
-        "host": "47.117.125.39",
-        "ssh_username": "office",
-        "ssh_password": "luke2020",
-        "port": 22
-    }
-
-    # 公共模块
-    lianghao_mysql_conf = {
-        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
-        "port": 3306,
-        "user": 'lh_read',
-        "password": 'fBaVM4MMS8Myx9g6',
-        "db": 'lh_pretty_client',
-        "charset": "utf8mb4"
-    }
-
-    lianghao_rw_mysql_conf = {
-        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
-        "port": 3306,
-        "user": 'lh_analyze',
-        "password": 'Z4qEu8FHaphqMd6i',
-        "db": 'lh_analyze',
-        "charset": "utf8mb4"
-    }
-
-    crm_mysql_conf = {
-        "host": "47.97.115.105",
-        "port": 3308,
-        "user": "copy",
-        "password": "459915476",
-        "db": "luke_crm",
-        "charset": "utf8mb4",
-        "cursorclass": pymysql.cursors.DictCursor
-    }
-
 else:
     pass
 
@@ -92,6 +56,41 @@ else:
 # redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
 # redis_db = 71
 
+lianghao_ssh_conf = {
+    "host": "47.117.125.39",
+    "ssh_username": "office",
+    "ssh_password": "luke2020",
+    "port": 22
+}
+
+# 公共模块
+lianghao_mysql_conf = {
+    "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+    "port": 3306,
+    "user": 'lh_read',
+    "password": 'fBaVM4MMS8Myx9g6',
+    "db": 'lh_pretty_client',
+    "charset": "utf8mb4"
+}
+
+lianghao_rw_mysql_conf = {
+    "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+    "port": 3306,
+    "user": 'lh_analyze',
+    "password": 'Z4qEu8FHaphqMd6i',
+    "db": 'lh_analyze',
+    "charset": "utf8mb4"
+}
+
+crm_mysql_conf = {
+    "host": "47.97.115.105",
+    "port": 3308,
+    "user": "copy",
+    "password": "459915476",
+    "db": "luke_crm",
+    "charset": "utf8mb4",
+    "cursorclass": pymysql.cursors.DictCursor
+}
 
 
 
