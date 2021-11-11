@@ -15,6 +15,7 @@ from config import *
 import traceback
 from util.help_fun import *
 import pandas as pd
+from analyzeserver.user.sysuser import check_token
 
 ocbp = Blueprint('operatecenter', __name__, url_prefix='/operations')
 
@@ -22,6 +23,17 @@ ocbp = Blueprint('operatecenter', __name__, url_prefix='/operations')
 def center_list():
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         with conn_crm.cursor() as cursor:
             sql = '''select id,operatename from luke_lukebus.operationcenter'''
             cursor.execute(sql)

@@ -12,7 +12,7 @@ from config import *
 import traceback
 from util.help_fun import *
 import pandas as pd
-
+from analyzeserver.user.sysuser import check_token
 
 
 opbp = Blueprint('operations', __name__, url_prefix='/lh/operations')
@@ -249,8 +249,19 @@ def operations_order_count():
     try:
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 4:
+        if len(request.json) != 5:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         search_key = request.json['key']
         operateid = request.json['operateid']
         num = str(request.json['num'])

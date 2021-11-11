@@ -25,13 +25,13 @@ if ENV == "test":
     financil_activity_category_ids = 'xx'  # 理财生活栏目id--测试未给栏目
 
     redis_host = "127.0.0.1"
-    redis_port = 6379
+    redis_port = 16379
     redis_password = "analyze.qq123"
     redis_db = 0
 
     analyze_mysql_conf = {
         "host": '127.0.0.1',
-        "port": 3306,
+        "port": 13306,
         "user": 'root',
         "password": 'root',
         "db": 'lh_analyze',
@@ -150,5 +150,9 @@ message = {
     "11017":"时间选择不能超过一年",
     "11018":"时间选择不能超过一个月",
     "11019":"最后采购时间范围不能小于首次采购时间范围",
-    "11020":"开始时间不能大于结束时间"
+    "11020":"开始时间不能大于结束时间",
+    "11022":"用户已注销",
+    "11024":"用户令牌不正确",
+    "11025":"获取数据失败，请稍后重试"
+
 }

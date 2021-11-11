@@ -17,6 +17,7 @@ import datetime
 from datetime import timedelta
 from functools import reduce
 from analyzeserver.common import *
+from analyzeserver.user.sysuser import check_token
 
 pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 
@@ -27,8 +28,19 @@ def personal_publish():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 9:
+            if len(request.json) != 10:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            # token校验
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
 
             # 表单选择operateid
             operateid = request.json['operateid']
@@ -203,8 +215,18 @@ def personal_publish_detail():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 4:
+            if len(request.json) != 5:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
 
             # 手机号
             phone = request.json['phone'].strip()
@@ -556,8 +578,19 @@ def personal_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) !=11:
+            if len(request.json) !=12:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
             # 购买人信息
             buyer_info = request.json['buyer_info'].strip()
             # 表单选择operateid
@@ -716,8 +749,18 @@ def personal_publish_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 13:
+            if len(request.json) != 14:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
 
             # 表单选择operateid
             operateid = request.json['operateid']
@@ -905,10 +948,21 @@ def personal_publish_order_flow():
 @pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
-        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+
         conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         page = request.json["page"]
         size = request.json["size"]
 
@@ -1111,6 +1165,17 @@ def personal_buy_all():
         conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+
         page = request.json["page"]
         size = request.json["size"]
 
@@ -1297,7 +1362,17 @@ def personal_buy_all():
 def person_buy():
     try:
         logger.info(request.json)
-        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         conn_read = direct_get_conn(lianghao_mysql_conf)
         phone = request.json["phone"]
 
@@ -1534,10 +1609,21 @@ def person_buy():
 @pmbp.route("sell/all", methods=["POST"])
 def personal_sell_all():
     try:
-        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+
         conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         page = request.json["page"]
         size = request.json["size"]
 
@@ -1719,8 +1805,18 @@ def personal_sell_all():
 def person_sell():
     try:
         logger.info(request.json)
-        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
         conn_read = direct_get_conn(lianghao_mysql_conf)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
         sell_phone = request.json["sell_phone"]
 
         # 1 今日 2 本周 3 本月  4 可选择区域

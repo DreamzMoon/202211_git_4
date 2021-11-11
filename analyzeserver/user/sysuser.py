@@ -36,11 +36,11 @@ def check_token(token,user_id):
       data = cursor.fetchone()
       logger.info(data)
       if not data:
-        return {"code": "10003", "msg": message["10003"], "status": "failed"}
+        return {"code": "11021", "msg": message["11021"], "status": "failed"}
 
       if int(data[6]) == 1:
         r.delete(token)
-        return {"code":"10021","msg":message["10021"], "status": "failed"}
+        return {"code":"11022","msg":message["11022"], "status": "failed"}
 
       if not token:
         return {"code": "10020", "msg": message["10020"], "status": "failed"}
@@ -52,7 +52,7 @@ def check_token(token,user_id):
 
       redis_user_id = json.loads(token_result)["user_id"]
       if str(user_id) != str(redis_user_id):
-        return {"code": "11013", "msg": message["11013"], "status": "failed"}
+        return {"code": "11024", "msg": message["11024"], "status": "failed"}
 
       logger.info("用户令牌正确")
       return {"code":"0000","msg":"用户令牌正常","status":"success"}
