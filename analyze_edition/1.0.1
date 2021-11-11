@@ -1,0 +1,12 @@
+CREATE TABLE `sys_user` (
+  `id` bigint(10) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) DEFAULT NULL COMMENT '用户名',
+  `phone` varchar(11) DEFAULT NULL COMMENT '手机号码',
+  `password` varchar(50) DEFAULT NULL COMMENT '密码8-20位',
+  `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
+  `uptime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delflag` tinyint(1) DEFAULT '0' COMMENT '1:删除 0:未删除',
+  `is_use` int(1) DEFAULT '0' COMMENT '注册平台之后 是否可用 1 可用 0不可用',
+  `is_control_user` int(1) DEFAULT '0' COMMENT '管理用户的权限 1可用 0不可用',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
