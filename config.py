@@ -26,14 +26,14 @@ if ENV == "test":
 
     redis_host = "127.0.0.1"
     redis_port = 6379
-    redis_password = ""
+    redis_password = "analyze.qq123"
     redis_db = 0
 
     analyze_mysql_conf = {
-        "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+        "host": '127.0.0.1',
         "port": 3306,
-        "user": 'lh_analyze',
-        "password": 'Z4qEu8FHaphqMd6i',
+        "user": 'root',
+        "password": 'root',
         "db": 'lh_analyze',
         "charset": "utf8mb4"
     }
