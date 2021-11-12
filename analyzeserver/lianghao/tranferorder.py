@@ -727,7 +727,7 @@ def transfer_public_order():
             logger.info(today)
             last_data = {"circle":circle,"today":today}
             return {"code":"0000","status":"successs","msg":last_data}
-        elif time_type == 2:
+        elif time_type == 2 or time_type == 3:
             circle_sql = ""
             if time_type == 2:
                 query_range = ["-0", "-6", "-7", "-13"]
