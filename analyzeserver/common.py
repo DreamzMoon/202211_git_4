@@ -774,6 +774,7 @@ def user_belong_bus(need_data):
     '''
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
+        cursor_crm = conn_crm.cursor()
         crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
@@ -783,24 +784,28 @@ def user_belong_bus(need_data):
         # logger.info(len(phone_list))
 
 
+
         # 查运营中心
         all_operate = []
         for pl in phone_list:
             # logger.info("phone:%s" % pl)
             pl_op_dict = {}
+            # 查询可以用sql查 处理用pandas
             operate_sql = '''
-                    select a.*,b.operatename,b.crm from 
-                    (WITH RECURSIVE temp as (
-                            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
-                            UNION ALL
-                            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-                    )
-                    SELECT * FROM temp 
-                    )a left join luke_lukebus.operationcenter b
-                    on a.id = b.unionid
-                    ''' % pl
-            operate_data = pd.read_sql(operate_sql, conn_crm)
+                                        select a.*,b.operatename,b.crm from 
+                                        (WITH RECURSIVE temp as (
+                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                                                UNION ALL
+                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                                        )
+                                        SELECT * FROM temp 
+                                        )a left join luke_lukebus.operationcenter b
+                                        on a.id = b.unionid
+                                        '''
 
+            # operate_data = pd.read_sql(operate_sql, conn_crm)
+            cursor_crm.execute(operate_sql,pl)
+            operate_data = pd.DataFrame(cursor_crm.fetchall())
 
             # logger.info(operate_data)
             # logger.info("----------------")
