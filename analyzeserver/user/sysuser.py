@@ -134,7 +134,7 @@ def login():
         return {"code": 10001, "status": "failed", "msg": message["10001"]}
     try:
         with conn.cursor() as cursor:
-            sql = '''select * from lh_analyze.sys_user where username = %s and del_flag = 0'''
+            sql = '''select * from lh_analyze.sys_user where username = %s and delflag = 0'''
             cursor.execute(sql, (username))
             data = cursor.fetchone()
             logger.info(data)
