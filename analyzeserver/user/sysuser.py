@@ -134,7 +134,7 @@ def login():
         return {"code": 10001, "status": "failed", "msg": message["10001"]}
     try:
         with conn.cursor() as cursor:
-            sql = '''select * from lh_analyze.sys_user where username = %s'''
+            sql = '''select * from lh_analyze.sys_user where username = %s and del_flag = 0'''
             cursor.execute(sql, (username))
             data = cursor.fetchone()
             logger.info(data)
@@ -149,9 +149,9 @@ def login():
                     logger.info("return_data:%s" %return_data)
                     return {"code": "0000", "status": "success", "msg": return_data}
                 else:
-                    return {"code": "10004", "status": "failed", "msg": message["10004"]}
+                    return {"code": "11027", "status": "failed", "msg": message["11027"]}
             else:
-                return {"code": "10003", "status": "failed", "msg": message["10003"]}
+                return {"code": "11026", "status": "failed", "msg": message["11026"]}
     except Exception as e:
         logger.exception(traceback.format_exc())
         logger.exception(e)
@@ -213,3 +213,4 @@ def check():
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
