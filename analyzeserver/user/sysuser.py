@@ -36,7 +36,7 @@ def check_token(token,user_id):
       data = cursor.fetchone()
       logger.info(data)
       if not data:
-        return {"code": "11021", "msg": message["11021"], "status": "failed"}
+        return {"code": "11026", "msg": message["11026"], "status": "failed"}
 
       if int(data[6]) == 1:
         r.delete(token)
@@ -171,7 +171,6 @@ def logout():
         request_headers = request.headers
         logger.info(request_headers)
         token = request_headers["Token"]
-
 
         user_id = request.args.get("user_id")
 
