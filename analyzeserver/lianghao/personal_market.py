@@ -1361,6 +1361,7 @@ def personal_buy_all():
 @pmbp.route("buy",methods=["POST"])
 def person_buy():
     try:
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         logger.info(request.json)
 
         token = request.headers["Token"]
@@ -1373,7 +1374,7 @@ def person_buy():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        conn_read = direct_get_conn(lianghao_mysql_conf)
+
         phone = request.json["phone"]
 
         # 1 今日 2 本周 3 本月  4 可选择区域
