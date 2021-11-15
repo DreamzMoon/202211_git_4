@@ -320,12 +320,11 @@ def operations_order_count():
         start_num = 0
         end_num = len(result[1])
     return_data = {
-        'count': len(result[1]),
         'title_data': result[2],
         'data': result[1][start_num:end_num]
     }
     end_time = time.time()
     logger.info(end_time - start_time)
-    return {"code": "0000", "status": "success", "msg": return_data}
+    return {"code": "0000", "status": "success", "msg": return_data,'count': len(result[1])}
 
 

@@ -676,10 +676,10 @@ def personal_order_flow():
                 start_index = 0
                 end_index = len(match_dict_list)
             return_data = {
-                "count": match_df.shape[0],
+
                 "data": match_dict_list[start_index: end_index]
             }
-            return {"code": "0000", "status": "success", "msg": return_data}
+            return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
@@ -705,10 +705,9 @@ def personal_order_flow():
                 match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
-                    "count": fina_df.shape[0],
                     "data": match_dict_list
                 }
-                return {"code": "0000", "status": "success", "msg": return_data}
+                return {"code": "0000", "status": "success", "msg": return_data,"count": fina_df.shape[0]}
 
             else:
                 flag_5, match_df = match_attribute(fina_df, request)
@@ -729,10 +728,9 @@ def personal_order_flow():
                 match_df_1['order_time'] = match_df_1['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
                 match_dict_list = match_df_1.to_dict('records')
                 return_data = {
-                    "count": match_df.shape[0],
                     "data": match_dict_list
                 }
-                return {"code": "0000", "status": "success", "msg": return_data}
+                return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
@@ -864,11 +862,11 @@ def personal_publish_order_flow():
                 start_index = 0
                 end_index = len(match_df)
             return_data = {
-                "count": match_df.shape[0],
+
 
                 "data": match_dict_list[start_index: end_index]
             }
-            return {"code": "0000", "status": "success", "msg": return_data}
+            return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
         # 如果不存在运营中心参数
         else:
             # 判断是否为无参
@@ -900,10 +898,10 @@ def personal_publish_order_flow():
                 match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
-                    "count": fina_df.shape[0],
+
                     "data": match_dict_list
                 }
-                return {"code": "0000", "status": "success", "msg": return_data}
+                return {"code": "0000", "status": "success", "msg": return_data,"count": fina_df.shape[0]}
 
             else:
                 flag_5, match_df = match_attribute(fina_df, request, mode="publish")
@@ -932,10 +930,10 @@ def personal_publish_order_flow():
                 match_dict_list = match_df_1.to_dict('records')
                 logger.info(match_dict_list)
                 return_data = {
-                    "count": match_df.shape[0],
+
                     "data": match_dict_list
                 }
-                return {"code": "0000", "status": "success", "msg": return_data}
+                return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
