@@ -461,8 +461,8 @@ def transfer_sell_order():
             circle_data = cursor.fetchall()
             logger.info(circle_data)
             circle = {
-                "today":circle_data[0][0],"today_buy_total_price":circle_data[0][1],"today_buy_order_count":circle_data[0][2],
-                "yesterday":circle_data[1][0],"yes_buy_total_price":circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
+                "today":circle_data[0][0],"today_sell_total_price":circle_data[0][1],"today_sell_order_count":circle_data[0][2],
+                "yesterday":circle_data[1][0],"yes_sell_total_price":circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
             }
 
             today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
@@ -481,9 +481,9 @@ def transfer_sell_order():
             for td in reversed(today_data):
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
-                td_dict["buy_order_count"] = int(td[1])
-                td_dict["buy_total_count"] = float(td[2])
-                td_dict["buy_total_price"] = float(td[3])
+                td_dict["sell_order_count"] = int(td[1])
+                td_dict["sell_total_count"] = float(td[2])
+                td_dict["sell_total_price"] = float(td[3])
                 today.append(td_dict)
             logger.info(today)
             last_data = {"circle":circle,"today":today}
@@ -511,8 +511,8 @@ def transfer_sell_order():
             circle_data = cursor.fetchall()
             logger.info(circle_data)
             circle = {
-                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],"today_buy_order_count":circle_data[0][2],
-                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
+                "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],"today_sell_order_count":circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
             }
 
             week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
@@ -532,9 +532,9 @@ def transfer_sell_order():
             for td in reversed(today_data):
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
-                td_dict["buy_order_count"] = int(td[1])
-                td_dict["buy_total_count"] = float(td[2])
-                td_dict["buy_total_price"] = float(td[3])
+                td_dict["sell_order_count"] = int(td[1])
+                td_dict["sell_total_count"] = float(td[2])
+                td_dict["sell_total_price"] = float(td[3])
                 today.append(td_dict)
             logger.info(today)
             last_data = {"circle": circle, "today": today}
@@ -566,10 +566,10 @@ def transfer_sell_order():
             logger.info(circle_data)
 
             circle = {
-                "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
-                "today_buy_order_count": circle_data[0][2],
-                "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
-                "yes_buy_order_count": circle_data[1][2]
+                "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
+                "today_sell_order_count": circle_data[0][2],
+                "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
+                "yes_sell_order_count": circle_data[1][2]
             }
 
             sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
@@ -588,9 +588,9 @@ def transfer_sell_order():
                 logger.info(td)
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
-                td_dict["buy_order_count"] = int(td[1])
-                td_dict["buy_total_count"] = float(td[2])
-                td_dict["buy_total_price"] = float(td[3])
+                td_dict["sell_order_count"] = int(td[1])
+                td_dict["sell_total_count"] = float(td[2])
+                td_dict["sell_total_price"] = float(td[3])
                 datas.append(td_dict)
             logger.info(datas)
             last_data = {"circle": circle, "today": datas}
