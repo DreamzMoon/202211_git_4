@@ -1033,7 +1033,7 @@ def personal_total():
             query_phone = ""
 
         if page and size:
-            code_page = (page - 1) * 10
+            code_page = (page - 1) * size
             code_size = page * size
 
 
@@ -1265,7 +1265,7 @@ def personal_buy_all():
             query_phone = ""
 
         if page and size:
-            code_page = (page - 1) * 10
+            code_page = (page - 1) * size
             code_size = page * size
 
         buy_sql = '''select phone,total_price,create_time from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
@@ -1710,7 +1710,7 @@ def personal_sell_all():
             query_phone = ""
 
         if page and size:
-            code_page = (page - 1) * 10
+            code_page = (page - 1) * size
             code_size = page * size
 
         buy_sql = '''select sell_phone phone,total_price,create_time from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
