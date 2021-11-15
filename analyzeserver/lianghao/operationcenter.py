@@ -264,8 +264,9 @@ def operations_order_count():
 
         search_key = request.json['key']
         operateid = request.json['operateid']
-        num = str(request.json['num'])
+        size = str(request.json['size'])
         page = str(request.json['page'])
+        num = size
         if num and page:
             # isdigit()可以判断是否为正整数
             if not num.isdigit() or int(num) < 1:

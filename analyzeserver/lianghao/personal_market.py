@@ -610,9 +610,10 @@ def personal_order_flow():
             transfer_id = request.json['transfer_id']
 
             # 每页显示条数
-            num = request.json['num']
+            size = request.json['size']
             # 页码
             page = request.json['page']
+            num = size
             if start_order_time or end_order_time:
                 order_time_result = judge_start_and_end_time(start_order_time, end_order_time)
                 if not order_time_result[0]:
@@ -783,10 +784,11 @@ def personal_publish_order_flow():
             transfer_id = str(request.json['transfer_id'])
 
             # 每页显示条数
-            num = request.json['num']
+            size = request.json['size']
             # 页码
             page = request.json['page']
 
+            num = size
             # 时间判断
             if start_publish_time or end_publish_time:
                 order_time_result = judge_start_and_end_time(start_publish_time, end_publish_time)
