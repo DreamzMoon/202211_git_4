@@ -831,7 +831,7 @@ def transfer_public_order():
                 "yes_publish_sell_count": circle_data[1][2]}
 
             # 自定义
-            sql = '''select DATE_FORMAT(up_time, '%%Y%%m%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' %(end_time,start_time)
+            sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' %(end_time,start_time)
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
             if args_phone_lists:
                 condition_sql = ''' and phone not in (%s)''' %(args_phone_lists)
