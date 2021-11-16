@@ -66,6 +66,17 @@ else:
     pass
 
 
+analyze_pro = {
+    "host": 'luke-mc.rwlb.rds.aliyuncs.com',
+    "port": 3306,
+    "user": 'lh_analyze',
+    "password": 'Z4qEu8FHaphqMd6i',
+    "db": 'lh_analyze',
+    "charset": "utf8mb4"
+}
+
+
+
 
 
 # redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"

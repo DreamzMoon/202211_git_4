@@ -72,9 +72,10 @@ try:
 
     # 通过sqlclchemy创建的连接无需关闭
     logger.info("准备写入的数据")
-    # logger.info(last_datas)
+    logger.info(last_datas)
     logger.info(last_datas.loc[0])
-    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    conn_rw = sqlalchemy_conn(analyze_pro)
     last_datas.to_sql("lh_history_pur", con=conn_rw, if_exists="append", index=False)
     logger.info("写入成功")
 except:

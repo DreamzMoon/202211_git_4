@@ -27,7 +27,8 @@ import traceback
 
 try:
 
-    conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+    # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+    conn_read = direct_get_conn(lianghao_mysql_conf)
 
     # 第一次需要查询全部的数据
     # 统计sql  出售订单 出售靓号数量 出售订单金额 出售实收  按订单来说 采购和出售是一样的 所以采购值直接按照出售来走
@@ -67,7 +68,8 @@ try:
 
     logger.info(last_datas.loc[0])
     logger.info("准备写写入")
-    conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    conn_rw = sqlalchemy_conn(analyze_pro)
     last_datas.to_sql("lh_plat_transfer", con=conn_rw, if_exists="append", index=False)
     logger.info("写入成功")
 

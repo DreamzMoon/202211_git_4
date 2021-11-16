@@ -14,7 +14,8 @@ from util.help_fun import *
 
 def clear():
     # 清除数据
-    conn_lh_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    # conn_lh_rw = ssh_get_conn(lianghao_ssh_conf, analyze_mysql_conf)
+    conn_lh_rw = direct_get_conn(analyze_pro)
     with conn_lh_rw.cursor() as cursor:
         clear_sql = "delete from lh_repeat_order_count"
         cursor.execute(clear_sql)
@@ -25,7 +26,8 @@ def clear():
 def init_table():
     try:
         # 重复订单查询
-        conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_lh_read = direct_get_conn(lianghao_mysql_conf)
         repeat_order_sql = '''
             select
                 user_id, date_format(create_time, '%Y-%m-%d') create_order_time, phone, count(*) repeat_count, sum(total_price) total_price, sum(count) total_count
@@ -81,7 +83,8 @@ def init_table():
 def repeat_order_data(mode='update'):
     try:
         # 重复订单查询
-        conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_lh_read = direct_get_conn(lianghao_mysql_conf)
         if mode == 'init':
             logger.info('进行表数据初始化')
             repeat_order_sql = '''
@@ -146,7 +149,8 @@ def repeat_order_data(mode='update'):
 
         logger.info("准备写入")
         # 通过sqlclchemy创建的连接无需关闭
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        conn_rw = sqlalchemy_conn(analyze_pro)
         logger.info(conn_rw)
         fina_data.to_sql("lh_repeat_order_count", con=conn_rw, if_exists="append", index=False)
         logger.info("重复订单数统计写入成功")

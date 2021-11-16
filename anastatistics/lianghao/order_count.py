@@ -46,7 +46,8 @@ def init_table(table_name):
 def count_order_data():
     try:
         # 执行查询总费用的统计
-        conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_read = direct_get_conn(lianghao_mysql_conf)
         total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
         logger.info("总费用查询完成")
         official_total_data = pd.read_sql("select date_format(create_time, '%Y-%m-%d') statistic_time, count(*) order_count, sum(count) total_count, sum(sell_fee) sell_fee, sum(fee) buyer_fee, sum(total_price) total_price from lh_order where `status` = 1 and del_flag = 0 and type = 0 and date_format(create_time, '%Y-%m-%d') = date_sub(curdate(), interval 1 day)", conn_read)
@@ -67,7 +68,8 @@ def count_order_data():
         logger.info("准备写入")
 
         # 通过sqlclchemy创建的连接无需关闭
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        conn_rw = sqlalchemy_conn(analyze_pro)
         logger.info(conn_rw)
         total_data.to_sql("lh_total_price", con=conn_rw,if_exists="append",index=False)
         logger.info("总费用写入成功")

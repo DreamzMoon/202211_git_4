@@ -21,7 +21,8 @@ import traceback
 
 try:
     data = {}
-    conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+    # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
+    conn_read = direct_get_conn(lianghao_mysql_conf)
     with conn_read.cursor() as cursor:
         sql = '''
         select DATE_FORMAT(create_time,"%Y%m%d") statistic_time,count(*) recycle_count from (
@@ -46,8 +47,8 @@ try:
     if not data:
         data = ((date.today()+timedelta(days=-1)).strftime("%Y-%m-%d %H:%M:%S"),0)
 
-
-    conn_rw = ssh_get_conn(lianghao_ssh_conf,analyze_mysql_conf)
+    conn_rw = direct_get_conn(analyze_pro)
+    # conn_rw = ssh_get_conn(lianghao_ssh_conf,analyze_mysql_conf)
     with conn_rw.cursor() as cursor:
         insert_sql = '''insert into lh_recycle (statistic_time,recycle_count) values (%s,%s)'''
         cursor.execute(insert_sql,data)

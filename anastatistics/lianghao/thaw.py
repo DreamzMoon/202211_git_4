@@ -17,7 +17,8 @@ from util.help_fun import *
 def thaw_count_data(mode='update'):
     try:
         # 重复订单查询
-        conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        # conn_lh_read = ssh_get_conn(lianghao_ssh_conf, lianghao_mysql_conf)
+        conn_lh_read = direct_get_conn(lianghao_mysql_conf)
         if mode == 'init':
             logger.info('进行表数据初始化')
             thaw_count_sql = '''
@@ -174,7 +175,8 @@ def thaw_count_data(mode='update'):
         logger.info('=' * 30)
         logger.info("准备写入")
         # 通过sqlclchemy创建的连接无需关闭
-        conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        # conn_rw = ssh_get_sqlalchemy_conn(lianghao_ssh_conf,analyze_mysql_conf)
+        conn_rw = sqlalchemy_conn(analyze_pro)
         logger.info(conn_rw)
         count_data.to_sql("lh_thaw_count", con=conn_rw, if_exists="append", index=False)
         logger.info("解冻靓号统计写入成功")
