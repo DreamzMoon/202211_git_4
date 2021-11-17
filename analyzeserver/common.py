@@ -16,7 +16,7 @@ from util.help_fun import *
 import time
 import datetime
 
-#通过禄可运营中心查询对应的手机号码
+#通过禄可运营中心查询对应的手机号码 算钱的 包含运营中心底下的人 包含云心中心
 def get_lukebus_phone(bus_lists):
     '''
     :param bus_lists: 传入运营中心的列表
@@ -98,7 +98,7 @@ def get_lukebus_phone(bus_lists):
 
 
 
-#通过禄可运营中心id查询对应的手机号码
+#通过禄可运营中心id查询对应的手机号码 不包含运营中心
 def get_busphne_by_id(bus_id):
     '''
     :param bus_lists: 传入运营中心的列表
@@ -164,9 +164,8 @@ def get_busphne_by_id(bus_id):
                 filter_data = crm_cursor.fetchall()
                 for k in range(0, len(filter_data)):
                     filter_phone_lists.append(filter_data[k]["phone"])
-
-        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists))
-        logger.info(len(phone_lists))
+        # 不包含底下直属运营中心
+        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists)-set(other_operatecenter_phone_list))
         args_phone_lists = ",".join(phone_lists)
         if args_phone_lists:
             return 1,args_phone_lists
@@ -953,6 +952,11 @@ if __name__ == "__main__":
     # logger.info(result)
 
     result = get_busphne_by_id(4)
-    logger.info(result)
+    logger.info(len(result[1].split(",")))
+    # time.sleep(2)
+
+    res = get_operationcenter_child(4)
+    logger.info(len(res[1]))
+    # time.sleep(2)
 
     # logger.info(one_belong_bus("13559436425"))
