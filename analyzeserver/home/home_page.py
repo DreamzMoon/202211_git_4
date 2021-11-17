@@ -159,10 +159,54 @@ def today_data():
                 return {"code": "10015", "status": "failed", "msg": message["10015"]}
             request.json['start_time'] = judge_result[0]
             request.json['end_time'] = judge_result[1]
-
+        # return '11111'
     except Exception as e:
         # 参数名错误
         logger.error(e)
         return {"code": "10009", "status": "failed", "msg": message["10009"]}
+    # 今日
+    if time_type == 1:
+        today_sql = '''
+            select date_format(create_time,"%%H:00") today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+            from lh_order
+            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and date_format(create_time,"%%Y-%%m-%%d") = curdate()
+            group by today_time
+            order by today_time desc
+        '''
+        yesterday_sql = '''
+            select date_format(create_time,"%%H:00") today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+            from lh_order
+            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and date_format(create_time,"%%Y-%%m-%%d") = date_sub(curdate(), interval 1 day)
+            group by today_time
+            order by today_time desc
+        '''
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+        cursor = conn_lh.cursor()
 
-    pass
+        cursor.execute(today_sql)
+        today_df = pd.DataFrame(cursor.fetchall())
+
+        cursor.execute(yesterday_sql)
+        yesterday_df = pd.DataFrame(cursor.fetchall())
+
+        # 环比
+        # 今日交易金额
+        today_price = today_df['total_price'].sum()
+        # 今日交易订单数
+        today_order_count = today_df['order_count'].sum()
+        # 今日交易人数
+        today_order_person = today_df['order_person'].sum()
+
+        # 昨日交易金额
+        yesterday_price = yesterday_df['total_price'].sum()
+        # 昨日交易订单数
+        yesterday_order_count = yesterday_df['order_count'].sum()
+        # 昨日交易人数
+        yesterday_order_person = yesterday_df['order_person'].sum()
+
+
+
+
+    # pass
