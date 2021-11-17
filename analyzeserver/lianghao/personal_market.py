@@ -296,7 +296,7 @@ def personal_publish_detail():
         # user_base_info = {}
         user_base_info_df.fillna("", inplace=True)
         user_base_info = user_base_info_df.to_dict('records')[0]
-        logger.info(user_base_info)
+        fina_data['user_base_info'] = user_base_info
 
         publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
