@@ -56,7 +56,8 @@ def personal_publish():
             end_near_time = request.json['end_near_time']
 
             page = request.json['page']
-            num = request.json['num']
+            size = request.json['size']
+            num = size
 
             # 时间判断
             if start_first_time or end_first_time:
@@ -194,10 +195,9 @@ def personal_publish():
         match_df.fillna("", inplace=True)
         match_dict_list = match_df.loc[start_index: end_index - 1, :].to_dict('records')
         return_data = {
-            'count': count_len,
             'data': match_dict_list
         }
-        return {"code": "0000", "status": "success", "msg": return_data}
+        return {"code": "0000", "status": "success", "msg": return_data, "count": count_len}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "success", "msg": message["10000"]}
@@ -862,8 +862,6 @@ def personal_publish_order_flow():
                 start_index = 0
                 end_index = len(match_df)
             return_data = {
-
-
                 "data": match_dict_list[start_index: end_index]
             }
             return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
@@ -898,7 +896,6 @@ def personal_publish_order_flow():
                 match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
                 match_dict_list = match_df.to_dict('records')
                 return_data = {
-
                     "data": match_dict_list
                 }
                 return {"code": "0000", "status": "success", "msg": return_data,"count": fina_df.shape[0]}
@@ -930,7 +927,6 @@ def personal_publish_order_flow():
                 match_dict_list = match_df_1.to_dict('records')
                 logger.info(match_dict_list)
                 return_data = {
-
                     "data": match_dict_list
                 }
                 return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
