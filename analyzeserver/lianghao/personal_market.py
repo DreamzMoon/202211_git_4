@@ -986,7 +986,7 @@ def personal_total():
         # 字符串拼接的手机号码
         query_phone = ""
         keyword_phone = []
-        parent_phone = []
+        parent_id = []
         bus_phone = []
 
         # 模糊查询
@@ -999,22 +999,29 @@ def personal_total():
                 return {"code":"11016","status":"failed","msg":message["11016"]}
 
         # 只查一个
+        # if parent:
+        #     if len(parent) == 11:
+        #         parent_phone.append(parent)
+        #     else:
+        #         result = get_phone_by_unionid(parent)
+        #         if result[0] == 1:
+        #             parent_phone.append(result[1])
+        #         else:
+        #             return {"code":"11014","status":"failed","msg":message["code"]}
+
         if parent:
             if len(parent) == 11:
-                parent_phone.append(parent)
+                result = get_parent_by_phone(parent)
+                if result[0] == 1:
+                    parent_id.append(result[1])
+                else:
+                    return {"code": "11014", "status": "failed", "msg": message["code"]}
             else:
                 result = get_phone_by_unionid(parent)
                 if result[0] == 1:
                     parent_phone.append(result[1])
                 else:
                     return {"code":"11014","status":"failed","msg":message["code"]}
-        # 查禄可商务的
-        # if bus:
-        #     result = get_lukebus_phone([bus])
-        #     if result[0] == 1:
-        #         bus_phone = result[1].split(",")
-        #     else:
-        #         return {"code":"11015","status":"failed","msg":message["11015"]}
 
         if bus_id:
             result = get_busphne_by_id(bus_id)
@@ -1023,19 +1030,29 @@ def personal_total():
             else:
                 return {"code":"11015","status":"failed","msg":message["11015"]}
 
+        # # 对手机号码差交集
+        # if keyword_phone and parent_phone and bus_phone:
+        #     query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
+        # elif keyword_phone and parent_phone:
+        #     query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
+        # elif keyword_phone and bus_phone:
+        #     query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+        # elif parent_phone and bus_phone:
+        #     query_phone = list(set(parent_phone).intersection(set(bus_phone)))
+        # elif keyword_phone:
+        #     query_phone = keyword_phone
+        # elif parent_phone:
+        #     query_phone = parent_phone
+        # elif bus_phone:
+        #     query_phone = bus_phone
+        # else:
+        #     query_phone = ""
+
         # 对手机号码差交集
-        if keyword_phone and parent_phone and bus_phone:
-            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
-        elif keyword_phone and parent_phone:
-            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
-        elif keyword_phone and bus_phone:
+        if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
-        elif parent_phone and bus_phone:
-            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
         elif keyword_phone:
             query_phone = keyword_phone
-        elif parent_phone:
-            query_phone = parent_phone
         elif bus_phone:
             query_phone = bus_phone
         else:
@@ -1132,8 +1149,7 @@ def personal_total():
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
 
-        # logger.info("code_page:%s" %code_page)
-        # logger.info("code_size:%s" %code_size)
+
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:

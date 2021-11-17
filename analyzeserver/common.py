@@ -781,13 +781,10 @@ def user_belong_bus(need_data):
         logger.info(user_data)
         phone_list = user_data.to_dict('list')['phone']
         # logger.info(len(phone_list))
-
-
-
         # 查运营中心
         all_operate = []
         for pl in phone_list:
-            # logger.info("phone:%s" % pl)
+            logger.info("phone:%s" % pl)
             pl_op_dict = {}
             # 查询可以用sql查 处理用pandas
             operate_sql = '''
@@ -804,10 +801,14 @@ def user_belong_bus(need_data):
 
             # operate_data = pd.read_sql(operate_sql, conn_crm)
             cursor_crm.execute(operate_sql,pl)
-            operate_data = pd.DataFrame(cursor_crm.fetchall())
+            sql_data = cursor_crm.fetchall()
+            if not sql_data:
+                continue
+            operate_data = pd.DataFrame(sql_data)
 
             # logger.info(operate_data)
             # logger.info("----------------")
+
             current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
             # logger.info(current_operate_data)
             # logger.info("--------------------")
@@ -825,9 +826,11 @@ def user_belong_bus(need_data):
         all_operate = pd.DataFrame(all_operate)
 
         user_data = user_data.merge(all_operate, how="left", on="phone")
+        # logger.info(user_data.info())
         last_data = user_data.to_dict("records")
         return 1, last_data
     except Exception as e:
+        logger.exception(traceback.format_exc())
         return 0,e
     finally:
         conn_crm.close()
@@ -942,6 +945,25 @@ def get_phone_by_unionid(unionid):
     finally:
         conn_crm.close()
 
+def get_parent_by_phone(phone):
+    '''
+    :param keyword:根据关键词找手机号
+    :return:
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        with conn_crm.cursor() as cursor:
+            sql = '''select * from luke_sincerechat.user where phone = %s'''
+            cursor.execute(sql,(phone))
+            data = cursor.fetchone()
+            if data:
+                return 1,data["id"]
+            else:
+                return 0,"暂无该用户"
+    except Exception as e:
+        return 0,e
+    finally:
+        conn_crm.close()
 
 
 

@@ -106,13 +106,19 @@ def deal_bus():
         return_lists = []
         for ol in operate_list:
             ol_dict = {}
-            sql = '''select sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and phone in (%s)''' %(ol["phone_list"])
+            sql = '''select sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and phone in (%s) and date_format(create_time,"%%Y%%m%%d") = CURRENT_DATE()''' %(ol["phone_list"])
+            logger.info(sql)
             cursor_lh.execute(sql)
             ol_dict["operatename"] = ol["operatename"]
             ol_dict["total_money"]=cursor_lh.fetchone()[0]
             return_lists.append(ol_dict)
         logger.info(return_lists)
-        return "1"
+        return_lists = pd.DataFrame(return_lists)
+        return_lists.sort_values(by="total_money",ascending=False,inplace=True)
+        logger.info(return_lists.iloc[0:3])
+        return_lists.iloc[0:3].to_dict("records")
+        return {"code":"0000","status":"success","msg":return_lists.iloc[0:3].to_dict("records")}
+
 
     except Exception as e:
         logger.exception(traceback.format_exc())
@@ -121,6 +127,70 @@ def deal_bus():
         conn_crm.close()
         conn_lh.close()
 
+
+# 交易中心
+@homebp.route("datacenter",methods=["GET"])
+def data_center():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        # cursor = conn_lh.cursor()
+        sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
+        data = (pd.read_sql(sql,conn_lh)).to_dict("records")
+        return {"code":"0000","status":"success","msg":data}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
+
+# 今日名片网火爆类型交易排行版
+@homebp.route("deal/top",methods=["GET"])
+def deal_top():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+        sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
+        select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
+        left join lh_sell s on o.sell_id = s.id
+        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE 
+        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1 
+        order by o.create_time desc) t group by pretty_type_name'''
+        data = (pd.read_sql(sql, conn_lh)).to_dict("records")
+        return {"code": "0000", "status": "success", "msg": data}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
 
 @homebp.route("/today/data", methods=["POST"])
 def today_data():
