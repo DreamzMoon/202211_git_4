@@ -235,6 +235,8 @@ def personal_publish_detail():
 
             # 手机号
             phone = request.json['phone'].strip()
+            if not phone:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
             # 1今日 2本周 3本月 4自定义-->必须传起始和结束时间
             time_type = request.json['time_type']
             # 首次发布时间
@@ -446,7 +448,7 @@ def personal_publish_detail():
             time_data_df = user_publish_df.loc[user_publish_df['create_time'].dt.date == to_day, :]
             # 如果匹配到数据大于0，再进行统计
             if time_data_df.shape[0] > 0:
-                time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
+                time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d %H')
                 time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
                 time_info['publish_count'] = int(time_data_df['sell_id'].count())
                 # 中间数据

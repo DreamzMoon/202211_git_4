@@ -159,7 +159,6 @@ def today_data():
                 return {"code": "10015", "status": "failed", "msg": message["10015"]}
             request.json['start_time'] = judge_result[0]
             request.json['end_time'] = judge_result[1]
-        # return '11111'
     except Exception as e:
         # 参数名错误
         logger.error(e)
