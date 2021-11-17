@@ -1885,7 +1885,7 @@ def person_sell():
 
         # 获取所有的数据
 
-        all_sql = '''select count(*) order_count,sum(count) total_count,sum(total_price) total_price,GROUP_CONCAT(pay_type) sum_pay_type from lh_order where del_flag = 0 and type in (1,4) and `status`=1 group by phone having sell_phone = %s'''
+        all_sql = '''select count(*) order_count,sum(count) total_count,sum(total_price) total_price,GROUP_CONCAT(pay_type) sum_pay_type from lh_order where del_flag = 0 and type in (1,4) and `status`=1 group by sell_phone having sell_phone = %s'''
         cursor.execute(all_sql, (sell_phone))
         datas = cursor.fetchone()
         user_order_data = {"order_total_price": datas[2], "order_count": datas[0], "total_count": datas[1],

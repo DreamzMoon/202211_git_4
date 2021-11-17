@@ -46,6 +46,9 @@ app.register_blueprint(typebp)
 from analyzeserver.user.sysuser import sysuserbp
 app.register_blueprint(sysuserbp)
 
+from analyzeserver.home.home_page import homebp
+app.register_blueprint(homebp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
