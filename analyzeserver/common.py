@@ -944,13 +944,15 @@ def get_phone_by_unionid(unionid):
         conn_crm.close()
 
 
+
+
 if __name__ == "__main__":
-    # result = get_lukebus_phone(["四川成都天府新区运营中心"])
+    # result = get_lukebus_phone(["福州高新区测试运营中心，请勿选择"])
     # logger.info(result)
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    # result = get_busphne_by_id(208)
-    # logger.info(result)
+    result = get_busphne_by_id(4)
+    logger.info(result)
 
-    logger.info(one_belong_bus("13559436425"))
+    # logger.info(one_belong_bus("13559436425"))

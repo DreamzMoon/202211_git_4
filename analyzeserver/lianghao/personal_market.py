@@ -1038,15 +1038,9 @@ def personal_total():
             code_page = (page - 1) * size
             code_size = page * size
 
-
-        # 如果没有手机号码可以一起查 如果有手机号码要分成三个sql
-        # sql = '''select count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price,
-        #         count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,
-        #         sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee
-        #         from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) '''
-        # logger.info(sql)
-        # last_all_data = pd.read_sql(sql,conn_read).to_dict("records")
-
+        logger.info("--------------------")
+        logger.info(query_phone)
+        logger.info("-------------------")
 
         order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
         group_sql = ''' group by phone'''
@@ -1131,8 +1125,8 @@ def personal_total():
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
 
-        logger.info("code_page:%s" %code_page)
-        logger.info("code_size:%s" %code_size)
+        # logger.info("code_page:%s" %code_page)
+        # logger.info("code_size:%s" %code_size)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
