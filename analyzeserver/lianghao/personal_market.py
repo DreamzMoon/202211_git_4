@@ -28,7 +28,7 @@ def personal_publish():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 10:
+            if len(request.json) != 11:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             # token校验
@@ -215,7 +215,7 @@ def personal_publish_detail():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 5:
+            if len(request.json) != 6:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -578,7 +578,7 @@ def personal_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) !=12:
+            if len(request.json) !=13:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -748,7 +748,7 @@ def personal_publish_order_flow():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 14:
+            if len(request.json) != 15:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
