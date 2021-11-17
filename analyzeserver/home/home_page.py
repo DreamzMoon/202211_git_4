@@ -58,7 +58,7 @@ def today_data():
     try:
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 2:
+        if len(request.json) != 4:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
@@ -86,8 +86,8 @@ def today_data():
             if not judge_result[0]:
                 return {"code": judge_result[1], "status": "failed", "msg": message[judge_result[1]]}
             sub_day = judge_result[1] - judge_result[0]
-            if sub_day.days + sub_day.seconds / (24.0 * 60.0 * 60.0) > 30:
-                return {"code": "11018", "status": "failed", "msg": message["11018"]}
+            if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
+                return {"code": "10015", "status": "failed", "msg": message["10015"]}
             request.json['start_time'] = judge_result[0]
             request.json['end_time'] = judge_result[1]
 

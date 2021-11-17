@@ -333,16 +333,16 @@ def personal_publish_detail():
         near_time = {}
 
         publish_mode_data = {
-            'publish_time': '暂无数据',
-            'total_price': '暂无数据',
-            'pay_type': '暂无数据',
-            'pretty_type': '暂无数据',
-            'count': '暂无数据'
+            'publish_time': '',
+            'total_price': '',
+            'pay_type': '',
+            'pretty_type': '',
+            'count': ''
         }
 
         if user_publish_df.shape[0] >= 3:
             first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            first_df.fillna('暂无数据', inplace=True)
+            first_df.fillna('', inplace=True)
             first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             first_time['total_price'] = first_df['total_price']
             try:
@@ -354,7 +354,7 @@ def personal_publish_detail():
             publish_info['first_time'] = first_time
 
             second_df = user_publish_df.loc[1, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            second_df.fillna('暂无数据', inplace=True)
+            second_df.fillna('', inplace=True)
             second_time['publish_time'] = second_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             second_time['total_price'] = second_df['total_price']
             try:
@@ -367,7 +367,7 @@ def personal_publish_detail():
 
             near_df = user_publish_df[-1:].reset_index(drop=True).loc[
                 0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            near_df.fillna('暂无数据', inplace=True)
+            near_df.fillna('', inplace=True)
             near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             near_time['total_price'] = near_df['total_price']
             try:
@@ -379,7 +379,7 @@ def personal_publish_detail():
             publish_info['near_time'] = near_time
         elif user_publish_df.shape[0] == 2:
             first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            first_df.fillna('暂无数据', inplace=True)
+            first_df.fillna('', inplace=True)
             first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             first_time['total_price'] = first_df['total_price']
             try:
@@ -394,7 +394,7 @@ def personal_publish_detail():
 
             near_df = user_publish_df[-1:].reset_index(drop=True).loc[
                 0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            near_df.fillna('暂无数据', inplace=True)
+            near_df.fillna('', inplace=True)
             near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             near_time['total_price'] = near_df['total_price']
             try:
@@ -406,7 +406,7 @@ def personal_publish_detail():
             publish_info['near_time'] = near_time
         elif user_publish_df.shape[0] == 1:
             first_df = user_publish_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
-            first_df.fillna('暂无数据', inplace=True)
+            first_df.fillna('', inplace=True)
             first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             first_time['total_price'] = first_df['total_price']
             try:
