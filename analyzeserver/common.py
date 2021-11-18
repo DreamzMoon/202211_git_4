@@ -105,6 +105,7 @@ def get_busphne_by_id(bus_id):
     :return:返回手机号码
     '''
     try:
+        logger.info(bus_id)
         phone_lists = []
         conn_crm = direct_get_conn(crm_mysql_conf)
         crm_cursor = conn_crm.cursor()
@@ -329,9 +330,9 @@ def get_notice_data(child_df, operatename, name, phone, unionid):
     return notice_data
 
 # 返回所有用户运营中心
-def get_all_user_operationcenter():
+def get_all_user_operationcenter(crm_user_data=""):
     '''
-
+    crm_user_data 必须是dataframe
     :param crm_cursor: crm数据库游标。需再调用方法后手动关闭数据库连接
     :return: crm手机不为空的用户对应运营中心
     '''
@@ -346,9 +347,12 @@ def get_all_user_operationcenter():
         operate_df = pd.DataFrame(operate_data)
 
         # crm用户数据
-        crm_user_sql = 'select id unionid, pid parentd, phone from luke_sincerechat.user where phone is not null'
-        crm_cursor.execute(crm_user_sql)
-        crm_user_df = pd.DataFrame(crm_cursor.fetchall())
+        if crm_user_data is not None:
+            crm_user_df = crm_user_data
+        else:
+            crm_user_sql = 'select id unionid, pid parentd, phone from luke_sincerechat.user where phone is not null'
+            crm_cursor.execute(crm_user_sql)
+            crm_user_df = pd.DataFrame(crm_cursor.fetchall())
 
         # 运营中心手机列表
         operate_telephone_list = operate_df['telephone'].to_list()
@@ -406,6 +410,7 @@ def get_all_user_operationcenter():
         logger.info('返回用户数据成功')
         return True, fina_df
     except Exception as e:
+        logger.exception(traceback.format_exc())
         logger.info(e)
         return False, e
 
@@ -891,6 +896,75 @@ def one_belong_bus(phone):
         conn_crm.close()
 
 
+#通过dataframe获取运营中心
+def user_belong_by_df(need_data):
+    '''
+
+    :param need_data: 需要查询的用户的dataframe
+    :return: 用户的dataframe 包括运营中心 和crm的数据
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        cursor_crm = conn_crm.cursor()
+        user_data = need_data
+        logger.info(user_data)
+        phone_list = user_data.to_dict('list')['phone']
+        # logger.info(len(phone_list))
+        # 查运营中心
+        all_operate = []
+        for pl in phone_list:
+            logger.info("phone:%s" % pl)
+            pl_op_dict = {}
+            # 查询可以用sql查 处理用pandas
+            operate_sql = '''
+                                        select a.*,b.operatename,b.crm from 
+                                        (WITH RECURSIVE temp as (
+                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                                                UNION ALL
+                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                                        )
+                                        SELECT * FROM temp 
+                                        )a left join luke_lukebus.operationcenter b
+                                        on a.id = b.unionid
+                                        '''
+
+            # operate_data = pd.read_sql(operate_sql, conn_crm)
+            cursor_crm.execute(operate_sql,pl)
+            sql_data = cursor_crm.fetchall()
+            if not sql_data:
+                continue
+            operate_data = pd.DataFrame(sql_data)
+
+            # logger.info(operate_data)
+            # logger.info("----------------")
+
+            current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
+            # logger.info(current_operate_data)
+            # logger.info("--------------------")
+            if len(current_operate_data)>0:
+                # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
+                # logger.info("有值")
+                pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
+                pl_op_dict["phone"] = pl
+                all_operate.append(pl_op_dict)
+            else:
+                pl_op_dict["operate_name"] = ""
+                pl_op_dict["phone"] = pl
+                all_operate.append(pl_op_dict)
+
+        all_operate = pd.DataFrame(all_operate)
+        logger.info(user_data)
+        logger.info(all_operate)
+        user_data = user_data.merge(all_operate, how="left", on="phone")
+        # logger.info(user_data.info())
+        last_data = user_data.to_dict("records")
+        return 1, last_data
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return 0,e
+    finally:
+        conn_crm.close()
+
 def get_phone_by_keyword(keyword):
     '''
     :param keyword:根据关键词找手机号
@@ -964,6 +1038,7 @@ def get_parent_by_phone(phone):
         return 0,e
     finally:
         conn_crm.close()
+
 
 
 
