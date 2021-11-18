@@ -28,6 +28,8 @@ homebp = Blueprint('homepage', __name__, url_prefix='/home')
 @homebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -41,8 +43,8 @@ def deal_person():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_crm = direct_get_conn(crm_mysql_conf)
+
+        # conn_crm = direct_get_conn(crm_mysql_conf)
         logger.info(conn_lh)
 
         sql = '''select nick_name,phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
@@ -63,6 +65,8 @@ def deal_person():
 @homebp.route("deal/bus",methods=["GET"])
 def deal_bus():
     try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -81,8 +85,7 @@ def deal_bus():
 
         logger.info(fifter_operate)
         #先查运营中心的人数
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
         cursor_crm = conn_crm.cursor()
         cursor_lh = conn_lh.cursor()
 
@@ -133,6 +136,7 @@ def deal_bus():
 @homebp.route("datacenter",methods=["GET"])
 def data_center():
     try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -146,7 +150,7 @@ def data_center():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
         # cursor = conn_lh.cursor()
         sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
         select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
@@ -163,6 +167,7 @@ def data_center():
 @homebp.route("deal/top",methods=["GET"])
 def deal_top():
     try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -176,7 +181,7 @@ def deal_top():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
 
         sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
