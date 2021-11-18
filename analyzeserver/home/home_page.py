@@ -29,7 +29,8 @@ homebp = Blueprint('homepage', __name__, url_prefix='/home')
 def deal_person():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        cursor = conn_crm.cursor()
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -43,22 +44,28 @@ def deal_person():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-
-        # conn_crm = direct_get_conn(crm_mysql_conf)
         logger.info(conn_lh)
 
-        sql = '''select nick_name,phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
-
+        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
+        for data in datas:
+            logger.info(data)
+            sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = %s'''
+            cursor.execute(sql,(data["phone"]))
+            user_data = cursor.fetchone()
+            logger.info(user_data)
+            data["username"] = user_data["username"]
+
         return {"code":"0000","status":"success","msg":datas}
 
     except Exception as e:
-        logger.error(e)
+        logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_lh.close()
+        conn_crm.close()
 
 
 # 运营中心每小时刷新一次
