@@ -1159,7 +1159,6 @@ def personal_total():
 @pmbp.route("buy/all",methods=["POST"])
 def personal_buy_all():
     try:
-        # conn_read = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)
         conn_read = direct_get_conn(lianghao_mysql_conf)
 
         logger.info(request.json)
@@ -1193,7 +1192,7 @@ def personal_buy_all():
         # 字符串拼接的手机号码
         query_phone = ""
         keyword_phone = []
-        parent_phone = []
+        parent_id = ""
         bus_phone = []
 
         time_condition_sql = ""
@@ -1228,13 +1227,13 @@ def personal_buy_all():
         # 只查一个
         if parent:
             if len(parent) == 11:
-                parent_phone.append(parent)
-            else:
-                result = get_phone_by_unionid(parent)
+                result = get_parent_by_phone(parent)
                 if result[0] == 1:
-                    parent_phone.append(result[1])
+                    parent_id = result[1]
                 else:
-                    return {"code":"11014","status":"failed","msg":message["code"]}
+                    return {"code": "11014", "status": "failed", "msg": message["code"]}
+            else:
+                parent_id = parent
 
 
         if bus_id:
@@ -1245,18 +1244,10 @@ def personal_buy_all():
                 return {"code":"11015","status":"failed","msg":message["11015"]}
 
         # 对手机号码差交集
-        if keyword_phone and parent_phone and bus_phone:
-            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
-        elif keyword_phone and parent_phone:
-            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
-        elif keyword_phone and bus_phone:
+        if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
-        elif parent_phone and bus_phone:
-            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
         elif keyword_phone:
             query_phone = keyword_phone
-        elif parent_phone:
-            query_phone = parent_phone
         elif bus_phone:
             query_phone = bus_phone
         else:
@@ -1316,36 +1307,60 @@ def personal_buy_all():
             df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
         df_merged_count = len(df_merged)
         logger.info(df_merged.shape)
+
+        # 这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_data = pd.read_sql(sql, conn_crm)
+        conn_crm.close()
+        df_merged = df_merged.merge(crm_data, how="left", on="phone")
+
+        # df_merged['parentid'] = pd.to_numeric(df_merged['parentid'], errors='coerce')
+        # 转类型
+        df_merged["parentid"] = df_merged['parentid'].astype(str)
+        df_merged["unionid"] = df_merged['unionid'].astype(str)
+        df_merged['parentid'] = df_merged['parentid'].apply(lambda x: del_point(x))
+        df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
+        if parent_id:
+            df_merged = df_merged[df_merged["parentid"] == parent_id]
+
         if page and size:
             df_merged = df_merged[code_page:code_size]
 
-        logger.info("当前查询的个数:%s" %len(df_merged))
-
-
-        logger.info(len(df_merged))
-        if len(df_merged) > 70:
-            crm_data_result = get_all_user_operationcenter()
-            if crm_data_result[0] ==  True:
-                crm_data = crm_data_result[1]
-                result = df_merged.merge(crm_data,how="left",on="phone")
-                last_data = result.to_dict("records")
-            else:
-                return {"code":"10006","status":"failed","msg":message["10006"]}
-
-            for d in last_data:
-                if not pd.isnull(d["unionid"]):
-                    d["unionid"] = int(d["unionid"])
-        else:
-            crm_data_result = user_belong_bus(df_merged)
+        # 按页码获取个数 如果有页码按需获取 或者集合数量小于100
+        if (page and size) or (len(df_merged) < 100):
+            try:
+                df_merged = df_merged[code_page:code_size]
+            except:
+                pass
+            logger.info(len(df_merged))
+            crm_data_result = user_belong_by_df(df_merged)
             if crm_data_result[0] == 1:
                 last_data = crm_data_result[1]
                 for d in last_data:
-                    d["total_price"] = round(d["total_price"],2)
+                    logger.info(d["total_price"])
+                    d["total_price"] = round(d["total_price"], 2)
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
+            return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
+        # 默认获取全部
+        else:
+            logger.info(df_merged.iloc[0])
+            crm_data_result = get_all_user_operationcenter(df_merged)
+            logger.info(crm_data_result)
+            if crm_data_result[0] == True:
+                last_data = crm_data_result[1]
 
+                last_data = last_data.to_dict("records")
+            else:
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+            logger.info(last_data)
+            for d in last_data:
+                if not pd.isnull(d["unionid"]):
+                    d["unionid"] = int(d["unionid"])
+            return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
 
-        return {"code":"0000","status":"success","msg":last_data,"count":df_merged_count}
+        # return {"code":"0000","status":"success","msg":last_data,"count":df_merged_count}
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())
