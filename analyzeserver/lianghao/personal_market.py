@@ -134,11 +134,12 @@ def personal_publish():
                 match_df = match_df.loc[(match_df['near_time'] >= request.json['start_near_time']) & (
                             match_df['near_time'] <= (request.json['end_near_time'])), :]
             count_len = len(match_df)
-            start_index = (page - 1) * num
-            end_index = page * num
-            if end_index > len(match_df):
-                end_index = len(match_df)
-            match_df = match_df.loc[start_index: end_index-1, :]
+            if page and num:
+                start_index = (page - 1) * num
+                end_index = page * num
+                if end_index > len(match_df):
+                    end_index = len(match_df)
+                match_df = match_df.loc[start_index: end_index-1, :]
         else:
             fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
             if not search_key and not parent and not start_first_time and not end_first_time and not start_near_time and not end_near_time and not page and not num:
@@ -173,26 +174,20 @@ def personal_publish():
                     match_df = match_df.loc[(match_df['near_time'] >= request.json['start_near_time']) & (
                             match_df['near_time'] <= (request.json['end_near_time'])), :]
                 child_phone_list = match_df['publish_phone'].tolist()
-                match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
-                if not match_result[0]:
-                    return {"code": match_result[1], "status": "success", "msg": message[match_result[1]]}
-                match_df = match_df.merge(match_result[1], how='left', on='publish_phone')
+                if child_phone_list:
+                    match_result = match_user_operate1(child_phone_list, conn_crm, 'publish_phone')
+                    if not match_result[0]:
+                        return {"code": match_result[1], "status": "success", "msg": message[match_result[1]]}
+                    match_df = match_df.merge(match_result[1], how='left', on='publish_phone')
                 count_len = len(match_df)
-                # 如果没有页码
-                # match_df.drop('parent_phone', axis=1, inplace=True)
-        # if match_df.shape[0] == 0:
-        #     return {"code": "10010", "status": "failed", "msg": message["10010"]}
+                if page and num:
+                    start_index = (page - 1) * num
+                    end_index = page * num
+                    if end_index > len(match_df):
+                        end_index = len(match_df)
+                    match_df = match_df.loc[start_index: end_index - 1, :]
         match_df.drop('parent_phone', axis=1, inplace=True)
 
-        # if page and num:
-        #     start_index = (page - 1) * num
-        #     if num > match_df.shape[0]:
-        #         end_index = len(match_df)
-        #     else:
-        #         end_index = page * num
-        # else:
-        #     start_index = 0
-        #     end_index = len(match_df)
         match_df['first_time'] = match_df['first_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         match_df['near_time'] = match_df['near_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         # 价钱圆整
