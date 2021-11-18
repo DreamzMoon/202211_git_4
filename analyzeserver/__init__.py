@@ -22,9 +22,6 @@ def hello():
     return 'Hello, World!'
 
 
-# from analyzeserver.demo import demobp
-# app.register_blueprint(demobp)
-
 from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
 

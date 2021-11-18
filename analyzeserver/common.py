@@ -1062,19 +1062,26 @@ if __name__ == "__main__":
     # logger.info(len(res[1]))
     # time.sleep(2)
 
-    # logger.info(one_belong_bus("13559436425"))
+    logger.info(one_belong_bus("13559436425"))
 
 
 
     #查询靓号所有的用户归属的运营中心
-    crm_data_result = get_all_user_operationcenter()
-    logger.info(crm_data_result)
-    if crm_data_result[0] == True:
-        crm_data = crm_data_result[1]
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        sql = "select phone,nick_name from lh_user where del_flag = 0"
-        lh_user_data = pd.read_sql(sql,conn_lh)
-        conn_lh.close()
-
-        user_data = lh_user_data.merge(crm_data,how="left",on="phone")
-        user_data.to_csv("e:/用户对应的运营中心.csv")
+    # crm_data_result = get_all_user_operationcenter()
+    # logger.info(crm_data_result)
+    # if crm_data_result[0] == True:
+    #     crm_data = crm_data_result[1]
+    #     conn_lh = direct_get_conn(lianghao_mysql_conf)
+    #     # sql = '''select phone,lh_user.nick_name,lh_config_grade.grade_name from lh_user
+    #     # left join lh_config_grade on lh_user.grade_id = lh_config_grade.id
+    #     # where lh_user.del_flag = 0 '''
+    #     sql = '''
+    #     select phone,lh_config_grade.grade_name from lh_user
+    #     left join lh_config_grade on lh_user.grade_id = lh_config_grade.id
+    #     where lh_user.del_flag = 0 and lh_config_grade.grade_name is not null and phone is not null
+    #     '''
+    #     lh_user_data = pd.read_sql(sql,conn_lh)
+    #     conn_lh.close()
+    #
+    #     user_data = lh_user_data.merge(crm_data,how="left",on="phone")
+    #     user_data.to_csv("e:/用户对应的运营中心全部都有身份的.csv")
