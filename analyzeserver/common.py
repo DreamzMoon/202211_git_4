@@ -347,7 +347,8 @@ def get_all_user_operationcenter(crm_user_data=""):
         operate_df = pd.DataFrame(operate_data)
 
         # crm用户数据
-        if crm_user_data is not None:
+        crm_user_df = ""
+        if len(crm_user_data) > 0:
             crm_user_df = crm_user_data
         else:
             crm_user_sql = 'select id unionid, pid parentd, phone from luke_sincerechat.user where phone is not null'
@@ -1053,12 +1054,27 @@ if __name__ == "__main__":
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    result = get_busphne_by_id(4)
-    logger.info(len(result[1].split(",")))
-    # time.sleep(2)
-
-    res = get_operationcenter_child(4)
-    logger.info(len(res[1]))
+    # result = get_busphne_by_id(4)
+    # logger.info(len(result[1].split(",")))
+    # # time.sleep(2)
+    #
+    # res = get_operationcenter_child(4)
+    # logger.info(len(res[1]))
     # time.sleep(2)
 
     # logger.info(one_belong_bus("13559436425"))
+
+
+
+    #查询靓号所有的用户归属的运营中心
+    crm_data_result = get_all_user_operationcenter()
+    logger.info(crm_data_result)
+    if crm_data_result[0] == True:
+        crm_data = crm_data_result[1]
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        sql = "select phone,nick_name from lh_user where del_flag = 0"
+        lh_user_data = pd.read_sql(sql,conn_lh)
+        conn_lh.close()
+
+        user_data = lh_user_data.merge(crm_data,how="left",on="phone")
+        user_data.to_csv("e:/用户对应的运营中心.csv")
