@@ -18,6 +18,7 @@ from datetime import timedelta
 from functools import reduce
 from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
+import numpy as np
 
 pmbp = Blueprint('personal', __name__, url_prefix='/lh/personal')
 
@@ -981,7 +982,7 @@ def personal_total():
         # 字符串拼接的手机号码
         query_phone = ""
         keyword_phone = []
-        parent_phone = []
+        parent_id = ""
         bus_phone = []
 
         # 模糊查询
@@ -996,20 +997,13 @@ def personal_total():
         # 只查一个
         if parent:
             if len(parent) == 11:
-                parent_phone.append(parent)
-            else:
-                result = get_phone_by_unionid(parent)
+                result = get_parent_by_phone(parent)
                 if result[0] == 1:
-                    parent_phone.append(result[1])
+                    parent_id = result[1]
                 else:
-                    return {"code":"11014","status":"failed","msg":message["code"]}
-        # 查禄可商务的
-        # if bus:
-        #     result = get_lukebus_phone([bus])
-        #     if result[0] == 1:
-        #         bus_phone = result[1].split(",")
-        #     else:
-        #         return {"code":"11015","status":"failed","msg":message["11015"]}
+                    return {"code": "11014", "status": "failed", "msg": message["code"]}
+            else:
+                parent_id = parent
 
         if bus_id:
             result = get_busphne_by_id(bus_id)
@@ -1019,18 +1013,10 @@ def personal_total():
                 return {"code":"11015","status":"failed","msg":message["11015"]}
 
         # 对手机号码差交集
-        if keyword_phone and parent_phone and bus_phone:
-            query_phone = list((set(keyword_phone).intersection(set(parent_phone))).intersection(set(bus_phone)))
-        elif keyword_phone and parent_phone:
-            query_phone = list(set(keyword_phone).intersection(set(parent_phone)))
-        elif keyword_phone and bus_phone:
+        if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
-        elif parent_phone and bus_phone:
-            query_phone = list(set(parent_phone).intersection(set(bus_phone)))
         elif keyword_phone:
             query_phone = keyword_phone
-        elif parent_phone:
-            query_phone = parent_phone
         elif bus_phone:
             query_phone = bus_phone
         else:
@@ -1085,9 +1071,23 @@ def personal_total():
         df_list.append(public_order)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
+        #这里要进行一个crm数据的合并
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_data = pd.read_sql(sql, conn_crm)
+        conn_crm.close()
+        df_merged = df_merged.merge(crm_data, how="left", on="phone")
+
+        df_merged["parentid"] = df_merged['parentid'].astype(str)
+        df_merged["unionid"] = df_merged['unionid'].astype(str)
+        df_merged['parentid'] = df_merged['parentid'].apply(lambda x: del_point(x))
+        df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
+        if parent_id:
+            df_merged = df_merged[df_merged["parentid"] == parent_id]
+
+        # 算全部的钱
         all_data = {"buy_count": 0, "buy_total_count": 0, "buy_total_price": 0, "sell_count": 0, "sell_fee": 0,
                     "sell_real_money": 0, "sell_total_count": 0, "sell_total_price": 0}
-
 
         #把nan都填充0
         df_merged["buy_count"].fillna(0,inplace=True)
@@ -1127,31 +1127,59 @@ def personal_total():
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
 
-        # logger.info("code_page:%s" %code_page)
-        # logger.info("code_size:%s" %code_size)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
             need_data = df_merged.copy()
         logger.info(need_data)
 
-        result = user_belong_bus(need_data)
+        logger.info(len(need_data))
+        if len(df_merged)<200:
+            result = user_belong_bus(need_data)
 
-        if result[0] == 1:
-            last_data = result[1]
-            logger.info(last_data)
+            if result[0] == 1:
+                last_data = result[1]
+                logger.info(last_data)
+            else:
+                return {"code":"10006","status":"failed","msg":message["10006"]}
+            msg_data = {"data":last_data,"all_data":all_data}
+            logger.info("msg_data:%s" %msg_data)
+            return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
         else:
-            return {"code":"10006","status":"failed","msg":message["10006"]}
-        msg_data = {"data":last_data,"all_data":all_data}
-        logger.info("msg_data:%s" %msg_data)
-        return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
+            crm_data_result = get_all_user_operationcenter(need_data)
+            logger.info(crm_data_result)
+            if crm_data_result[0] == True:
+                last_data = crm_data_result[1]
+                last_data = last_data.to_dict("records")
+            else:
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+            logger.info(last_data)
+            for d in last_data:
+                logger.info(d)
+                logger.info(pd.isnull(d["unionid"]))
+                logger.info(pd.isnull("operatename"))
+                logger.info("-----------------------")
+                if not (d["unionid"] == "nan"):
+                    d["unionid"] = int(d["unionid"])
+            return {"code": "0000", "status": "success", "msg": last_data, "count": len(df_merged)}
+
+
+        # result = user_belong_bus(need_data)
+        #
+        # if result[0] == 1:
+        #     last_data = result[1]
+        #     logger.info(last_data)
+        # else:
+        #     return {"code":"10006","status":"failed","msg":message["10006"]}
+        # msg_data = {"data":last_data,"all_data":all_data}
+        # logger.info("msg_data:%s" %msg_data)
+        # return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_read.close()
-
 
 
 

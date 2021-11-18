@@ -770,19 +770,24 @@ def judge_start_and_end_time(start, end):
         logger.error(traceback.format_exc())
         return False, "10013"
 #很多用户归属的运营中心
-def user_belong_bus(need_data):
+def user_belong_bus(need_data,crm_data=0):
     '''
-
+    :param crm_data =1 不差crm数据 为0 查crm数据
     :param need_data: 需要查询的用户的dataframe
     :return: 用户的dataframe 包括运营中心 和crm的数据
     '''
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
         cursor_crm = conn_crm.cursor()
+
+
         crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
-        user_data = need_data.merge(crm_user_data, how="left", on="phone")
+        if crm_data == 0:
+            user_data = need_data.merge(crm_user_data, how="left", on="phone")
+        else:
+            user_data = need_data
         logger.info(user_data)
         phone_list = user_data.to_dict('list')['phone']
         # logger.info(len(phone_list))
