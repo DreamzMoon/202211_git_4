@@ -37,7 +37,6 @@ if ENV == "test":
         "db": 'lh_analyze',
         "charset": "utf8mb4"
     }
-
 elif ENV == "pro":
     # 资讯正式
     zx_api_url = 'http://xs.lkkjjt.com/open/content/python'  # api_url
