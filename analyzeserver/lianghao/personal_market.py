@@ -1384,7 +1384,8 @@ def personal_buy_all():
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
             logger.info(last_data)
             for d in last_data:
-                if not pd.isnull(d["unionid"]):
+                # if not pd.isnull(d["unionid"]):
+                if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
             return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
 
@@ -1839,7 +1840,8 @@ def personal_sell_all():
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
             logger.info(last_data)
             for d in last_data:
-                if not pd.isnull(d["unionid"]):
+                # if not pd.isnull(d["unionid"]):
+                if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
             return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
 
