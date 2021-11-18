@@ -208,155 +208,281 @@ def deal_top():
 @homebp.route("/today/data", methods=["POST"])
 def today_data():
     try:
-        logger.info(request.json)
-        # 参数个数错误
-        if len(request.json) != 4:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 4:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        token = request.headers["Token"]
-        user_id = request.json["user_id"]
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
 
-        if not user_id and not token:
-            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
-        check_token_result = check_token(token, user_id)
-        if check_token_result["code"] != "0000":
-            return check_token_result
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
 
-        # 1今日 2昨日 3自定义-->必须传起始和结束时间
-        time_type = request.json['time_type']
-        # 首次发布时间
-        start_time = request.json['start_time']
-        end_time = request.json['end_time']
+            # 1今日 2昨日 3自定义-->必须传起始和结束时间
+            time_type = request.json['time_type']
+            # 首次发布时间
+            start_time = request.json['start_time']
+            end_time = request.json['end_time']
 
-        if (time_type != 3 and start_time and end_time) or time_type not in range(1, 4) or (
-                time_type == 3 and not start_time and not end_time):
-            return {"code": "10014", "status": "failed", "msg": message["10014"]}
-        # 时间判断
-        elif start_time or end_time:
-            strp_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
-            strp_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
-            if strp_start_time > strp_end_time:
-                return {"code": "10012", "status": "failed", "msg": message["10012"]}
-            sub_day = strp_end_time - strp_start_time
-            if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
-                return {"code": "10015", "status": "failed", "msg": message["10015"]}
+            if (time_type != 3 and start_time and end_time) or time_type not in range(1, 4) or (
+                    time_type == 3 and not start_time and not end_time):
+                return {"code": "10014", "status": "failed", "msg": message["10014"]}
+            # 时间判断
+            elif start_time or end_time:
+                strp_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+                strp_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+                if strp_start_time > strp_end_time:
+                    return {"code": "10012", "status": "failed", "msg": message["10012"]}
+                sub_day = strp_end_time - strp_start_time
+                if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
+                    return {"code": "10015", "status": "failed", "msg": message["10015"]}
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        # 今日
+        if time_type == 1:
+            today_sql = '''
+                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                group by today_time
+            '''
+            yesterday_sql = '''
+                select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+                group by yesterday_time
+            '''
+
+            today_df = pd.read_sql(today_sql, conn_lh)
+            yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
+
+            today_df['pretty_count'] = today_df['pretty_count'].astype(int)
+
+            today_data = {
+                'today_price': round(float(today_df['total_price'].sum()), 2), # 今日交易金额
+                'today_order_count': int(today_df['order_count'].sum()), # 今日交易订单数
+                'today_order_person': int(today_df['order_person'].sum()), # 今日交易人数
+            }
+            yesterday_data = {
+                'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2), # 昨日交易金额
+                'yesterday_order_count': int(yesterday_df['order_count'].sum()), # 昨日交易订单数
+                'yesterday_order_person': int(yesterday_df['order_person'].sum()), # 昨日交易人数
+            }
+        # 昨日
+        elif time_type == 2:
+            today_sql = '''
+                        select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                        from lh_pretty_client.lh_order
+                        where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+                        group by today_time
+                    '''
+            yesterday_sql = '''
+                        select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                        from lh_pretty_client.lh_order
+                        where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 2 day)
+                        group by yesterday_time
+                    '''
+
+            today_df = pd.read_sql(today_sql, conn_lh)
+            yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
+
+            today_df['pretty_count'] = today_df['pretty_count'].astype(int)
+
+            today_data = {
+                'today_price': round(float(today_df['total_price'].sum()), 2),  # 今日交易金额
+                'today_order_count': int(today_df['order_count'].sum()),  # 今日交易订单数
+                'today_order_person': int(today_df['order_person'].sum()),  # 今日交易人数
+            }
+            yesterday_data = {
+                'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2),  # 昨日交易金额
+                'yesterday_order_count': int(yesterday_df['order_count'].sum()),  # 昨日交易订单数
+                'yesterday_order_person': int(yesterday_df['order_person'].sum()),  # 昨日交易人数
+            }
+        # 自定义
+        else:
+            today_sql = '''
+                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "")
+                and DATE_FORMAT(create_time,'%Y-%m-%d %H:00:00') >= "{start_time}" and DATE_FORMAT(create_time,'%Y-%m-%d') <= "{end_time}"
+                group by today_time
+            '''.format(start_time=strp_start_time, end_time=strp_end_time)
+
+            strp_yes_start_time = strp_start_time + timedelta(days=-1)
+            strp_yes_end_time = strp_end_time + timedelta(days=-1)
+            yesterday_sql = '''
+                select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "")
+                and DATE_FORMAT(create_time,'%Y-%m-%d %H:00:00') >= "{start_time}" and DATE_FORMAT(create_time,'%Y-%m-%d') <= "{end_time}"
+                group by yesterday_time
+            '''.format(start_time=strp_yes_start_time, end_time=strp_yes_end_time)
+            logger.info(yesterday_sql)
+            today_df = pd.read_sql(today_sql, conn_lh)
+            logger.info(today_df.shape)
+            yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
+
+            today_df['pretty_count'] = today_df['pretty_count'].astype(int)
+
+            today_data = {
+                'today_price': round(float(today_df['total_price'].sum()), 2),  # 今日交易金额
+                'today_order_count': int(today_df['order_count'].sum()),  # 今日交易订单数
+                'today_order_person': int(today_df['order_person'].sum()),  # 今日交易人数
+            }
+            yesterday_data = {
+                'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2),  # 昨日交易金额
+                'yesterday_order_count': int(yesterday_df['order_count'].sum()),  # 昨日交易订单数
+                'yesterday_order_person': int(yesterday_df['order_person'].sum()),  # 昨日交易人数
+            }
+
+        return_data = {
+            "today_data": today_data,
+            "yesterday_data": yesterday_data,
+            "day_data": today_df.to_dict("records")
+        }
+
+        return {"code": "0000", "status": "success", "msg": return_data}
     except Exception as e:
-        # 参数名错误
-        logger.error(e)
-        return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        logger.error((traceback.format_exc()))
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
 
-    conn_lh = direct_get_conn(lianghao_mysql_conf)
-    if not conn_lh:
-        return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
-    # 今日
-    if time_type == 1:
-        today_sql = '''
-            select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-            from lh_pretty_client.lh_order
-            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
-            group by today_time
+@homebp.route('/today/dynamic', methods=["POST"])
+def today_dynamic():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 1:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 今日交易时时动态
+        sell_order_sql = '''
+                select t1.sub_time, t1.phone, t2.pretty_type_name from
+                (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
+                where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+                order by pay_time desc
+                limit 6) t1
+                left join
+                (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
+                on t1.sell_id = t2.id
+            '''
+            #
+        search_name_sql = '''
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+            '''
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_crm or not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        order_df = pd.read_sql(sell_order_sql, conn_lh)
+        if order_df.shape[0] > 0:
+            order_df['sub_time'] = round(order_df['sub_time'], 0).astype(int)
+
+            sell_phone_list = order_df['phone'].tolist()
+            sell_df_list = []
+            for phone in set(sell_phone_list):
+                sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+            sell_df = pd.concat(sell_df_list, axis=0)
+            sell_fina_df = order_df.merge(sell_df, how='left', on='phone')
+            sell_list = sell_fina_df.to_dict("records")
+        else:
+            sell_list = []
+
+        # 发布时时动态
+        publish_order_sql = '''
+            select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+            from lh_pretty_client.lh_sell
+            where del_flag=0 and (sell_phone is not null or sell_phone != '') and `status`=0
+            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+            order by up_time desc
+            limit 6
         '''
-        yesterday_sql = '''
-            select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-            from lh_pretty_client.lh_order
-            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
-            group by yesterday_time
+        publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
+        if publish_order_df.shape[0] > 0:
+            publish_order_df['sub_time'] = round(publish_order_df['sub_time'], 0).astype(int)
+
+            publish_phone_list = publish_order_df['phone'].to_list()
+            publish_df_list = []
+            for phone in set(publish_phone_list):
+                publish_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+            publish_df = pd.concat(publish_df_list, axis=0)
+            publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
+
+            publish_list = publish_fina_df.to_dict("records")
+        else:
+            publish_list = []
+        # 新注册用户
+        new_user_sql = '''
+            select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
+            where del_flag=0 and (phone is not null or phone != '')
+            and create_time is not null
+            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+            order by create_time desc
+            limit 6
         '''
+        new_user_df = pd.read_sql(new_user_sql, conn_lh)
+        if new_user_df.shape[0] > 0:
+            new_user_df['sub_time'] = round(new_user_df['sub_time'], 0).astype(int)
 
-        today_df = pd.read_sql(today_sql, conn_lh)
-        yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
+            new_user_phone_list = new_user_df['phone'].to_list()
+            new_user_df_list = []
+            for phone in set(new_user_phone_list):
+                new_user_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+            user_df = pd.concat(new_user_df_list, axis=0)
+            new_user_fina_df = new_user_df.merge(user_df, how='left', on='phone')
 
-        today_df['pretty_count'] = today_df['pretty_count'].astype(int)
+            new_user_list = new_user_fina_df.to_dict("records")
+        else:
+            new_user_list = []
 
-        today_data = {
-            'today_price': round(float(today_df['total_price'].sum()), 2), # 今日交易金额
-            'today_order_count': int(today_df['order_count'].sum()), # 今日交易订单数
-            'today_order_person': int(today_df['order_person'].sum()), # 今日交易人数
+        return_data = {
+            "sell_dynamic": sell_list,
+            "publish_dynamic": publish_list,
+            "new_user": new_user_list
         }
-        yesterday_data = {
-            'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2), # 昨日交易金额
-            'yesterday_order_count': int(yesterday_df['order_count'].sum()), # 昨日交易订单数
-            'yesterday_order_person': int(yesterday_df['order_person'].sum()), # 昨日交易人数
-        }
-    # 昨日
-    elif time_type == 2:
-        today_sql = '''
-                    select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-                    from lh_pretty_client.lh_order
-                    where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
-                    group by today_time
-                '''
-        yesterday_sql = '''
-                    select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-                    from lh_pretty_client.lh_order
-                    where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 2 day)
-                    group by yesterday_time
-                '''
-
-        today_df = pd.read_sql(today_sql, conn_lh)
-        yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
-
-        today_df['pretty_count'] = today_df['pretty_count'].astype(int)
-
-        today_data = {
-            'today_price': round(float(today_df['total_price'].sum()), 2),  # 今日交易金额
-            'today_order_count': int(today_df['order_count'].sum()),  # 今日交易订单数
-            'today_order_person': int(today_df['order_person'].sum()),  # 今日交易人数
-        }
-        yesterday_data = {
-            'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2),  # 昨日交易金额
-            'yesterday_order_count': int(yesterday_df['order_count'].sum()),  # 昨日交易订单数
-            'yesterday_order_person': int(yesterday_df['order_person'].sum()),  # 昨日交易人数
-        }
-    # 自定义
-    else:
-        today_sql = '''
-            select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-            from lh_pretty_client.lh_order
-            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "")
-            and DATE_FORMAT(create_time,'%Y-%m-%d %H:00:00') >= "{start_time}" and DATE_FORMAT(create_time,'%Y-%m-%d') <= "{end_time}"
-            group by today_time
-        '''.format(start_time=strp_start_time, end_time=strp_end_time)
-
-        strp_yes_start_time = strp_start_time + timedelta(days=-1)
-        strp_yes_end_time = strp_end_time + timedelta(days=-1)
-        yesterday_sql = '''
-            select DATE_FORMAT(create_time, '%Y-%m-%d %H') yesterday_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count
-            from lh_pretty_client.lh_order
-            where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "")
-            and DATE_FORMAT(create_time,'%Y-%m-%d %H:00:00') >= "{start_time}" and DATE_FORMAT(create_time,'%Y-%m-%d') <= "{end_time}"
-            group by yesterday_time
-        '''.format(start_time=strp_yes_start_time, end_time=strp_yes_end_time)
-        logger.info(yesterday_sql)
-        today_df = pd.read_sql(today_sql, conn_lh)
-        logger.info(today_df.shape)
-        yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
-
-        today_df['pretty_count'] = today_df['pretty_count'].astype(int)
-
-        today_data = {
-            'today_price': round(float(today_df['total_price'].sum()), 2),  # 今日交易金额
-            'today_order_count': int(today_df['order_count'].sum()),  # 今日交易订单数
-            'today_order_person': int(today_df['order_person'].sum()),  # 今日交易人数
-        }
-        yesterday_data = {
-            'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2),  # 昨日交易金额
-            'yesterday_order_count': int(yesterday_df['order_count'].sum()),  # 昨日交易订单数
-            'yesterday_order_person': int(yesterday_df['order_person'].sum()),  # 昨日交易人数
-        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_crm.close()
+        except:
+            pass
 
 
-
-    return_data = {
-        "today_data": today_data,
-        "yesterday_data": yesterday_data,
-        "day_data": today_df.to_dict("records")
-    }
-
-    return {"code": "0000", "status": "success", "msg": return_data}
-
-
-
-    # pass
