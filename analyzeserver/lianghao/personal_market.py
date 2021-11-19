@@ -1379,9 +1379,17 @@ def personal_buy_all():
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
 
-        if page and size:
-            df_merged = df_merged[code_page:code_size]
 
+        logger.info(code_page)
+        logger.info(code_size)
+
+        # if page and size:
+        #     try:
+        #         df_merged = df_merged[code_page:code_size]
+        #     except:
+        #         pass
+        logger.info(df_merged)
+        time.sleep(10)
         # 按页码获取个数 如果有页码按需获取 或者集合数量小于100
         if (page and size) or (len(df_merged) < 100):
             try:
