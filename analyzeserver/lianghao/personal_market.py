@@ -1089,7 +1089,7 @@ def personal_total():
         all_data = {"buy_count": 0, "buy_total_count": 0, "buy_total_price": 0, "sell_count": 0, "sell_fee": 0,
                     "sell_real_money": 0, "sell_total_count": 0, "sell_total_price": 0}
 
-        #把nan都填充0
+        # #把nan都填充0
         df_merged["buy_count"].fillna(0,inplace=True)
         df_merged["buy_total_count"].fillna(0,inplace=True)
         df_merged["buy_total_price"].fillna(0,inplace=True)
@@ -1101,28 +1101,31 @@ def personal_total():
         df_merged["publish_sell_count"].fillna(0,inplace=True)
         df_merged["publish_total_count"].fillna(0,inplace=True)
         df_merged["publish_total_price"].fillna(0,inplace=True)
-
-
-        all_df = df_merged.to_dict("records")
-
-        for i in range(0,len(all_df)):
-
-            all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-            all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-            all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-            all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-            all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-            all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-            all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-            all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
-
-        all_data["buy_total_price"] = round(all_data["buy_total_price"],2)
-        all_data["sell_fee"] = round(all_data["sell_fee"],2)
-        all_data["sell_real_money"] = round(all_data["sell_real_money"],2)
-        all_data["sell_total_price"] = round(all_data["sell_total_price"],2)
-        all_data["buy_total_count"] = int(all_data["buy_total_count"])
-        all_data["sell_total_count"] = int(all_data["sell_total_count"])
-
+        #
+        #
+        # all_df = df_merged.to_dict("records")
+        #
+        # for i in range(0,len(all_df)):
+        #
+        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
+        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
+        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
+        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
+        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
+        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
+        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
+        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+        #
+        # all_data["buy_total_price"] = round(all_data["buy_total_price"],2)
+        # all_data["sell_fee"] = round(all_data["sell_fee"],2)
+        # all_data["sell_real_money"] = round(all_data["sell_real_money"],2)
+        # all_data["sell_total_price"] = round(all_data["sell_total_price"],2)
+        # all_data["buy_total_count"] = int(all_data["buy_total_count"])
+        # all_data["sell_total_count"] = int(all_data["sell_total_count"])
+        #
+        # df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
+        # df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
+        # df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
         df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
@@ -1132,6 +1135,28 @@ def personal_total():
         else:
             need_data = df_merged.copy()
         logger.info(need_data)
+
+        all_df = need_data.to_dict("records")
+        logger.info("all_df:%s" %all_df)
+        for i in range(0, len(all_df)):
+            all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
+            all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
+            all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
+            all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
+            all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
+            all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
+            all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
+            all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+
+        all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
+        all_data["sell_fee"] = round(all_data["sell_fee"], 2)
+        all_data["sell_real_money"] = round(all_data["sell_real_money"], 2)
+        all_data["sell_total_price"] = round(all_data["sell_total_price"], 2)
+        all_data["buy_total_count"] = int(all_data["buy_total_count"])
+        all_data["sell_total_count"] = int(all_data["sell_total_count"])
+
+
+
 
         logger.info(len(need_data))
         if len(need_data)<200:
