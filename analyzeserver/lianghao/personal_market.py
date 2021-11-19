@@ -1135,7 +1135,8 @@ def personal_total():
 
         logger.info(len(need_data))
         if len(need_data)<200:
-            result = user_belong_bus(need_data)
+            # result = user_belong_bus(need_data)
+            result = user_belong_by_df(need_data)
 
             if result[0] == 1:
                 last_data = result[1]
