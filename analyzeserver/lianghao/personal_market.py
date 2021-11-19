@@ -1134,7 +1134,7 @@ def personal_total():
         logger.info(need_data)
 
         logger.info(len(need_data))
-        if len(df_merged)<200:
+        if len(need_data)<200:
             result = user_belong_bus(need_data)
 
             if result[0] == 1:
@@ -1155,13 +1155,14 @@ def personal_total():
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
             logger.info(last_data)
             for d in last_data:
-                logger.info(d)
-                logger.info(pd.isnull(d["unionid"]))
-                logger.info(pd.isnull("operatename"))
-                logger.info("-----------------------")
+                # logger.info(d)
+                # logger.info(pd.isnull(d["unionid"]))
+                # logger.info(pd.isnull("operatename"))
+                # logger.info("-----------------------")
                 if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
-            return {"code": "0000", "status": "success", "msg": last_data, "count": len(df_merged)}
+            msg_data = {"data": last_data, "all_data": all_data}
+            return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
 
         # result = user_belong_bus(need_data)
