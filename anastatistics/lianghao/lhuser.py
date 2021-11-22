@@ -111,7 +111,7 @@ try:
 
     ok_datas["statistic_time"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-
+    logger.info(tomorrow_time)
 
     create_sql = '''
         CREATE TABLE `lh_user_%s` (
