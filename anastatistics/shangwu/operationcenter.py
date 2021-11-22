@@ -155,6 +155,7 @@ def refresh_operate_relationship():
         for index, row in new_operate_df.iterrows():
             logger.info(index)
             old_row_data = old_operate_df[old_operate_df['id'] == row['id']]
+            # 如果为新增数据则插入
             if old_row_data.shape[0] == 0:
                 new_data = pd.DataFrame(row).T
                 new_data['contains'] = new_data['contains'].apply(lambda x: json.dumps(x))
@@ -164,16 +165,17 @@ def refresh_operate_relationship():
                 # 插入数据
                 new_data.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
                 continue
-            # 数据对比
+            # 已存在数据进行更新
             update_record = {'addtime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'contains': len(row['contains']), 'not_contains': len(row['not_contains']), "child_center_id": len(row['child_center_id'])}
-            row['update_record'].append(update_record)
+            history_record = eval(old_row_data['update_record'].values[0])
+            history_record.append(update_record)
+
             update_sql = '''update operate_relationship set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
             update_data = (
             row['unionid'], row['parentid'], row['name'], row['phone'], row['operatename'], row['crm'], row['status'],
-            json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), json.dumps(row['update_record']), row['id'])
+            json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), json.dumps(history_record), row['id'])
             cursor.execute(update_sql, update_data)
             conn_rw_refresh.commit()
-        conn_rw_refresh.close()
         logger.info('更新完成')
     except Exception as e:
         logger.error(traceback.format_exc())
