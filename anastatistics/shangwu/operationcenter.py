@@ -2,6 +2,7 @@
 '''
 禄可商务运营中心
 '''
+import datetime
 import sys, os, json
 import traceback
 from datetime import date
@@ -106,7 +107,11 @@ def operate_relationship(mode='first'):
             contains.extend(first_child_center)
             # 包含运营中心id
             child_center_id = all_data.loc[all_data['operatename'].notna(), :]['id'].to_list()[1:]
-            ret = {'phone': phone, 'not_contains': not_contains, "contains": contains, "child_center_id": child_center_id}
+            # 更新记录
+            update_record_list = []
+            update_record = {'addtime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'contains': len(contains), 'not_contains': len(not_contains), "child_center_id": len(child_center_id)}
+            update_record_list.append(update_record)
+            ret = {'phone': phone, 'not_contains': not_contains, "contains": contains, "child_center_id": child_center_id, "update_record": update_record_list}
             fina_center_data_list.append(ret)
         fina_df = pd.DataFrame(fina_center_data_list)
         result_df = operate_df.merge(fina_df, how='left', on='phone')
@@ -117,6 +122,7 @@ def operate_relationship(mode='first'):
             result_df['contains'] = result_df['contains'].apply(lambda x: json.dumps(x))
             result_df['not_contains'] = result_df['not_contains'].apply(lambda x: json.dumps(x))
             result_df['child_center_id'] = result_df['child_center_id'].apply(lambda x: json.dumps(x))
+            result_df['update_record'] = result_df['update_record'].apply(lambda x: json.dumps(x))
             result_df.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
             return True, '添加数据成功'
         else:
@@ -137,17 +143,6 @@ def refresh_operate_relationship():
         if not new_result:
             return new_result[1]
         new_operate_df = new_result[1]
-        test_data = new_operate_df.iloc[:1,:].copy()
-        test_data['id'] = 1314
-        test_data['unionid'] = 1314520
-        test_data['parentid'] = 0
-        test_data['name'] = '施鸿1111111'
-        test_data['operatename'] = '测试一个中心'
-
-
-        new_operate_df = pd.concat([new_operate_df, test_data], axis=0, ignore_index=True)
-        new_operate_df.loc[0, 'status'] = 0
-
 
         old_operate_sql = '''
             select * from lh_analyze.operate_relationship
@@ -165,14 +160,17 @@ def refresh_operate_relationship():
                 new_data['contains'] = new_data['contains'].apply(lambda x: json.dumps(x))
                 new_data['not_contains'] = new_data['not_contains'].apply(lambda x: json.dumps(x))
                 new_data['child_center_id'] = new_data['child_center_id'].apply(lambda x: json.dumps(x))
+                new_data['update_record'] = new_data['update_record'].apply(lambda x: json.dumps(x))
                 # 插入数据
                 new_data.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
                 continue
             # 数据对比
-            update_sql = '''update operate_relationship set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s where id="%s"'''
+            update_record = {'addtime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'contains': len(row['contains']), 'not_contains': len(row['not_contains']), "child_center_id": len(row['child_center_id'])}
+            row['update_record'].append(update_record)
+            update_sql = '''update operate_relationship set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
             update_data = (
             row['unionid'], row['parentid'], row['name'], row['phone'], row['operatename'], row['crm'], row['status'],
-            json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), row['id'])
+            json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), json.dumps(row['update_record']), row['id'])
             cursor.execute(update_sql, update_data)
             conn_rw_refresh.commit()
         conn_rw_refresh.close()
