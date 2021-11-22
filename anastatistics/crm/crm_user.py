@@ -145,6 +145,7 @@ try:
             analyze_cursor.execute(insert_sql, params)
             conn_analyze.commit()
             logger.info("插入成功")
+
 except:
     logger.info(traceback.format_exc())
 finally:
