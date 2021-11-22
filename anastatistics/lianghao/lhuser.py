@@ -152,7 +152,9 @@ try:
 
     #准备入库
     conn_rw = sqlalchemy_conn(analyze_mysql_conf)
-    ok_datas.to_sql("lh_user_%s" %tomorrow_time, con=conn_rw, if_exists="append", index=False)
+    table_name = "lh_user_%s" %tomorrow_time
+    logger.info(table_name)
+    ok_datas.to_sql(table_name, con=conn_rw, if_exists="append", index=False)
     logger.info("写入成功")
 except:
     logger.exception(traceback.format_exc())
