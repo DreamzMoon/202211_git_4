@@ -99,7 +99,7 @@ try:
     # 准备入库
 
 
-
+    logger.info(tomorrow_time)
     #建表 以明天的时间建表
     create_sql = '''
         CREATE TABLE `crm_user_%s` (
