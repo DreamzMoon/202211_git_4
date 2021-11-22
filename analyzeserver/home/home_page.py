@@ -205,6 +205,7 @@ def deal_top():
     finally:
         conn_lh.close()
 
+# 今日实时交易数据分析
 @homebp.route("/today/data", methods=["POST"])
 def today_data():
     try:
@@ -364,18 +365,18 @@ def today_data():
         except:
             pass
 
-
-@homebp.route('/today/dynamic', methods=["POST"])
+# 今日交易实时动态
+@homebp.route('/today/dynamic', methods=["GET"])
 def today_dynamic():
     try:
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 1:
-                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+            # if len(request.json) != 1:
+            #     return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
-            user_id = request.json["user_id"]
+            user_id = request.args.get("user_id")
 
             if not user_id and not token:
                 return {"code": "10001", "status": "failed", "msg": message["10001"]}

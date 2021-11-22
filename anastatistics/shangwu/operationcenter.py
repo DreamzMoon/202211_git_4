@@ -77,7 +77,7 @@ def operate_relationship(mode='first'):
 
         fina_center_data_list = []
         for phone in operate_telephone_list:
-            print(phone)
+            logger.info(phone)
             crm_cursor.execute(supervisor_sql, phone)
             all_data = crm_cursor.fetchall()
             # 总数据
@@ -118,7 +118,7 @@ def operate_relationship(mode='first'):
             result_df['not_contains'] = result_df['not_contains'].apply(lambda x: json.dumps(x))
             result_df['child_center_id'] = result_df['child_center_id'].apply(lambda x: json.dumps(x))
             result_df.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
-            return True, '刷新成功'
+            return True, '添加数据成功'
         else:
             return True, result_df
     except:
@@ -131,24 +131,59 @@ def operate_relationship(mode='first'):
 
 # 更新数据
 def refresh_operate_relationship():
-    new_result = operate_relationship(mode='refresh')
-    if not new_result:
-        return new_result[1]
-    new_operate_df = new_result[1]
-    old_operate_sql = '''
-        select * from lh_analyze.operate_relationship_copy1
-    '''
-    conn_rw = pd_conn(analyze_mysql_conf)
+    try:
+        logger.info('读取新数据')
+        new_result = operate_relationship(mode='refresh')
+        if not new_result:
+            return new_result[1]
+        new_operate_df = new_result[1]
+        test_data = new_operate_df.iloc[:1,:].copy()
+        test_data['id'] = 1314
+        test_data['unionid'] = 1314520
+        test_data['parentid'] = 0
+        test_data['name'] = '施鸿1111111'
+        test_data['operatename'] = '测试一个中心'
 
-    old_operate_df = pd.read_sql(old_operate_sql, conn_rw)
-    for index, row in new_operate_df.iterrows():
-        old_row_data = old_operate_df[old_operate_df['id'] == row['id']]
-        if old_row_data.shape[0] == 0:
-            new_data = pd.DataFrame(row).T
-            new_data['contains'] = new_data['contains'].apply(lambda x: json.dumps(x))
-            new_data['not_contains'] = new_data['not_contains'].apply(lambda x: json.dumps(x))
-            new_data['child_center_id'] = new_data['child_center_id'].apply(lambda x: json.dumps(x))
-            # 插入数据
-            new_data.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
 
-# refresh_operate_relationship()
+        new_operate_df = pd.concat([new_operate_df, test_data], axis=0, ignore_index=True)
+        new_operate_df.loc[0, 'status'] = 0
+
+
+        old_operate_sql = '''
+            select * from lh_analyze.operate_relationship
+        '''
+        conn_rw = pd_conn(analyze_mysql_conf)
+        conn_rw_refresh = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_rw_refresh.cursor()
+        old_operate_df = pd.read_sql(old_operate_sql, conn_rw)
+        logger.info('进行数据更新')
+        for index, row in new_operate_df.iterrows():
+            logger.info(index)
+            old_row_data = old_operate_df[old_operate_df['id'] == row['id']]
+            if old_row_data.shape[0] == 0:
+                new_data = pd.DataFrame(row).T
+                new_data['contains'] = new_data['contains'].apply(lambda x: json.dumps(x))
+                new_data['not_contains'] = new_data['not_contains'].apply(lambda x: json.dumps(x))
+                new_data['child_center_id'] = new_data['child_center_id'].apply(lambda x: json.dumps(x))
+                # 插入数据
+                new_data.to_sql("operate_relationship", con=conn_rw, if_exists="append", index=False)
+                continue
+            # 数据对比
+            update_sql = '''update operate_relationship set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s where id="%s"'''
+            update_data = (
+            row['unionid'], row['parentid'], row['name'], row['phone'], row['operatename'], row['crm'], row['status'],
+            json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), row['id'])
+            cursor.execute(update_sql, update_data)
+            conn_rw_refresh.commit()
+        conn_rw_refresh.close()
+        logger.info('更新完成')
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.info('更新失败')
+    finally:
+        try:
+            conn_rw_refresh.close()
+        except:
+            pass
+
+refresh_operate_relationship()
