@@ -98,7 +98,7 @@ try:
     # last_data = last_data.to_dict("records")
     # 准备入库
 
-    tomorrow_time = (date.today() + timedelta(days=+1)).strftime("%Y-%m-%d")
+
 
     #建表 以明天的时间建表
     create_sql = '''

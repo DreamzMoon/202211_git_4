@@ -11,7 +11,7 @@ import pymysql
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
 logger = logging.getLogger(__name__)
-
+from datetime import timedelta,date
 from env import *
 
 if ENV == "test":
@@ -175,3 +175,6 @@ message = {
     "11027":"用户密码不正确，请检查后在登陆"
 
 }
+
+
+tomorrow_time = (date.today() + timedelta(days=+0)).strftime("%Y%m%d")

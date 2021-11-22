@@ -111,7 +111,7 @@ try:
 
     ok_datas["statistic_time"] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    tomorrow_time = (date.today() + timedelta(days=+1)).strftime("%Y-%m-%d")
+
 
     create_sql = '''
         CREATE TABLE `lh_user_%s` (
