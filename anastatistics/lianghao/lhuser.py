@@ -151,6 +151,7 @@ try:
     logger.info("建表成功")
 
     #准备入库
+    logger.info(analyze_mysql_conf)
     conn_rw = sqlalchemy_conn(analyze_mysql_conf)
     logger.info(conn_rw)
     table_name = "lh_user_%s" %tomorrow_time
