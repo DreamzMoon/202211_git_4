@@ -10,6 +10,7 @@ import sys
 sys.path.append("../")
 from config import *
 import pymysql
+pymysql.install_as_MySQLdb()
 from sshtunnel import SSHTunnelForwarder
 from sqlalchemy import create_engine
 import pandas as pd
