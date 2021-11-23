@@ -29,3 +29,6 @@ CREATE TABLE `operate_relationship` (
   `update_record` longtext COLLATE utf8mb4_general_ci COMMENT '更新记录',
   `del_flag` int(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE `lh_analyze`.`operate_relationship`
+ADD COLUMN `user_type` int(1) NULL DEFAULT 0 COMMENT '0:正常用户 1：开发用户 2：运营 3：测试\'' AFTER `del_flag`;
