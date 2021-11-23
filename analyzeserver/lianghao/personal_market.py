@@ -1076,6 +1076,11 @@ def personal_total():
         df_list.append(public_order)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
+        logger.info(df_merged)
+        #无数据返回空
+        if df_merged.empty:
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
+
         #这里要进行一个crm数据的合并
         conn_crm = direct_get_conn(crm_mysql_conf)
         sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
@@ -1106,31 +1111,7 @@ def personal_total():
         df_merged["publish_sell_count"].fillna(0,inplace=True)
         df_merged["publish_total_count"].fillna(0,inplace=True)
         df_merged["publish_total_price"].fillna(0,inplace=True)
-        #
-        #
-        # all_df = df_merged.to_dict("records")
-        #
-        # for i in range(0,len(all_df)):
-        #
-        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
-        #
-        # all_data["buy_total_price"] = round(all_data["buy_total_price"],2)
-        # all_data["sell_fee"] = round(all_data["sell_fee"],2)
-        # all_data["sell_real_money"] = round(all_data["sell_real_money"],2)
-        # all_data["sell_total_price"] = round(all_data["sell_total_price"],2)
-        # all_data["buy_total_count"] = int(all_data["buy_total_count"])
-        # all_data["sell_total_count"] = int(all_data["sell_total_count"])
-        #
-        # df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
-        # df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
-        # df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
+
         df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
@@ -1365,8 +1346,15 @@ def personal_buy_all():
             logger.info(df_merged.shape)
         if last_start_time and last_end_time:
             df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
+
+        # 无数据返回空
+        if df_merged.empty:
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
+
         df_merged_count = len(df_merged)
         logger.info(df_merged.shape)
+
+
 
         # 这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
         conn_crm = direct_get_conn(crm_mysql_conf)
@@ -1843,6 +1831,10 @@ def personal_sell_all():
             logger.info(df_merged.shape)
         if last_start_time and last_end_time:
             df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
+
+        # 无数据返回空
+        if df_merged is None:
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         result_count = len(df_merged)
 
