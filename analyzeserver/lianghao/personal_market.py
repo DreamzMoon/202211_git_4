@@ -538,7 +538,11 @@ def personal_publish_detail():
                     user_publish_df['create_time'] <= request.json['end_time']), :]
             # 如果匹配到数据大于0，再进行统计
             if time_data_df.shape[0] > 0:
-                time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
+                # 判断是否未同一天
+                if request.json['start_time'].date() == request.json['end_time'].date():
+                    time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d %H')
+                else:
+                    time_data_df['strf_time'] = time_data_df['create_time'].dt.strftime('%Y-%m-%d')
                 time_info['total_price'] = round(time_data_df['total_price'].sum(), 2)
                 time_info['publish_count'] = int(time_data_df['sell_id'].count())
                 # 中间数据
@@ -548,6 +552,7 @@ def personal_publish_detail():
                 grouped['day_total_price'] = grouped['day_total_price'].apply(lambda x: round(float(x), 2))
                 grouped['day_count'] = grouped['day_count'].astype(int)
                 grouped['day_pretty_count'] = grouped['day_pretty_count'].astype(int)
+                logger.info(grouped.head())
                 day_data = grouped.to_dict('records')
                 time_info['day_data'] = day_data
 
