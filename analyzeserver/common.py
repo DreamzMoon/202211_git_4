@@ -537,20 +537,20 @@ def match_attribute(data_df, request, mode='order'):
     try:
         if mode == 'order':
             match_df = data_df.loc[
-                ((data_df['buyer_name'].str.contains(request.json['buyer_info'])) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'])) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'])))  # 购买人信息
-                & (data_df['order_sn'].str.contains(request.json['order_sn']))  # 订单编号
-                & ((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                & (data_df['pay_type'].str.contains(request.json['pay_id']))  # 支付类型
-                & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
+                ((data_df['buyer_name'].str.contains(request.json['buyer_info'], regex=False)) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'], regex=False)) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'], regex=False)))  # 购买人信息
+                & (data_df['order_sn'] == request.json['order_sn'])  # 订单编号
+                & ((data_df['sell_name'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_phone'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_unionid'].str.contains(request.json['sell_info'], regex=False)))  # 出售人信息
+                & (data_df['pay_type'] == request.json['pay_id'])  # 支付类型
+                & (data_df['transfer_type'] == request.json['transfer_id'])  # 转让类型
                 ]
             if request.json['parent']:
                 match_df = match_df.loc[(match_df['parentid']==request.json['parent']) | (match_df['parent_phone']==request.json['parent']), :]  # 归属上级]
             if request.json['start_order_time']:
                 match_df = match_df.loc[(match_df['order_time']>=request.json['start_order_time']) & (match_df['order_time']<=(request.json['end_order_time'])), :]
         else:
-            match_df = data_df.loc[((data_df['sell_name'].str.contains(request.json['sell_info'])) | (data_df['sell_phone'].str.contains(request.json['sell_info'])) | (data_df['sell_unionid'].str.contains(request.json['sell_info'])))  # 出售人信息
-                   & (data_df['status'].str.contains(request.json['status']))  # 支付类型
-                   & (data_df['transfer_type'].str.contains(request.json['transfer_id']))  # 转让类型
+            match_df = data_df.loc[((data_df['sell_name'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_phone'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_unionid'].str.contains(request.json['sell_info'], regex=False)))  # 出售人信息
+                   & (data_df['status'] == request.json['status'])  # 支付类型
+                   & (data_df['transfer_type'] == request.json['transfer_id'])  # 转让类型
             , :]
             if request.json['parent']:
                 match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (match_df['parent_phone'] == request.json['parent']), :]  # 归属上级

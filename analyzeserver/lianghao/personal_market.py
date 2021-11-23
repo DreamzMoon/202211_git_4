@@ -124,7 +124,7 @@ def personal_publish():
             part_user_df['operatename'] = child_phone_list[-1]
             part_user_df = part_user_df.merge(crm_user_df, how='left', on='publish_phone')
             # 匹配数据
-            match_df = part_user_df.loc[((part_user_df['publish_name'].str.contains(search_key)) | (part_user_df['publish_unionid'].str.contains(search_key)) | (part_user_df['publish_phone'].str.contains(search_key)))]
+            match_df = part_user_df.loc[((part_user_df['publish_name'].str.contains(search_key, regex=False)) | (part_user_df['publish_unionid'].str.contains(search_key, regex=False)) | (part_user_df['publish_phone'].str.contains(search_key, regex=False)))]
             if parent:
                 match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (
                         match_df['parent_phone'] == request.json['parent']), :]  # 归属上级
@@ -164,7 +164,7 @@ def personal_publish():
                 match_df = child_df.merge(match_result[1], how='left', on='publish_phone')
                 count_len = len(fina_df)
             else:
-                match_df = fina_df.loc[(fina_df['publish_name'].str.contains(search_key)) | (fina_df['publish_unionid'].str.contains(search_key)) | (fina_df['publish_phone'].str.contains(search_key))]
+                match_df = fina_df.loc[(fina_df['publish_name'].str.contains(search_key, regex=False)) | (fina_df['publish_unionid'].str.contains(search_key, regex=False)) | (fina_df['publish_phone'].str.contains(search_key, regex=False))]
                 if parent:
                     match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (
                             match_df['parent_phone'] == request.json['parent']), :]  # 归属上级
