@@ -332,7 +332,7 @@ def transfer_buy_order():
                                 union all
                                 select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
                                 select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and phone not in (%s) group by statistic_time order by statistic_time asc) b 
-                                ''' % (args_phone_lists,end_time, start_time, args_phone_lists,before_end_time, before_start_time)
+                                ''' % (end_time, start_time,args_phone_lists, before_end_time, before_start_time,args_phone_lists)
             else:
                 circle_sql = '''
                 select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
@@ -341,6 +341,7 @@ def transfer_buy_order():
                 select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
                 select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b 
                 ''' %(end_time,start_time,before_end_time,before_start_time)
+            logger.info(circle_sql)
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
             logger.info(circle_data)
@@ -552,7 +553,7 @@ def transfer_sell_order():
                                 union all
                                 select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
                                 select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and sell_phone not in (%s) group by statistic_time order by statistic_time asc) b 
-                                ''' % (args_phone_lists,end_time, start_time, args_phone_lists,before_end_time, before_start_time)
+                                ''' % (end_time, start_time,args_phone_lists,before_end_time, before_start_time, args_phone_lists)
             else:
                 circle_sql = '''
                 select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
@@ -834,7 +835,7 @@ def transfer_public_order():
             sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' %(end_time,start_time)
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
             if args_phone_lists:
-                condition_sql = ''' and phone not in (%s)''' %(args_phone_lists)
+                condition_sql = ''' and sell_phone not in (%s)''' %(args_phone_lists)
                 sql = sql + condition_sql + group_order_sql
             else:
                 sql = sql + group_order_sql
