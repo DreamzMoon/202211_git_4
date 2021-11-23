@@ -152,6 +152,7 @@ try:
 
     #准备入库
     conn_rw = sqlalchemy_conn(analyze_mysql_conf)
+    logger.info(conn_rw)
     table_name = "lh_user_%s" %tomorrow_time
     logger.info(table_name)
     ok_datas.to_sql(table_name, con=conn_rw, if_exists="append", index=False)
