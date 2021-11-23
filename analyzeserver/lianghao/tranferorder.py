@@ -194,7 +194,6 @@ def transfer_buy_order():
         cursor = conn_read.cursor()
 
         #校验参数
-        sub_time = ""
         if time_type == 4:
             if not start_time or not end_time:
                 return {"code":"11009","status":"failed","msg":message["11009"]}
@@ -207,8 +206,7 @@ def transfer_buy_order():
             if daysss.days+ daysss.seconds/(24.0*60.0*60.0) > 30:
                 return {"code":"11018","status":"failed","msg":message["11018"]}
 
-            #获取两个起始时间相减判断是否一天
-            sub_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(start_time,"%Y-%m-%d %H:%M:%S")
+
 
         args_phone_lists = []
         if phone_lists:
@@ -226,7 +224,7 @@ def transfer_buy_order():
 
 
         # 如果选择今天的就按照今天的时间返回
-        if time_type == 1 or (time_type == 4 and sub_time):
+        if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
 
             if time_type == 1:
@@ -430,7 +428,7 @@ def transfer_sell_order():
         cursor = conn_read.cursor()
 
         #校验参数
-        sub_time = ""
+
         if time_type == 4:
             if not start_time or not end_time:
                 return {"code":"11009","status":"failed","msg":message["11009"]}
@@ -443,8 +441,7 @@ def transfer_sell_order():
             if daysss.days+ daysss.seconds/(24.0*60.0*60.0) > 30:
                 return {"code":"11018","status":"failed","msg":message["11018"]}
                 # 获取两个起始时间相减判断是否一天
-            sub_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(
-                start_time, "%Y-%m-%d %H:%M:%S")
+
 
         args_phone_lists = []
         if phone_lists:
@@ -460,7 +457,7 @@ def transfer_sell_order():
         logger.info("args_phone_lists:%s" %args_phone_lists)
 
         # 如果选择今天的就按照今天的时间返回
-        if time_type == 1 or (time_type ==4 and sub_time):
+        if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
 
             if time_type == 1:
@@ -667,7 +664,7 @@ def transfer_public_order():
         cursor = conn_read.cursor()
 
         #校验参数
-        sub_time = ""
+
         if time_type == 4:
             if not start_time or not end_time:
                 return {"code": "11009", "status": "failed", "msg": message["11009"]}
@@ -680,7 +677,6 @@ def transfer_public_order():
             if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
                 return {"code": "11018", "status": "failed", "msg": message["11018"]}
                 # 获取两个起始时间相减判断是否一天
-            sub_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
 
         args_phone_lists = []
         if phone_lists:
@@ -714,7 +710,7 @@ def transfer_public_order():
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
 
         # 如果选择今天的就按照今天的时间返回
-        if time_type == 1 or (time_type == 4 and sub_time):
+        if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
             if time_type == 1:
                 circle_sql1 = '''select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
