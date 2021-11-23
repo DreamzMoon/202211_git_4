@@ -364,7 +364,7 @@ def transfer_buy_order():
             current_datas = cursor.fetchall()
             logger.info(current_datas)
             datas = []
-            for td in current_datas:
+            for td in reversed(current_datas):
                 logger.info(td)
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
@@ -584,7 +584,7 @@ def transfer_sell_order():
             current_datas = cursor.fetchall()
             logger.info(current_datas)
             datas = []
-            for td in current_datas:
+            for td in reversed(current_datas):
                 logger.info(td)
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
@@ -717,7 +717,7 @@ def transfer_public_order():
             today_data = cursor.fetchall()
             logger.info(today_data)
             today = []
-            for td in today_data:
+            for td in reversed(today_data):
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
                 td_dict["publish_total_price"] = int(td[1])
@@ -780,7 +780,7 @@ def transfer_public_order():
             today_data = cursor.fetchall()
             logger.info(today_data)
             today = []
-            for td in today_data:
+            for td in reversed(today_data):
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
                 td_dict["publish_total_price"] = int(td[1])
@@ -843,7 +843,7 @@ def transfer_public_order():
             current_datas = cursor.fetchall()
             logger.info(current_datas)
             datas = []
-            for td in current_datas:
+            for td in reversed(current_datas):
                 logger.info(td)
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
