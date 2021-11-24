@@ -429,15 +429,11 @@ def today_data():
             pass
 
 # 今日交易实时动态
-@homebp.route('/today/dynamic', methods=["GET"])
-def today_dynamic():
+@homebp.route('/today/dynamic/transaction', methods=["GET"])
+def today_dynamic_transaction():
     try:
         try:
             logger.info(request.json)
-            # 参数个数错误
-            # if len(request.json) != 1:
-            #     return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
 
@@ -451,6 +447,12 @@ def today_dynamic():
             # 参数名错误
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_crm or not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
         # 今日交易时时动态
         sell_order_sql = '''
                 select t1.sub_time, t1.phone, t2.pretty_type_name from
@@ -467,10 +469,7 @@ def today_dynamic():
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
             '''
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        if not conn_crm or not conn_lh:
-            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
 
         order_df = pd.read_sql(sell_order_sql, conn_lh)
         if order_df.shape[0] > 0:
@@ -485,6 +484,49 @@ def today_dynamic():
             sell_list = sell_fina_df.to_dict("records")
         else:
             sell_list = []
+
+        return_data = {
+            "sell_dynamic": sell_list,
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_crm.close()
+        except:
+            pass
+
+# 今日发布实时动态
+@homebp.route('/today/dynamic/publish', methods=["GET"])
+def today_dynamic_publish():
+    try:
+        try:
+            logger.info(request.json)
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh or not conn_crm:
+            return {"code": "10002", "status": "failed", "message": message["10002"]}
+
+        # 用户名称搜索
+        search_name_sql = '''
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+            '''
 
         # 发布时时动态
         publish_order_sql = '''
@@ -509,6 +551,55 @@ def today_dynamic():
             publish_list = publish_fina_df.to_dict("records")
         else:
             publish_list = []
+
+        return_data = {
+            "publish_dynamic": publish_list,
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_crm.close()
+        except:
+            pass
+
+# 今日新增用户动态
+@homebp.route('/today/dynamic/newuser', methods=["GET"])
+def today_dynamic_newuser():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            # if len(request.json) != 1:
+            #     return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh or not conn_crm:
+            return {"code": "10002", "status": "failed", "message": message["10002"]}
+
+        # 用户名搜索
+        search_name_sql = '''
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+            '''
+
         # 新注册用户
         new_user_sql = '''
             select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
@@ -534,8 +625,6 @@ def today_dynamic():
             new_user_list = []
 
         return_data = {
-            "sell_dynamic": sell_list,
-            "publish_dynamic": publish_list,
             "new_user": new_user_list
         }
         return {"code": "0000", "status": "success", "msg": return_data}
@@ -548,5 +637,3 @@ def today_dynamic():
             conn_crm.close()
         except:
             pass
-
-
