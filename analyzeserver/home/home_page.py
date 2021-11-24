@@ -460,7 +460,7 @@ def today_dynamic_transaction():
                 where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
                 order by pay_time desc
-                limit 6) t1
+                limit 3) t1
                 left join
                 (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
                 on t1.sell_id = t2.id
@@ -535,7 +535,7 @@ def today_dynamic_publish():
             where del_flag=0 and (sell_phone is not null or sell_phone != '') and `status`=0
             and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
             order by up_time desc
-            limit 6
+            limit 3
         '''
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
@@ -607,7 +607,7 @@ def today_dynamic_newuser():
             and create_time is not null
             and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
             order by create_time desc
-            limit 6
+            limit 3
         '''
         new_user_df = pd.read_sql(new_user_sql, conn_lh)
         if new_user_df.shape[0] > 0:
