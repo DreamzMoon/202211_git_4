@@ -979,7 +979,7 @@ def user_belong_bus(need_data,crm_data=0):
         cursor_crm = conn_crm.cursor()
 
 
-        crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
         if crm_data == 0:
@@ -1048,7 +1048,7 @@ def one_belong_bus(phone):
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
 
-        crm_user_sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone = %s''' %phone
+        crm_user_sql = '''select id unionid,pid parentid,phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone = %s''' %phone
         user_data = pd.read_sql(crm_user_sql,conn_crm)
 
         # 查运营中心

@@ -1120,7 +1120,7 @@ def personal_total():
 
         #这里要进行一个crm数据的合并
         conn_crm = direct_get_conn(crm_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_data = pd.read_sql(sql, conn_crm)
         conn_crm.close()
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
@@ -1395,7 +1395,7 @@ def personal_buy_all():
 
         # 这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
         conn_crm = direct_get_conn(crm_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_data = pd.read_sql(sql, conn_crm)
         conn_crm.close()
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
@@ -1877,7 +1877,7 @@ def personal_sell_all():
 
         #这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
         conn_crm = direct_get_conn(crm_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         crm_data = pd.read_sql(sql,conn_crm)
         conn_crm.close()
         df_merged = df_merged.merge(crm_data,how="left",on="phone")
