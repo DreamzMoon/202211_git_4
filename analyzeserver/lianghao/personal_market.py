@@ -849,101 +849,144 @@ def personal_publish_order_flow():
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
         fina_df['parentid'] = fina_df['parentid'].astype(str)
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
-        # 最终返回结果时处理
-        # fina_df['publish_time'] = fina_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        # fina_df['up_time'] = fina_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        # fina_df['sell_time'] = fina_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-        # fina_df['sell_time'] = fina_df['sell_time'].astype(str)
-
 
         if operateid:
             flag_2, child_phone_list = get_operationcenter_child(operateid)
             if not flag_2:
                 return {"code": child_phone_list, "status": "failed", "msg": message[child_phone_list]}
             flag_3, match_df = publish_exist_operationcenter(fina_df, child_phone_list, request)
+            # if not flag_3:
+            #     return {"code": match_df, "status": "failed", "msg": message[match_df]}
+            part_user_df = fina_df.loc[fina_df['sell_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+            flag_3, match_attribute_df = match_attribute(part_user_df, request, mode="publish")
             if not flag_3:
-                return {"code": match_df, "status": "failed", "msg": message[match_df]}
-
-            match_dict_list = match_df.to_dict('records')
-            logger.info(match_dict_list)
-            if num and page:
-                start_index = (page - 1) * num
-                end_index = page * num
-                # 如果num超过数据条数
-                if end_index > len(match_df):
-                    end_index = len(match_df)
+                return {"code": match_attribute_df, "status": "failed", "msg": message[match_attribute_df]}
+            match_attribute_df['operatename'] = child_phone_list[-1]
+            if page and size:
+                start_index = (page - 1) * size
+                end_index = page * size
+                match_df = match_attribute_df[start_index:end_index]
             else:
-                start_index = 0
-                end_index = len(match_df)
-            return_data = {
-                "data": match_dict_list[start_index: end_index]
-            }
-            return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
+                match_df = match_attribute_df.copy()
+            # match_dict_list = match_df.to_dict('records')
+            # logger.info(match_dict_list)
+            # if num and page:
+            #     start_index = (page - 1) * num
+            #     end_index = page * num
+            #     # 如果num超过数据条数
+            #     if end_index > len(match_df):
+            #         end_index = len(match_df)
+            # else:
+            #     start_index = 0
+            #     end_index = len(match_df)
+            # return_data = {
+            #     "data": match_dict_list[start_index: end_index]
+            # }
+            # return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
         # 如果不存在运营中心参数
         else:
-            # 判断是否为无参
-            if not parent and not sell_info and not start_publish_time and not start_up_time and not transfer_id and not start_sell_time:
-                # 根据页码和显示条数返回数据
-                if num and page:
-                    start_index = (page - 1) * num
-                    end_index = page * num
-                    # 如果num超过数据条数
-                    if end_index > len(fina_df):
-                        end_index = len(fina_df)
-                    flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="publish")
-                    if not flag_4:
-                        return {"code": match_df, "status": "failed", "msg": message[match_df]}
-                else:
-                    all_user_operate_result = get_all_user_operationcenter()
-                    if not all_user_operate_result[0]:
-                        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-                    all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
-                    match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left', on='sell_phone')
-                    match_df.drop(['parent_phone'], axis=1, inplace=True)
-                match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                try:
-                    match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-                except:
-                    pass
-                match_df['sell_time'] = match_df['sell_time'].astype(str)
-                match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
-                match_dict_list = match_df.to_dict('records')
-                return_data = {
-                    "data": match_dict_list
-                }
-                return {"code": "0000", "status": "success", "msg": return_data,"count": fina_df.shape[0]}
-
+            # 不管是否有参数，先进行数据匹配
+            flag_3, match_attribute_df = match_attribute(fina_df, request, mode="publish")
+            if not flag_3:
+                return {"code": match_attribute_df, "status": "failed", "msg": message[match_attribute_df]}
+            if page and size:
+                start_index = (page - 1) * size
+                end_index = page * size
+                cut_data = match_attribute_df[start_index:end_index]
             else:
-                flag_5, match_df = match_attribute(fina_df, request, mode="publish")
+                cut_data = match_attribute_df.copy()
+            # 以1500条数据为界限，以上调用get_all_user_operationcenter,以下直接进行运营中心匹配
+            if cut_data.shape[0] > 1500:
+                # 调用get_all_user_operationcenter
+                all_user_operate_result = get_all_user_operationcenter()
+                if not all_user_operate_result[0]:
+                    return {"code": "10000", "status": "failed", "msg": message["10000"]}
+                all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
+                match_df = cut_data.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left',
+                                         on='sell_phone')
+                match_df.drop(['parent_phone'], axis=1, inplace=True)
+            else:
+                flag_5, match_df = match_user_operate(conn_crm, cut_data, mode="publish")
                 if not flag_5:
                     return {"code": match_df, "status": "failed", "msg": message[match_df]}
-                if num and page:
-                    start_index = (page - 1) * num
-                    end_index = page * num
-                    # 如果num超过数据条数
-                    if end_index > len(match_df):
-                        end_index = len(match_df)
-                else:
-                    start_index = 0
-                    end_index = len(match_df)
-                flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="publish")
-                if not flag_6:
-                    return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
-                match_df_1['publish_time'] = match_df_1['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                match_df_1['up_time'] = match_df_1['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-                try:
-                    match_df_1['sell_time'] = match_df_1['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-                except:
-                    pass
-                match_df_1['sell_time'] = match_df_1['sell_time'].astype(str)
-                match_df_1['sell_time'] = match_df_1['sell_time'].apply(lambda x: x.replace("NaT", ""))
-                match_dict_list = match_df_1.to_dict('records')
-                logger.info(match_dict_list)
-                return_data = {
-                    "data": match_dict_list
-                }
-                return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
+        match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+        try:
+            match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        except:
+            pass
+        match_df['sell_time'] = match_df['sell_time'].astype(str)
+        match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
+        match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+        match_df.fillna("", inplace=True)
+        match_dict_list = match_df.to_dict('records')
+        return_data = {
+            "data": match_dict_list
+        }
+        return {"code": "0000", "status": "success", "msg": return_data, "count": match_attribute_df.shape[0]}
+            # # 判断是否为无参
+            # if not parent and not sell_info and not start_publish_time and not start_up_time and not transfer_id and not start_sell_time:
+            #     # 根据页码和显示条数返回数据
+            #     if num and page:
+            #         start_index = (page - 1) * num
+            #         end_index = page * num
+            #         # 如果num超过数据条数
+            #         if end_index > len(fina_df):
+            #             end_index = len(fina_df)
+            #         flag_4, match_df = match_user_operate(conn_crm, fina_df.iloc[start_index:end_index, :], mode="publish")
+            #         if not flag_4:
+            #             return {"code": match_df, "status": "failed", "msg": message[match_df]}
+            #     else:
+            #         all_user_operate_result = get_all_user_operationcenter()
+            #         if not all_user_operate_result[0]:
+            #             return {"code": "10000", "status": "failed", "msg": message["10000"]}
+            #         all_user_operate_result[1].rename(columns={"phone": 'sell_phone'}, inplace=True)
+            #         match_df = fina_df.merge(all_user_operate_result[1].loc[:, ['sell_phone', 'operatename']], how='left', on='sell_phone')
+            #         match_df.drop(['parent_phone'], axis=1, inplace=True)
+            #     match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            #     match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            #     try:
+            #         match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+            #     except:
+            #         pass
+            #     match_df['sell_time'] = match_df['sell_time'].astype(str)
+            #     match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
+            #     match_dict_list = match_df.to_dict('records')
+            #     return_data = {
+            #         "data": match_dict_list
+            #     }
+            #     return {"code": "0000", "status": "success", "msg": return_data,"count": fina_df.shape[0]}
+            #
+            # else:
+            #     flag_5, match_df = match_attribute(fina_df, request, mode="publish")
+            #     if not flag_5:
+            #         return {"code": match_df, "status": "failed", "msg": message[match_df]}
+            #     if num and page:
+            #         start_index = (page - 1) * num
+            #         end_index = page * num
+            #         # 如果num超过数据条数
+            #         if end_index > len(match_df):
+            #             end_index = len(match_df)
+            #     else:
+            #         start_index = 0
+            #         end_index = len(match_df)
+            #     flag_6, match_df_1 = match_user_operate(conn_crm, match_df.iloc[start_index:end_index, :], mode="publish")
+            #     if not flag_6:
+            #         return {"code": match_df_1, "status": "failed", "msg": message[match_df_1]}
+            #     match_df_1['publish_time'] = match_df_1['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            #     match_df_1['up_time'] = match_df_1['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+            #     try:
+            #         match_df_1['sell_time'] = match_df_1['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+            #     except:
+            #         pass
+            #     match_df_1['sell_time'] = match_df_1['sell_time'].astype(str)
+            #     match_df_1['sell_time'] = match_df_1['sell_time'].apply(lambda x: x.replace("NaT", ""))
+            #     match_dict_list = match_df_1.to_dict('records')
+            #     logger.info(match_dict_list)
+            #     return_data = {
+            #         "data": match_dict_list
+            #     }
+            #     return {"code": "0000", "status": "success", "msg": return_data,"count": match_df.shape[0]}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}

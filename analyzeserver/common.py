@@ -665,9 +665,13 @@ def match_user_operate(conn_crm, user_df, mode="order"):
         match_buyer_list = user_df[tag].tolist()
         match_user_data_list = []
         for buyer in set(match_buyer_list):
+            # 可能存在用户在靓号里有，但是crm里没有，直接跳过处理
             crm_cursor.execute(operate_sql, buyer)
             match_operate_data = pd.DataFrame(crm_cursor.fetchall())
-            match_operatename = match_operate_data.loc[(match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+            try:
+                match_operatename = match_operate_data.loc[(match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+            except:
+                continue
             if match_operatename:
                 match_operate_data.loc[0, 'operatename'] = match_operatename[0]
             match_user_data = match_operate_data.loc[:0, :]
