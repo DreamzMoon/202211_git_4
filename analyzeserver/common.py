@@ -853,8 +853,6 @@ def match_time_type_data(data_df, request):
             to_week = to_day + timedelta(days=-6)
             time_data_df = data_df.loc[(data_df['create_time'].dt.date >= to_week) & (
                     data_df['create_time'].dt.date <= to_day), :]
-            time_data_df.to_csv(r'D:/time_data_df.csv', encoding='gb18030')
-
             # 同比
             to_week_end_ratio = to_week + timedelta(days=-1)
             to_week_start_ratio = to_week_end_ratio + timedelta(days=-6)
