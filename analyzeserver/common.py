@@ -788,7 +788,6 @@ def user_first_second_near_publish(data_df):
         }
 
         if data_df.shape[0] >= 1:
-            logger.info('1111111111111111')
             first_df = data_df.loc[0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             first_df.fillna('', inplace=True)
             first_time['publish_time'] = first_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -803,7 +802,7 @@ def user_first_second_near_publish(data_df):
             first_time = publish_mode_data
         publish_info['first_time'] = first_time
 
-        if data_df.shape[0] >=3:
+        if data_df.shape[0] == 2:
             second_df = data_df.loc[1, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             second_df.fillna('', inplace=True)
             second_time['publish_time'] = second_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -818,7 +817,7 @@ def user_first_second_near_publish(data_df):
             second_time = publish_mode_data
         publish_info['second_time'] = second_time
 
-        if data_df.shape[0] >= 2:
+        if data_df.shape[0] >= 3:
             near_df = data_df[-1:].reset_index(drop=True).loc[
                 0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             near_df.fillna('', inplace=True)

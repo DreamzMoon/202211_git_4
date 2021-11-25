@@ -315,8 +315,7 @@ def personal_publish_detail():
         user_order_df = pd.read_sql(order_sql, conn_lh)
         user_publish_df = user_publish_base_df.merge(user_order_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)
-        user_publish_df.reset_index(drop=True)
-        conn_crm.close()
+        user_publish_df.reset_index(drop=True, inplace=True)
 
         # 数据分析---用户标题总数据
         title_data = {}
