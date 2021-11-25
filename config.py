@@ -62,14 +62,14 @@ elif ENV == "pro":
     }
 elif ENV == 'local':
     redis_host = "127.0.0.1"
-    redis_port = 16379
-    redis_password = "analyze.qq123"
-    # redis_password = ""
+    redis_port = 6379
+    # redis_password = "analyze.qq123"
+    redis_password = ""
     redis_db = 0
 
     analyze_mysql_conf = {
         "host": '127.0.0.1',
-        "port": 13306,
+        "port": 3306,
         "user": 'root',
         "password": 'root',
         "db": 'lh_analyze',
