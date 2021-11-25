@@ -227,7 +227,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
         logger.info('search_operateid:%s' % search_operateid)
         fina_center_data_list = []
         for phone in operate_telephone_list:
-            logger.info(phone)
+            # logger.info(phone)
             crm_cursor.execute(supervisor_sql, phone)
             all_data = crm_cursor.fetchall()
             # 总数据
@@ -236,8 +236,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
             all_data_phone = all_data['phone'].tolist()
             # 运营中心名称
             operate_data = operate_df.loc[operate_df['telephone'] == phone, :]
-            operateid = str(operate_data['id'].values[0])
-            logger.info('operateid: %s' % operateid)
+            operateid = operate_data['id'].values[0]
             operatename = operate_data['operatename'].values[0]
             operate_leader_unionid = operate_data['unionid'].values[0]
             operate_leader_name = operate_data['name'].values[0]
@@ -507,7 +506,8 @@ def match_attribute(data_df, request, mode):
 
     :param data_df: 需要匹配的DataFrame
     :param request: 请求
-    :return:
+    :param mode: order为订单流水， publish为发布出售， publish_data为转卖市场发布
+    :return: bool与匹配数据或者错误码
     '''
     try:
         if mode == 'order':
@@ -553,69 +553,69 @@ def match_attribute(data_df, request, mode):
         return False, "10011"
 
 # 如果订单流水存在运营中心参数
-def order_exist_operationcenter(fina_df, child_phone_list, request):
-    '''
-
-    :param fina_df: 由order_and_user_merge处理后的数据
-    :param child_phone_list: 下级手机列表
-    :param request: 请求
-    :return:
-    '''
-    try:
-        part_user_df = fina_df.loc[fina_df['buyer_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
-        flag, match_df = match_attribute(part_user_df, request)
-        if not flag:
-            return False, match_df
-        # 匹配到数据
-        # if match_df.shape[0] > 0:
-        match_df['operatename'] = child_phone_list[-1]
-        # 删除多余列
-        match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
-        match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S") # 可优化
-        match_df = map_type(match_df)
-        match_df.fillna("", inplace=True)
-        return True, match_df
-        # else:
-        #     return False, "10010"
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return False, "10011"
+# def order_exist_operationcenter(fina_df, child_phone_list, request):
+#     '''
+#
+#     :param fina_df: 由order_and_user_merge处理后的数据
+#     :param child_phone_list: 下级手机列表
+#     :param request: 请求
+#     :return:
+#     '''
+#     try:
+#         part_user_df = fina_df.loc[fina_df['buyer_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+#         flag, match_df = match_attribute(part_user_df, request)
+#         if not flag:
+#             return False, match_df
+#         # 匹配到数据
+#         # if match_df.shape[0] > 0:
+#         match_df['operatename'] = child_phone_list[-1]
+#         # 删除多余列
+#         match_df.drop(['parent_phone', 'sell_name'], axis=1, inplace=True)
+#         match_df['order_time'] = match_df['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S") # 可优化
+#         match_df = map_type(match_df)
+#         match_df.fillna("", inplace=True)
+#         return True, match_df
+#         # else:
+#         #     return False, "10010"
+#     except Exception as e:
+#         logger.error(traceback.format_exc())
+#         return False, "10011"
 
 # 发布订单流水存在运营中心
-def publish_exist_operationcenter(fina_df, child_phone_list, request):
-    '''
-
-        :param fina_df:
-        :param child_phone_list: 下级手机列表
-        :param request: 请求
-        :return:
-        '''
-    logger.info(child_phone_list)
-    logger.info('----------------------')
-    try:
-        part_user_df = fina_df.loc[fina_df['sell_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
-        flag, match_df = match_attribute(part_user_df, request, mode='publish')
-        if not flag:
-            return False, match_df
-        # 匹配到数据
-        # if match_df.shape[0] > 0:
-        match_df['operatename'] = child_phone_list[-1]
-        # 最终返回结果时处理
-        match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-        match_df['sell_time'] = match_df['sell_time'].astype(str)
-        # 删除多余列
-        match_df.drop(['parent_phone'], axis=1, inplace=True)
-        match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
-        match_df = map_type(match_df)
-        match_df.fillna("", inplace=True)
-        return True, match_df
-        # else:
-        #     return False, "10010"
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return False, "10011"
+# def publish_exist_operationcenter(fina_df, child_phone_list, request):
+#     '''
+#
+#         :param fina_df:
+#         :param child_phone_list: 下级手机列表
+#         :param request: 请求
+#         :return:
+#         '''
+#     logger.info(child_phone_list)
+#     logger.info('----------------------')
+#     try:
+#         part_user_df = fina_df.loc[fina_df['sell_phone'].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+#         flag, match_df = match_attribute(part_user_df, request, mode='publish')
+#         if not flag:
+#             return False, match_df
+#         # 匹配到数据
+#         # if match_df.shape[0] > 0:
+#         match_df['operatename'] = child_phone_list[-1]
+#         # 最终返回结果时处理
+#         match_df['publish_time'] = match_df['publish_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#         match_df['up_time'] = match_df['up_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#         match_df['sell_time'] = match_df['sell_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+#         match_df['sell_time'] = match_df['sell_time'].astype(str)
+#         # 删除多余列
+#         match_df.drop(['parent_phone'], axis=1, inplace=True)
+#         match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
+#         match_df = map_type(match_df)
+#         match_df.fillna("", inplace=True)
+#         return True, match_df
+#         # else:
+#         #     return False, "10010"
+#     except Exception as e:
+#         logger.error(traceback.format_exc())
+#         return False, "10011"
 
 # 不存在运营中心参数时，匹配用户运营中心
 def match_user_operate(user_df, field):
@@ -679,37 +679,37 @@ def match_user_operate(user_df, field):
         except:
             pass
 
-def match_user_operate1(child_phone_list, crm_conn, field):
-    try:
-        operate_sql = '''
-            select a.phone, b.operatename, b.crm from 
-            (WITH RECURSIVE temp as (
-                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
-                    UNION ALL
-                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-            )
-            SELECT * FROM temp 
-            )a left join luke_lukebus.operationcenter b
-            on a.id = b.unionid
-            '''
-        crm_cursor = crm_conn.cursor()
-        match_user_data_list = []
-        for child in set(child_phone_list):
-            crm_cursor.execute(operate_sql, child)
-            match_operate_data = pd.DataFrame(crm_cursor.fetchall())
-            match_operatename = match_operate_data.loc[
-                (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
-            if match_operatename:
-                match_operate_data.loc[0, 'operatename'] = match_operatename[0]
-            match_user_data = match_operate_data.loc[:0, :]
-            match_user_data_list.append(match_user_data)
-        df_concat = pd.concat(match_user_data_list, ignore_index=True)
-        df_concat.columns = [field, 'operatename', 'crm']
-        df_concat.drop('crm', axis=1, inplace=True)
-        return True, df_concat
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return False, "10011"
+# def match_user_operate1(child_phone_list, crm_conn, field):
+#     try:
+#         operate_sql = '''
+#             select a.phone, b.operatename, b.crm from
+#             (WITH RECURSIVE temp as (
+#                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
+#                     UNION ALL
+#                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+#             )
+#             SELECT * FROM temp
+#             )a left join luke_lukebus.operationcenter b
+#             on a.id = b.unionid
+#             '''
+#         crm_cursor = crm_conn.cursor()
+#         match_user_data_list = []
+#         for child in set(child_phone_list):
+#             crm_cursor.execute(operate_sql, child)
+#             match_operate_data = pd.DataFrame(crm_cursor.fetchall())
+#             match_operatename = match_operate_data.loc[
+#                 (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+#             if match_operatename:
+#                 match_operate_data.loc[0, 'operatename'] = match_operatename[0]
+#             match_user_data = match_operate_data.loc[:0, :]
+#             match_user_data_list.append(match_user_data)
+#         df_concat = pd.concat(match_user_data_list, ignore_index=True)
+#         df_concat.columns = [field, 'operatename', 'crm']
+#         df_concat.drop('crm', axis=1, inplace=True)
+#         return True, df_concat
+#     except Exception as e:
+#         logger.error(traceback.format_exc())
+#         return False, "10011"
 
 # 根据运营中心id及request返回匹配数据
 def if_exist_operate_match_data(fina_df, operateid, request, match_field, mode):
