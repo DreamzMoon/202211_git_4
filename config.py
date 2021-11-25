@@ -64,6 +64,7 @@ elif ENV == 'local':
     redis_host = "127.0.0.1"
     redis_port = 16379
     redis_password = "analyze.qq123"
+    # redis_password = ""
     redis_db = 0
 
     analyze_mysql_conf = {
