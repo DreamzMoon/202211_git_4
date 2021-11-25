@@ -483,6 +483,7 @@ def today_dynamic_transaction():
                 sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
             sell_df = pd.concat(sell_df_list, axis=0)
             sell_fina_df = order_df.merge(sell_df, how='left', on='phone')
+            sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             sell_list = sell_fina_df.to_dict("records")
         else:
             sell_list = []
@@ -549,7 +550,7 @@ def today_dynamic_publish():
                 publish_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
             publish_df = pd.concat(publish_df_list, axis=0)
             publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
-
+            publish_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             publish_list = publish_fina_df.to_dict("records")
         else:
             publish_list = []
@@ -621,7 +622,7 @@ def today_dynamic_newuser():
                 new_user_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
             user_df = pd.concat(new_user_df_list, axis=0)
             new_user_fina_df = new_user_df.merge(user_df, how='left', on='phone')
-
+            new_user_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             new_user_list = new_user_fina_df.to_dict("records")
         else:
             new_user_list = []
