@@ -256,9 +256,11 @@ def deal_top():
         sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
         left join lh_sell s on o.sell_id = s.id
-        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE 
-        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1 
+        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
+        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
         order by o.create_time desc) t group by pretty_type_name order by total_price desc'''
+
+
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
 
