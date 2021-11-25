@@ -24,7 +24,7 @@ def hello():
 
 @app.route('/hello')
 def hello():
-    return 'Hello, World!'
+    return 'Hello, World!!'
 
 from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
