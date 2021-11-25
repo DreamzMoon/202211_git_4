@@ -802,7 +802,7 @@ def user_first_second_near_publish(data_df):
             first_time = publish_mode_data
         publish_info['first_time'] = first_time
 
-        if data_df.shape[0] == 2:
+        if data_df.shape[0] >= 2:
             second_df = data_df.loc[1, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             second_df.fillna('', inplace=True)
             second_time['publish_time'] = second_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -852,7 +852,8 @@ def match_time_type_data(data_df, request):
         elif time_type == 2: # 周
             to_week = to_day + timedelta(days=-6)
             time_data_df = data_df.loc[(data_df['create_time'].dt.date >= to_week) & (
-                    data_df['create_time'].dt.date <= to_week), :]
+                    data_df['create_time'].dt.date <= to_day), :]
+            time_data_df.to_csv(r'D:/time_data_df.csv', encoding='gb18030')
 
             # 同比
             to_week_end_ratio = to_week + timedelta(days=-1)
