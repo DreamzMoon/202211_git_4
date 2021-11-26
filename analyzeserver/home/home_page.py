@@ -535,7 +535,7 @@ def today_dynamic_publish():
         publish_order_sql = '''
             select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
             from lh_pretty_client.lh_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '') and `status`=0
+            where del_flag=0 and (sell_phone is not null or sell_phone != '')
             and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
             order by up_time desc
             limit 3
