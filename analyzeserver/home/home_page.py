@@ -107,21 +107,25 @@ def deal_business():
         sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone'''
         cursor_lh.execute(sql)
         order_datas = pd.DataFrame(cursor_lh.fetchall())
+        # 如果暂无交易数据，返回空
+        if order_datas.shape[0] > 0:
+            for ol in reversed(operate_datas):
+                ol_dict = {}
+                phone_list = json.loads(ol[1])
+                ol_dict["operatename"] = ol[0]
+                order_data_phone = order_datas[order_datas[0].isin(phone_list)][1]
+                ol_dict["total_money"] = order_data_phone.sum() if len(order_data_phone)>0 else 0
+                return_lists.append(ol_dict)
 
-        for ol in reversed(operate_datas):
-            ol_dict = {}
-            phone_list = json.loads(ol[1])
-            ol_dict["operatename"] = ol[0]
-            order_data_phone = order_datas[order_datas[0].isin(phone_list)][1]
-            ol_dict["total_money"] = order_data_phone.sum() if len(order_data_phone)>0 else 0
-            return_lists.append(ol_dict)
-
-        logger.info(return_lists)
-        return_lists = pd.DataFrame(return_lists)
-        return_lists.sort_values(by="total_money",ascending=False,inplace=True)
-        logger.info(return_lists.iloc[0:3])
-        return_lists.iloc[0:3].to_dict("records")
-        return {"code":"0000","status":"success","msg":return_lists.iloc[0:3].to_dict("records")}
+            logger.info(return_lists)
+            return_lists = pd.DataFrame(return_lists)
+            return_lists.sort_values(by="total_money",ascending=False,inplace=True)
+            return_lists['total_money'] = return_lists['total_money'].astype(float)
+            logger.info(return_lists.iloc[0:3])
+            return_data = return_lists.iloc[0:3].to_dict("records")
+        else:
+            return_data = return_lists
+        return {"code":"0000","status":"success","msg":return_data}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
