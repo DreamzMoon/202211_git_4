@@ -21,7 +21,9 @@ CORS(app, supports_credentials=True)
 def hello():
     return 'Hello, World!'
 
-
+@app.route('/')
+def hellohello():
+    return 'hellohello'
 
 
 from analyzeserver.other.user import userbp
