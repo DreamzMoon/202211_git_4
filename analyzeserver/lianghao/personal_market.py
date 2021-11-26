@@ -1869,7 +1869,7 @@ def personal_sell_all():
             df_merged = df_merged[(df_merged["last_time"] >= last_start_time) & (df_merged["last_time"] <= last_end_time)]
 
         # 无数据返回空
-        if df_merged is None:
+        if df_merged.empty:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         result_count = len(df_merged)
