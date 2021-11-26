@@ -21,7 +21,7 @@ CORS(app, supports_credentials=True)
 def hello():
     return 'Hello, World!'
 
-@app.route('/')
+@app.route('/hello')
 def hellohello():
     return 'hellohello'
 
