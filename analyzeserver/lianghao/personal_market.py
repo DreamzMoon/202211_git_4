@@ -313,7 +313,7 @@ def personal_publish_detail():
 
         order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
-        user_publish_df = user_publish_base_df.merge(user_order_df, how='left', on='sell_id')
+        user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)
         user_publish_df.reset_index(drop=True, inplace=True)
 
