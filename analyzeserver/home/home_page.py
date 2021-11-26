@@ -262,7 +262,7 @@ def deal_top():
         left join lh_sell s on o.sell_id = s.id
         where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
         and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        order by o.create_time desc) t group by pretty_type_name order by total_price desc'''
+        order by o.create_time desc) t group by pretty_type_name order by total_count desc'''
 
 
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
