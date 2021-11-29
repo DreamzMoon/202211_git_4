@@ -26,7 +26,7 @@ def get_lukebus_phone(bus_lists):
         phone_lists = []
         conn_crm = direct_get_conn(crm_mysql_conf)
         crm_cursor = conn_crm.cursor()
-        sql = '''select * from luke_lukebus.operationcenter where find_in_set(operatename,%s)'''
+        sql = '''select * from luke_lukebus.operationcenter where find_in_set(operatename,%s) and crm = 1'''
         crm_cursor.execute(sql, (",".join(bus_lists)))
         operate_datas = crm_cursor.fetchall()
         logger.info("operate_datas:%s" % operate_datas)
@@ -109,7 +109,7 @@ def get_busphne_by_id(bus_id):
         phone_lists = []
         conn_crm = direct_get_conn(crm_mysql_conf)
         crm_cursor = conn_crm.cursor()
-        sql = '''select * from luke_lukebus.operationcenter where id = %s'''
+        sql = '''select * from luke_lukebus.operationcenter where id = %s and crm = 1'''
         crm_cursor.execute(sql, (bus_id))
         operate_datas = crm_cursor.fetchall()
         logger.info("operate_datas:%s" % operate_datas)

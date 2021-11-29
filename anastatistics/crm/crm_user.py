@@ -124,6 +124,7 @@ try:
       `capacity` tinyint(2) DEFAULT NULL COMMENT '1运营中心/公司 2网店主 3带货者 20无身份(普通用户)',
       `exclusive` tinyint(1) DEFAULT NULL COMMENT '网店主类型：1专营店 2自营店',
       `addtime` datetime DEFAULT NULL COMMENT '用户的注册时间 可能在各业务系统',
+      `operate_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
       `operatename` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
       `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
       `del_flag` int(1) DEFAULT '0' COMMENT '1：删除'
