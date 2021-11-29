@@ -340,7 +340,7 @@ def get_all_user_operationcenter(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
