@@ -85,24 +85,24 @@ def operations_order_count_drop():
         # 运营中心数据
         if search_key == "" and form_operatename == "":
             # 运营中心sql
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         # 11位手机号
         elif search_key.isdigit() and len(search_key) == 11 and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and crm = 1'
         elif search_key.isdigit() and len(search_key) == 11 and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and operatename=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and operatename=%s and crm = 1'
         # unionid
         elif search_key.isdigit() and len(search_key) < 11 and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and crm = 1'
         elif search_key.isdigit() and len(search_key) < 11 and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and operatename=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and operatename=%s and crm = 1'
         # 名称
         elif search_key and not search_key.isdigit() and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and crm = 1'
         elif search_key and not search_key.isdigit() and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and operatename=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and operatename=%s and crm = 1'
         elif not search_key and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and operatename=%s'
+            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and operatename=%s and crm = 1'
         else: # 手机号输入过长或者unionid输入错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
         logger.info(operate_sql)
