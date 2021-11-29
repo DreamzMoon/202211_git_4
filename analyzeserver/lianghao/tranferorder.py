@@ -701,7 +701,7 @@ def transfer_sell_order():
 @tobp.route("public",methods=["POST"])
 def transfer_public_order():
     try:
-
+        logger.info("进入")
         conn_read = direct_get_conn(lianghao_mysql_conf)
         if not conn_read:
             return {"code":"10008","status":"failed","msg":message["10008"]}
@@ -771,7 +771,7 @@ def transfer_public_order():
                 args_phone_lists = phone_lists_result[1]
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-
+        logger.info("args_phone_lists:%s" %args_phone_lists)
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
@@ -817,6 +817,7 @@ def transfer_public_order():
             else:
                 today_sql = today_sql + group_order_sql
 
+            logger.info("today_sql:%s" %today_sql)
             cursor.execute(today_sql)
             today_data = cursor.fetchall()
             logger.info(today_data)
@@ -942,7 +943,7 @@ def transfer_public_order():
                 sql = sql + condition_sql + group_order_sql
             else:
                 sql = sql + group_order_sql
-            logger.info(sql)
+            logger.info("todaysql:%s" %sql)
             cursor.execute(sql)
             current_datas = cursor.fetchall()
             logger.info(current_datas)
