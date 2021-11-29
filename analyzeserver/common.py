@@ -359,7 +359,7 @@ def get_all_user_operationcenter(crm_user_data=""):
 
         # 关系查找ql
         supervisor_sql = '''
-                select a.*,b.operatename,b.crm from 
+                select a.*,if (crm =0,"",b.operatename) operatename ,b.crm from 
                 (WITH RECURSIVE temp as (
                     SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
