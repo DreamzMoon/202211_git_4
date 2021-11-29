@@ -345,6 +345,7 @@ def get_all_user_operationcenter(crm_user_data=""):
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
 
+
         # crm用户数据
         crm_user_df = ""
         if len(crm_user_data) > 0:
@@ -358,19 +359,31 @@ def get_all_user_operationcenter(crm_user_data=""):
         operate_telephone_list = operate_df['telephone'].to_list()
 
         # 关系查找ql
+        # supervisor_sql = '''
+        #         select a.*,if (crm =0,"",b.operatename) operatename ,b.crm from
+        #         (WITH RECURSIVE temp as (
+        #             SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+        #             UNION ALL
+        #             SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+        #         )
+        #         SELECT * FROM temp
+        #         )a left join luke_lukebus.operationcenter b
+        #         on a.id = b.unionid
+        #         '''
         supervisor_sql = '''
-                select a.*,if (crm =0,"",b.operatename) operatename ,b.crm from 
-                (WITH RECURSIVE temp as (
-                    SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
-                    UNION ALL
-                    SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
-                )
-                SELECT * FROM temp
-                )a left join luke_lukebus.operationcenter b
-                on a.id = b.unionid
-                '''
+            select a.*,if (crm =0,Null,b.operatename) operatename,b.crm  from 
+            (WITH RECURSIVE temp as (
+            SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+            UNION ALL
+            SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+            )
+            SELECT * FROM temp
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid
+        '''
         child_df_list = []
         for phone in operate_telephone_list:
+
             # 1、获取运营中心所有下级数据
             crm_cursor.execute(supervisor_sql, phone)
             all_data = crm_cursor.fetchall()
@@ -1257,7 +1270,7 @@ if __name__ == "__main__":
     # logger.info(len(res[1]))
     # time.sleep(2)
 
-    logger.info(one_belong_bus("13559436425"))
+    # logger.info(one_belong_bus("13559436425"))
 
 
 
@@ -1280,3 +1293,6 @@ if __name__ == "__main__":
     #
     #     user_data = lh_user_data.merge(crm_data,how="left",on="phone")
     #     user_data.to_csv("e:/用户对应的运营中心全部都有身份的.csv")
+
+    data = get_all_user_operationcenter()
+    data[1].to_csv(r"F:\ProjectCode\dataanalysis\anastatistics\crm\aaabbb.csv")
