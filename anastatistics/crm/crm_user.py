@@ -34,6 +34,93 @@ def str_to_date(x):
     except:
        return "error_birth"
 
+def get_user_operationcenter_direct(crm_user_data=""):
+    '''
+    crm_user_data 必须是dataframe
+    :param crm_cursor: crm数据库游标。需再调用方法后手动关闭数据库连接
+    :return: crm手机不为空的用户对应运营中心
+    '''
+    try:
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        if not conn_crm:
+            return False, '数据库连接失败'
+        crm_cursor = conn_crm.cursor()
+        operate_sql = 'select id operate_direct_id,unionid, name, telephone, operatename operatenamedirect from luke_lukebus.operationcenter where capacity=1'
+        crm_cursor.execute(operate_sql)
+        operate_data = crm_cursor.fetchall()
+        operate_df = pd.DataFrame(operate_data)
+
+        # crm用户数据
+        crm_user_df = ""
+        if len(crm_user_data) > 0:
+            crm_user_df = crm_user_data
+        else:
+            crm_user_sql = 'select id unionid, pid parentd, phone from luke_sincerechat.user where phone is not null'
+            crm_cursor.execute(crm_user_sql)
+            crm_user_df = pd.DataFrame(crm_cursor.fetchall())
+
+        # 运营中心手机列表
+        operate_telephone_list = operate_df['telephone'].to_list()
+
+        # 关系查找ql
+        supervisor_sql = '''
+                select a.*,b.operatename operatenamedirect,b.crm from 
+                (WITH RECURSIVE temp as (
+                    SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+                    UNION ALL
+                    SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+                )
+                SELECT * FROM temp
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid
+                '''
+        child_df_list = []
+        for phone in operate_telephone_list:
+            # 1、获取运营中心所有下级数据
+            crm_cursor.execute(supervisor_sql, phone)
+            all_data = crm_cursor.fetchall()
+            # 总数据
+            all_data = pd.DataFrame(all_data)
+            all_data.dropna(subset=['phone'], axis=0, inplace=True)
+            all_data_phone = all_data['phone'].tolist()
+            # 运营中心名称
+            operatename = operate_df.loc[operate_df['telephone'] == phone, 'operatenamedirect'].values[0]
+            operate_direct_id = operate_df.loc[operate_df['telephone'] == phone, 'operate_direct_id'].values[0]
+            # 子运营中心-->包含本身
+            center_phone_list = all_data.loc[all_data['operatenamedirect'].notna(), :]['phone'].tolist()
+            child_center_phone_list = []  # 子运营中心所有下级
+            # 2、得到运营中心下所有归属下级
+            first_child_center = []  # 第一级运营中心
+            for i in center_phone_list[1:]:
+                # 剔除下级的下级运营中心
+                if i in child_center_phone_list:
+                    continue
+                # 排除运营中心重复统计
+                #         if i not in center_phone_list:
+                #         first_child_center.append(i)
+                crm_cursor.execute(supervisor_sql, i)
+                center_data = crm_cursor.fetchall()
+                center_df = pd.DataFrame(center_data)
+                center_df.dropna(subset=['phone'], axis=0, inplace=True)
+                child_center_phone_list.extend(center_df['phone'].tolist())
+            ret = list(set(all_data_phone) - set(child_center_phone_list))
+            #     ret.extend(first_child_center)
+            # 3、取得每个运营中心下级df合并
+            child_df = crm_user_df.loc[crm_user_df['phone'].isin(ret), :]
+            child_df['operatenamedirect'] = operatename
+            child_df["operate_direct_id"] = operate_direct_id
+            child_df_list.append(child_df)
+        # 用户数据拼接
+        exist_center_df = pd.concat(child_df_list)
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatenamedirect','operate_direct_id']], how='left', on='phone')
+        conn_crm.close()
+        logger.info('返回用户数据成功')
+        return True, fina_df
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return False, "10000"
+
+
 start_time = int(time.time())
 try:
     conn_crm = direct_get_conn(crm_mysql_conf)
@@ -80,6 +167,12 @@ try:
 
     last_data = user_data_result[1]
 
+    user_data_result = get_user_operationcenter_direct(last_data)
+    logger.info(user_data_result)
+    last_data = user_data_result[1]
+
+
+
     #把数字的要转成str 不然不能替换
     last_data["vertify_status"] = last_data["vertify_status"].astype("object")
     last_data["vip_grade"] = last_data["vip_grade"].astype("object")
@@ -102,7 +195,7 @@ try:
     logger.info(tomorrow_time)
     #建表 以明天的时间建表
     create_sql = '''
-        CREATE TABLE `crm_user_%s` (
+       CREATE TABLE `crm_user_%s` (
       `unionid` bigint(20) DEFAULT NULL COMMENT '用户id',
       `parentid` bigint(20) DEFAULT NULL COMMENT '推荐id',
       `phone` varchar(20) DEFAULT NULL COMMENT '手机号码',
@@ -126,6 +219,8 @@ try:
       `addtime` datetime DEFAULT NULL COMMENT '用户的注册时间 可能在各业务系统',
       `operate_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
       `operatename` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
+      `operate_direct_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
+      `operatenamedirect` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
       `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
       `del_flag` int(1) DEFAULT '0' COMMENT '1：删除'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -134,6 +229,7 @@ try:
     analyze_cursor.execute(create_sql)
     conn_analyze.commit()
     logger.info("建表成功")
+    logger.info(tomorrow_time)
 
     # 第一次入库走这个
     conn = sqlalchemy_conn(analyze_mysql_conf)
