@@ -284,7 +284,7 @@ def personal_publish_detail():
         user_base_info_df = user_info_df.merge(parent_df, how='left', on='parentid')
         # 查找运营中心
         operate_sql = '''
-            select a.phone, b.operatename, b.crm from 
+            select a.phone, if (crm =0, Null, b.operatename) operatename, b.crm from 
             (WITH RECURSIVE temp as (
                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -311,7 +311,7 @@ def personal_publish_detail():
         publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
 
-        order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null''' % phone
+        order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
         user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)

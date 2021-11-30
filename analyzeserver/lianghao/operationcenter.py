@@ -46,7 +46,7 @@ def operations_order_count_drop():
         crm_user_sql = 'select `phone` from luke_sincerechat.user where phone is not null'
         # 运营中心关系sql
         supervisor_sql = '''
-        select a.*,b.operatename,b.crm from
+        select a.*, if (crm =0, Null, b.operatename) operatename, b.crm from
         (WITH RECURSIVE temp as (
             SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
             UNION ALL

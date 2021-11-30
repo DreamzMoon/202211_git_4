@@ -34,7 +34,7 @@ def get_lukebus_phone(bus_lists):
         all_phone_lists = []
         for operate_data in operate_datas:
             below_person_sql = '''
-            select a.*,b.operatename from 
+            select a.*,if (crm =0, Null, b.operatename) operatename from 
             (WITH RECURSIVE temp as (
                 SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                 UNION ALL
@@ -68,7 +68,7 @@ def get_lukebus_phone(bus_lists):
                 if center_phone in filter_phone_lists:
                     continue
                 filter_sql = '''
-                select a.*,b.operatename from 
+                select a.*,if (crm =0, Null, b.operatename) operatename from 
                 (WITH RECURSIVE temp as (
                     SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -117,7 +117,7 @@ def get_busphne_by_id(bus_id):
         all_phone_lists = []
         for operate_data in operate_datas:
             below_person_sql = '''
-            select a.*,b.operatename from 
+            select a.*,if (crm =0, Null, b.operatename) operatename from 
             (WITH RECURSIVE temp as (
                 SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                 UNION ALL
@@ -151,7 +151,7 @@ def get_busphne_by_id(bus_id):
                 if center_phone in filter_phone_lists:
                     continue
                 filter_sql = '''
-                select a.*,b.operatename from 
+                select a.*,if (crm =0, Null, b.operatename) operatename from 
                 (WITH RECURSIVE temp as (
                     SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -188,7 +188,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
     '''
     try:
         supervisor_sql = '''
-                select a.*,b.operatename,b.crm from
+                select a.*,if (crm =0, Null, b.operatename) operatename,b.crm from
                 (WITH RECURSIVE temp as (
                     SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -203,7 +203,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
             return False, '10002' # 数据库连接失败
         crm_cursor = conn_crm.cursor()
 
-        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
@@ -433,13 +433,12 @@ def get_operationcenter_child(operateid):
     try:
         search_operate_phone = '''select telephone, operatename from luke_lukebus.operationcenter where id = %s''' % operateid
         search_operate_result = pd.read_sql(search_operate_phone, child_conn_crm)
-        logger.info(search_operate_result)
         operate_phone = search_operate_result['telephone'].values[0]
         operatename = search_operate_result['operatename'].values[0]
 
         # 运营中心归属下级（不包含下级运营中心）
         supervisor_sql = '''
-               select a.*,b.operatename,b.crm from 
+               select a.*,if (crm =0,Null,b.operatename) operatename,b.crm from 
                (WITH RECURSIVE temp as (
                    SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
                    UNION ALL
@@ -468,6 +467,7 @@ def get_operationcenter_child(operateid):
             child_center_phone_list.extend(child_center_df['phone'].tolist())
         child_phone_list = list(set(operate_df_phone_list) - set(child_center_phone_list))
         child_phone_list.append(operatename)
+        logger.info(child_phone_list)
         return True, child_phone_list
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -636,7 +636,7 @@ def match_user_operate(user_df, field):
         if user_df.shape[0] == 0:
             return True, user_df
         operate_sql = '''
-            select a.phone, b.operatename, b.crm from 
+            select a.phone, if (crm =0, Null, b.operatename) operatename, b.crm from 
             (WITH RECURSIVE temp as (
                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
                     UNION ALL
@@ -662,7 +662,6 @@ def match_user_operate(user_df, field):
             # 可能存在用户在靓号里有，但是crm里没有，直接跳过处理
             crm_cursor.execute(operate_sql, buyer)
             match_operate_data = pd.DataFrame(crm_cursor.fetchall())
-            logger.info(match_operate_data)
             try:
                 match_operatename = match_operate_data.loc[(match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
             except:
@@ -828,6 +827,7 @@ def user_first_second_near_publish(data_df):
             near_df = data_df[-1:].reset_index(drop=True).loc[
                 0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             near_df.fillna('', inplace=True)
+            logger.info(near_df)
             near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
             near_time['total_price'] = near_df['total_price']
             try:
@@ -1001,16 +1001,16 @@ def user_belong_bus(need_data,crm_data=0):
             pl_op_dict = {}
             # 查询可以用sql查 处理用pandas
             operate_sql = '''
-                                        select a.*,b.operatename,b.crm from 
-                                        (WITH RECURSIVE temp as (
-                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
-                                                UNION ALL
-                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-                                        )
-                                        SELECT * FROM temp 
-                                        )a left join luke_lukebus.operationcenter b
-                                        on a.id = b.unionid
-                                        '''
+                select a.*,if (crm =0, Null, b.operatename) operatename,b.crm from 
+                (WITH RECURSIVE temp as (
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        UNION ALL
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                )
+                SELECT * FROM temp 
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid
+                '''
 
             # operate_data = pd.read_sql(operate_sql, conn_crm)
             cursor_crm.execute(operate_sql,pl)
@@ -1022,7 +1022,7 @@ def user_belong_bus(need_data,crm_data=0):
             # logger.info(operate_data)
             # logger.info("----------------")
 
-            current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
+            current_operate_data = operate_data[(operate_data["operatename"].notna()) & (operate_data["crm"] == 1)]
             # logger.info(current_operate_data)
             # logger.info("--------------------")
             if len(current_operate_data)>0:
@@ -1061,7 +1061,7 @@ def one_belong_bus(phone):
 
         pl_op_dict = {}
         operate_sql = '''
-                select a.*,b.operatename,b.crm from 
+                select a.*,if (crm =0, Null, b.operatename) operatename,b.crm from 
                 (WITH RECURSIVE temp as (
                         SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                         UNION ALL
@@ -1074,7 +1074,7 @@ def one_belong_bus(phone):
         operate_data = pd.read_sql(operate_sql, conn_crm)
         # logger.info(operate_data)
         # logger.info("----------------")
-        current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
+        current_operate_data = operate_data[(operate_data["operatename"].notna()) & (operate_data["crm"] == 1)]
         logger.info(current_operate_data)
         logger.info("--------------------")
         if len(current_operate_data)>0:
@@ -1125,17 +1125,16 @@ def user_belong_by_df(need_data):
             pl_op_dict = {}
             # 查询可以用sql查 处理用pandas
             operate_sql = '''
-                                        select a.*,b.operatename,b.crm from 
-                                        (WITH RECURSIVE temp as (
-                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
-                                                UNION ALL
-                                                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-                                        )
-                                        SELECT * FROM temp 
-                                        )a left join luke_lukebus.operationcenter b
-                                        on a.id = b.unionid
-                                        '''
-
+                select a.*, if (crm =0, Null, b.operatename) operatename,b.crm from 
+                (WITH RECURSIVE temp as (
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        UNION ALL
+                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                )
+                SELECT * FROM temp 
+                )a left join luke_lukebus.operationcenter b
+                on a.id = b.unionid
+                '''
             # operate_data = pd.read_sql(operate_sql, conn_crm)
             cursor_crm.execute(operate_sql,pl)
             sql_data = cursor_crm.fetchall()
@@ -1146,7 +1145,7 @@ def user_belong_by_df(need_data):
             # logger.info(operate_data)
             # logger.info("----------------")
 
-            current_operate_data = operate_data[(operate_data["operatename"] != "") & (operate_data["crm"] == 1)]
+            current_operate_data = operate_data[(operate_data["operatename"].notna()) & (operate_data["crm"] == 1)]
             # logger.info(current_operate_data)
             # logger.info("--------------------")
             if len(current_operate_data)>0:
@@ -1289,4 +1288,4 @@ if __name__ == "__main__":
     #     user_data.to_csv("e:/用户对应的运营中心全部都有身份的.csv")
 
     data = get_all_user_operationcenter()
-    data[1].to_csv(r"F:\ProjectCode\dataanalysis\anastatistics\crm\aaabbb.csv")
+    data[1].to_csv(r"D:\match_df.csv", encoding='gb18030')
