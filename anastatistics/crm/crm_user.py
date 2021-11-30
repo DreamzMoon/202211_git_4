@@ -34,6 +34,16 @@ def str_to_date(x):
     except:
        return "error_birth"
 
+def int_time_to_str(x):
+    try:
+        if x:
+            time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(x)))
+            return time_str
+        else:
+            return ""
+    except:
+        return ""
+
 def get_user_operationcenter_direct(crm_user_data=""):
     '''
     crm_user_data 必须是dataframe
@@ -149,12 +159,18 @@ try:
     auth_datas = pd.read_sql(sql,conn_crm)
     crm_datas = crm_datas.merge(auth_datas, how="left", on="unionid")
 
+    #活体认证
+    sql = '''select unionid,status huoti_status from authentication_livingthing'''
+    huoti_data = pd.read_sql(sql,conn_crm)
+    crm_datas = crm_datas.merge(huoti_data,how="left",on="unionid")
+
     # conn = direct_get_conn(crm_mysql_conf)
     vip_datas = ""
     serpro_datas = ""
     # pandas read_sql 不支持sql时间戳格式化FROM_UNIXTIME 所以这里改用sql查询方式 然后进行pandas 的动态拼接
     with conn_crm.cursor() as cursor:
-        sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
+        # sql = '''select unionid,grade vip_grade,FROM_UNIXTIME(starttime,'%Y-%m-%d %H:%i:%s') vip_starttime,FROM_UNIXTIME(endtime,'%Y-%m-%d %H:%i:%s') vip_endtime from luke_crm.user_vip'''
+        sql = '''select unionid,grade vip_grade,starttime vip_starttime,endtime vip_endtime from luke_crm.user_vip'''
         cursor.execute(sql)
         vip_datas = pd.DataFrame(cursor.fetchall())
 
@@ -163,7 +179,8 @@ try:
         serpro_datas = pd.DataFrame(cursor.fetchall())
 
 
-
+    vip_datas["vip_starttime"] = vip_datas['vip_starttime'].apply(lambda x: int_time_to_str(x))
+    vip_datas["vip_endtime"] = vip_datas['vip_endtime'].apply(lambda x: int_time_to_str(x))
     crm_datas = crm_datas.merge(vip_datas, how="left", on="unionid")
     crm_datas = crm_datas.merge(serpro_datas, how="left", on="unionid")
 
@@ -227,6 +244,7 @@ try:
       `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '地址',
       `nationality` varchar(50) DEFAULT NULL COMMENT '族',
       `vertify_status` tinyint(1) DEFAULT NULL COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
+      `huoti_status` tinyint(1) DEFAULT NULL COMMENT '活体认证状态：0待认证 1待审核 2认证中 3失败 4成功',
       `vip_grade` tinyint(1) DEFAULT NULL COMMENT '等级 1普通会员 2vip会员 3至尊VIP',
       `vip_starttime` datetime DEFAULT NULL COMMENT 'vip开始时间',
       `vip_endtime` datetime DEFAULT NULL COMMENT 'vip结束时间',

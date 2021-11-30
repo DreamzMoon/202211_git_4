@@ -58,3 +58,31 @@ def status_type():
         return {"code": "0000", "status": "success", "msg": map_status}
     except:
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+@typebp.route("server/type",methods=["GET"])
+def server_type():
+    try:
+        serpro_grade = [
+            {"serpro_grade_id": "1", "serpro_grade_name": "初级服务商"},
+            {"serpro_grade_id": "2", "serpro_grade_name": "中级服务商"},
+            {"serpro_grade_id": "3", "serpro_grade_name": "高级服务商"},
+            {"serpro_grade_id": "4", "serpro_grade_name": "机构服务商"}
+        ]
+        return {"code": "0000", "status": "success", "msg": serpro_grade}
+    except:
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+@typebp.route("bus/identify",methods=["GET"])
+def bus_identify():
+    try:
+        serpro_grade = [
+            {"capacity_id": "1", "capacity_name": "运营中心/公司"},
+            {"capacity_id": "2", "capacity_name": "网店主"},
+            {"capacity_id": "3", "capacity_name": "带货者"},
+            {"capacity_id": "20", "capacity_name": "无身份(普通用户)"}
+        ]
+        return {"code": "0000", "status": "success", "msg": serpro_grade}
+    except:
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}

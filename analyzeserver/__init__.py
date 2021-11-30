@@ -50,6 +50,9 @@ app.register_blueprint(sysuserbp)
 from analyzeserver.home.home_page import homebp
 app.register_blueprint(homebp)
 
+from analyzeserver.user.crmuserrelate import userrelatebp
+app.register_blueprint(userrelatebp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
