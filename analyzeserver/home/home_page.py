@@ -95,7 +95,7 @@ def deal_business():
         cursor_lh = conn_lh.cursor()
         cursor_ana = conn_analyze.cursor()
 
-        bus_sql = '''select operatename,contains from operate_relationship where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
+        bus_sql = '''select operatename,contains from operate_relationship_crm where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
 
         logger.info(bus_sql)
         cursor_ana.execute(bus_sql)
