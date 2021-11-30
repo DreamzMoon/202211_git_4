@@ -35,7 +35,14 @@ def center_list():
             return check_token_result
 
         with conn_crm.cursor() as cursor:
-            sql = '''select id,operatename from luke_lukebus.operationcenter where capacity = 1 and crm = 1'''
+            # sql = '''select id,operatename from luke_lukebus.operationcenter where capacity = 1 and crm = 1'''
+            sql = '''
+                select id, operatename from
+                (
+                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from luke_lukebus.operationcenter where capacity = 1 and crm = 1
+                    order by sort_type asc
+                )t1
+            '''
             cursor.execute(sql)
             datas = cursor.fetchall()
             logger.info(datas)
