@@ -253,7 +253,7 @@ def user_relate_detail():
         conn = direct_get_conn(analyze_mysql_conf)
 
         # 参数个数错误
-        if len(request.args) != 2:
+        if len(request.json) != 2:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
