@@ -125,8 +125,8 @@ def user_relate_mes():
             data_dict["operatenamedirect"] = data[8]
             data_dict["direct_bus_phone"] = data[9]
             data_dict["vip_grade"] = data[10]
-            data_dict["vip_starttime"] = data[11].strftime("%Y-%m-%d %H:%M") if data[11] else ""
-            data_dict["vip_endtime"] = data[12].strftime("%Y-%m-%d %H:%M") if data[12] else ""
+            data_dict["vip_starttime"] = data[11].strftime("%Y-%m-%d %H:%M:%S") if data[11] else ""
+            data_dict["vip_endtime"] = data[12].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
             data_dict["serpro_grade"] = data[13]
             data_dict["serpro_status"] = data[14]
             last_datas.append(data_dict)
@@ -232,11 +232,11 @@ def user_relate_basicmes():
             data_dict["nickname"] = data[2]
             data_dict["name"] = data[3]
             data_dict["sex"] = data[4]
-            data_dict["birth"] = data[5].strftime("%Y-%m-%d %H:%M") if data[5] else ""
+            data_dict["birth"] = data[5].strftime("%Y-%m-%d %H:%M:%S") if data[5] else ""
             data_dict["nationality"] = data[6]
             data_dict["vertify_status"] = data[7]
             data_dict["huoti_status"] = data[8]
-            data_dict["addtime"] = data[9].strftime("%Y-%m-%d %H:%M") if data[9] else ""
+            data_dict["addtime"] = data[9].strftime("%Y-%m-%d %H:%M:%S") if data[9] else ""
             data_dict["status"] = data[10]
             last_datas.append(data_dict)
 
@@ -275,12 +275,12 @@ def user_relate_detail():
         data = data.to_dict("records")
         data = data[0]
         logger.info(data)
-        data["addtime"] = data["addtime"].strftime("%Y-%m-%d %H:%M") if data["addtime"] else ""
-        data["birth"] = data["birth"].strftime("%Y-%m-%d %H:%M") if data["birth"] else ""
-        data["serpro_starttime"] = data["serpro_starttime"].strftime("%Y-%m-%d %H:%M") if data["serpro_starttime"] else ""
-        data["addtime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M") if data["vip_starttime"] else ""
-        data["vip_endtime"] = data["vip_endtime"].strftime("%Y-%m-%d %H:%M") if data["vip_endtime"] else ""
-        data["vip_starttime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M") if data["vip_starttime"] else ""
+        data["addtime"] = data["addtime"].strftime("%Y-%m-%d %H:%M:%S") if data["addtime"] else ""
+        data["birth"] = data["birth"].strftime("%Y-%m-%d %H:%M:%S") if data["birth"] else ""
+        data["serpro_starttime"] = data["serpro_starttime"].strftime("%Y-%m-%d %H:%M:%S") if data["serpro_starttime"] else ""
+        data["addtime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M:%S") if data["vip_starttime"] else ""
+        data["vip_endtime"] = data["vip_endtime"].strftime("%Y-%m-%d %H:%M:%S") if data["vip_endtime"] else ""
+        data["vip_starttime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M:%S") if data["vip_starttime"] else ""
 
         return {"code": "0000", "msg": data, "status": "success"}
     except Exception as e:
