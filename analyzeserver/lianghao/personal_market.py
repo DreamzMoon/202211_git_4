@@ -1033,8 +1033,8 @@ def personal_total():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                return {"code":"11016","status":"failed","msg":message["11016"]}
-
+                # return {"code":"11016","status":"failed","msg":message["11016"]}
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
             if len(parent) == 11:
@@ -1056,6 +1056,8 @@ def personal_total():
         # 对手机号码差交集
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+            if not query_phone:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         elif keyword_phone:
             query_phone = keyword_phone
         elif bus_phone:
@@ -1299,8 +1301,8 @@ def personal_buy_all():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                return {"code":"11016","status":"failed","msg":message["11016"]}
-
+                # return {"code":"11016","status":"failed","msg":message["11016"]}
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
             if len(parent) == 11:
@@ -1323,6 +1325,8 @@ def personal_buy_all():
         # 对手机号码差交集
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+            if not query_phone:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         elif keyword_phone:
             query_phone = keyword_phone
         elif bus_phone:
@@ -1349,8 +1353,6 @@ def personal_buy_all():
             order_sql = buy_sql
 
         #返回条数
-
-
         logger.info("order_sql:%s" %order_sql)
         order_data = pd.read_sql(order_sql,conn_read)
         order_data_group = order_data.groupby("phone")
@@ -1359,8 +1361,6 @@ def personal_buy_all():
         first_data = order_data.sort_values("create_time", ascending=True).groupby("phone").first().reset_index()
         first_data.rename(columns={"phone":"phone","create_time":"first_time","total_price":"first_total_price"},inplace=True)
         first_data["first_time"] = first_data['first_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        logger.info(first_data.info())
-
 
         last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
         last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},inplace=True)
@@ -1408,10 +1408,6 @@ def personal_buy_all():
         df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
-
-
-        logger.info(code_page)
-        logger.info(code_size)
 
         # if page and size:
         #     try:
@@ -1554,8 +1550,8 @@ def person_buy():
         if user_data_result[0] == 1:
             user_data = user_data_result[1]
         else:
-            return {"code":"11016","status":"failed","msg":message["11016"]}
-
+            # return {"code":"11016","status":"failed","msg":message["11016"]}
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
         personal_datas["person"] = user_data
 
 
@@ -1789,8 +1785,8 @@ def personal_sell_all():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                return {"code": "11016", "status": "failed", "msg": message["11016"]}
-
+                # return {"code": "11016", "status": "failed", "msg": message["11016"]}
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
             if len(parent) == 11:
@@ -1813,6 +1809,8 @@ def personal_sell_all():
 
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
+            if not query_phone:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         elif keyword_phone:
             query_phone = keyword_phone
         elif bus_phone:
@@ -2024,8 +2022,8 @@ def person_sell():
         if user_data_result[0] == 1:
             user_data = user_data_result[1]
         else:
-            return {"code": "11016", "status": "failed", "msg": message["11016"]}
-
+            # return {"code": "11016", "status": "failed", "msg": message["11016"]}
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
         personal_datas["person"] = user_data
 
         # 获取所有的数据
