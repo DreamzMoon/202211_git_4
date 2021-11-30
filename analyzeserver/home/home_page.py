@@ -335,28 +335,41 @@ def today_data():
             where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
             group by yesterday_time
         '''
-        person_sql = '''
+        today_person_sql = '''
             select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, count(distinct phone) person_count from lh_pretty_client.lh_order where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
             group by today_time
-            union all
+        '''
+        yesterday_person_sql = '''
             select DATE_FORMAT(create_time, '%Y-%m-%d') yesterday_time, count(distinct phone) person_count from lh_pretty_client.lh_order where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = date_sub(CURDATE(), interval 1 day)
             group by yesterday_time
         '''
 
         today_df = pd.read_sql(today_sql, conn_lh)
         yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
-        person_count_df = pd.read_sql(person_sql, conn_lh)
+        # 今日交易人数
+        today_person_count_df = pd.read_sql(today_person_sql, conn_lh)
+        if today_person_count_df.empty:
+            today_order_person = 0
+        else:
+            today_order_person = int(today_person_count_df['person_count'].values[0])
+
+        # 昨日交易人数
+        yesterday_person_count_df = pd.read_sql(yesterday_person_sql, conn_lh)
+        if yesterday_person_count_df.empty:
+            yesterday_order_person = 0
+        else:
+            yesterday_order_person = int(yesterday_person_count_df['person_count'].values[0])
 
         today_df['pretty_count'] = today_df['pretty_count'].astype(int)
         today_data = {
             'today_price': round(float(today_df['total_price'].sum()), 2), # 今日交易金额
             'today_order_count': int(today_df['order_count'].sum()), # 今日交易订单数
-            'today_order_person': int(person_count_df['person_count'].values[0]), # 今日交易人数
+            'today_order_person': today_order_person, # 今日交易人数
         }
         yesterday_data = {
             'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2), # 昨日交易金额
             'yesterday_order_count': int(yesterday_df['order_count'].sum()), # 昨日交易订单数
-            'yesterday_order_person': int(person_count_df['person_count'].values[1]), # 昨日交易人数
+            'yesterday_order_person': yesterday_order_person, # 昨日交易人数
         }
         # # 昨日
         # elif time_type == 2:
