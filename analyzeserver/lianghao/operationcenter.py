@@ -247,84 +247,93 @@ def operations_order_count_drop():
 @opbp.route('/center', methods=['POST'])
 def operations_order_count():
     try:
-        logger.info(request.json)
-        # 参数个数错误
-        if len(request.json) != 5:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 5:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        token = request.headers["Token"]
-        user_id = request.json["user_id"]
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
 
-        if not user_id and not token:
-            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
-        check_token_result = check_token(token, user_id)
-        if check_token_result["code"] != "0000":
-            return check_token_result
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
 
-        search_key = request.json['key']
-        operateid = request.json['operateid']
-        size = str(request.json['size'])
-        page = str(request.json['page'])
-        num = size
-        if num and page:
-            # isdigit()可以判断是否为正整数
-            if not num.isdigit() or int(num) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
-            elif not page.isdigit() or int(page) < 1:
-                return {"code": "10009", "status": "failed", "msg": message["10009"]}
+            search_key = request.json['key']
+            operateid = request.json['operateid']
+            size = str(request.json['size'])
+            page = str(request.json['page'])
+            num = size
+            if num and page:
+                # isdigit()可以判断是否为正整数
+                if not num.isdigit() or int(num) < 1:
+                    return {"code": "10009", "status": "failed", "msg": message["10009"]}
+                elif not page.isdigit() or int(page) < 1:
+                    return {"code": "10009", "status": "failed", "msg": message["10009"]}
+                else:
+                    num = int(num)
+                    page = int(page)
             else:
-                num = int(num)
-                page = int(page)
+                pass
+        except:
+            # 参数名错误
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        start_time = time.time()
+        lh_count_sql = '''
+            select t1.*, t2.publish_total_price, t2.publish_total_count, t2.publish_sell_count from
+            ((select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price, count(*) sell_order, count(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
+            where del_flag = 0
+            and type in (1,4)
+            and `status` = 1
+            group by phone) t1
+            left join
+            (select sell_phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
+            from lh_sell
+            where del_flag=0
+            and `status` != 1
+            group by sell_phone) t2
+            on t1.phone=t2.sell_phone)
+            '''
+
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh:
+            return {"code": "10008", "status": "failed", "msg": message["10008"]}
+
+        # 用户订单DataFrame
+        user_order_df = pd.read_sql(lh_count_sql, conn_lh)
+
+        # 获取运营中心数据
+        result = get_operationcenter_data(user_order_df, search_key, operateid)
+        if not result[0]: # 不成功
+            return {"code": result[1], "status": "failed", "msg": message[result[1]]}
+        if num and page:
+            start_num = (page - 1) * num
+            end_num = page * num
+            # 如果num超过数据条数
+            if end_num > len(result[1]):
+                end_num = len(result[1])
         else:
-            pass
-    except:
-        # 参数名错误
-        return {"code": "10009", "status": "failed", "msg": message["10009"]}
-
-    start_time = time.time()
-    lh_count_sql = '''
-        select t1.*, t2.publish_total_price, t2.publish_total_count, t2.publish_sell_count from
-        ((select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price, count(*) sell_order, count(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
-        where del_flag = 0
-        and type in (1,4)
-        and `status` = 1
-        group by phone) t1
-        left join
-        (select sell_phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
-        from lh_sell
-        where del_flag=0
-        and `status` != 1
-        group by sell_phone) t2
-        on t1.phone=t2.sell_phone)
-        '''
-
-    conn_lh = ssh_get_sqlalchemy_conn(lianghao_ssh_conf, lianghao_mysql_conf)
-    if not conn_lh:
-        return {"code": "10008", "status": "failed", "msg": message["10008"]}
-
-    # 用户订单DataFrame
-    user_order_df = pd.read_sql(lh_count_sql, conn_lh)
-
-    # 获取运营中心数据
-    result = get_operationcenter_data(user_order_df, search_key, operateid)
-    if not result[0]: # 不成功
-        return {"code": result[1], "status": "failed", "msg": message[result[1]]}
-    if num and page:
-        start_num = (page - 1) * num
-        end_num = page * num
-        # 如果num超过数据条数
-        if end_num > len(result[1]):
+            start_num = 0
             end_num = len(result[1])
-    else:
-        start_num = 0
-        end_num = len(result[1])
-    return_data = {
-        'title_data': result[2],
-        'data': result[1][start_num:end_num]
-    }
-    end_time = time.time()
-    logger.info(end_time - start_time)
-    return {"code": "0000", "status": "success", "msg": return_data,'count': len(result[1])}
+        return_data = {
+            'title_data': result[2],
+            'data': result[1][start_num:end_num]
+        }
+        end_time = time.time()
+        logger.info(end_time - start_time)
+        return {"code": "0000", "status": "success", "msg": return_data,'count': len(result[1])}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message['10000']}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
 
 
