@@ -60,9 +60,9 @@ def user_relate_mes():
         cursor = conn.cursor()
         sql = '''select nickname,phone,unionid,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
         serpro_grade,serpro_status
-        from crm_user_%s where del_flag = 0''' %tomorrow_time
+        from crm_user_%s where del_flag = 0''' %current_time
         count_sql = '''select count(*) count
-        from crm_user_%s where del_flag = 0''' %tomorrow_time
+        from crm_user_%s where del_flag = 0''' %current_time
 
 
         if keyword:
@@ -185,7 +185,7 @@ def user_relate_basicmes():
             # if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
             #     return {"code": "11018", "status": "failed", "msg": message["11018"]}
 
-
+        logger.info("current_time:%s" %current_time)
         sql = '''select phone,unionid,nickname,`name`,sex,birth,nationality,vertify_status,huoti_status,addtime,`status` from crm_user_%s where del_flag = 0 ''' %current_time
         count_sql = '''select count(*) count from crm_user_%s where del_flag = 0 ''' %current_time
 
@@ -273,13 +273,16 @@ def user_relate_detail():
         data = pd.read_sql(sql,conn)
 
         data = data.to_dict("records")
-
+        data = data[0]
+        logger.info(data)
         data["addtime"] = data["addtime"].strftime("%Y-%m-%d %H:%M") if data["addtime"] else ""
         data["birth"] = data["birth"].strftime("%Y-%m-%d %H:%M") if data["birth"] else ""
         data["serpro_starttime"] = data["serpro_starttime"].strftime("%Y-%m-%d %H:%M") if data["serpro_starttime"] else ""
         data["addtime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M") if data["vip_starttime"] else ""
+        data["vip_endtime"] = data["vip_endtime"].strftime("%Y-%m-%d %H:%M") if data["vip_endtime"] else ""
+        data["vip_starttime"] = data["vip_starttime"].strftime("%Y-%m-%d %H:%M") if data["vip_starttime"] else ""
 
-        return {"code": "0000", "msg": data.to_dict("records"), "status": "success"}
+        return {"code": "0000", "msg": data, "status": "success"}
     except Exception as e:
         logger.error(e)
         # 参数名错误
