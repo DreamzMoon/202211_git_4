@@ -247,7 +247,7 @@ def user_relate_basicmes():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 
-@userrelatebp.route("detailmes",methods=["GET"])
+@userrelatebp.route("detailmes",methods=["POST"])
 def user_relate_detail():
     try:
         conn = direct_get_conn(analyze_mysql_conf)
@@ -257,9 +257,9 @@ def user_relate_detail():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
-        user_id = request.args.get("user_id")
+        user_id = request.json["user_id"]
 
-        unionid = request.args.get("unionid")
+        unionid = request.json["unionid"]
 
 
         if not user_id and not token:
