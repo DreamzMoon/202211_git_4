@@ -340,7 +340,7 @@ def get_all_user_operationcenter(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
+        operate_sql = 'select id operate_id,unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
@@ -382,6 +382,9 @@ def get_all_user_operationcenter(crm_user_data=""):
             all_data_phone = all_data['phone'].tolist()
             # 运营中心名称
             operatename = operate_df.loc[operate_df['telephone'] == phone, 'operatename'].values[0]
+            operate_id = operate_df.loc[operate_df['telephone'] == phone, 'operate_id'].values[0]
+            bus_phone = operate_df.loc[operate_df['telephone'] == phone, 'telephone'].values[0]
+
             # 子运营中心-->包含本身
             center_phone_list = all_data.loc[all_data['operatename'].notna(), :]['phone'].tolist()
             child_center_phone_list = []  # 子运营中心所有下级
@@ -404,10 +407,12 @@ def get_all_user_operationcenter(crm_user_data=""):
             # 3、取得每个运营中心下级df合并
             child_df = crm_user_df.loc[crm_user_df['phone'].isin(ret), :]
             child_df['operatename'] = operatename
+            child_df['operate_id'] = operate_id
+            child_df["bus_phone"] = bus_phone
             child_df_list.append(child_df)
         # 用户数据拼接
         exist_center_df = pd.concat(child_df_list)
-        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename']], how='left', on='phone')
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename','operate_id','bus_phone']], how='left', on='phone')
         conn_crm.close()
         logger.info('返回用户数据成功')
         return True, fina_df

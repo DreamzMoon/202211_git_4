@@ -86,6 +86,7 @@ def get_user_operationcenter_direct(crm_user_data=""):
             # 运营中心名称
             operatename = operate_df.loc[operate_df['telephone'] == phone, 'operatenamedirect'].values[0]
             operate_direct_id = operate_df.loc[operate_df['telephone'] == phone, 'operate_direct_id'].values[0]
+            direct_bus_phone = operate_df.loc[operate_df['telephone'] == phone, 'telephone'].values[0]
             # 子运营中心-->包含本身
             center_phone_list = all_data.loc[all_data['operatenamedirect'].notna(), :]['phone'].tolist()
             child_center_phone_list = []  # 子运营中心所有下级
@@ -109,10 +110,11 @@ def get_user_operationcenter_direct(crm_user_data=""):
             child_df = crm_user_df.loc[crm_user_df['phone'].isin(ret), :]
             child_df['operatenamedirect'] = operatename
             child_df["operate_direct_id"] = operate_direct_id
+            child_df["direct_bus_phone"] = direct_bus_phone
             child_df_list.append(child_df)
         # 用户数据拼接
         exist_center_df = pd.concat(child_df_list)
-        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatenamedirect','operate_direct_id']], how='left', on='phone')
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatenamedirect','operate_direct_id','direct_bus_phone']], how='left', on='phone')
         conn_crm.close()
         logger.info('返回用户数据成功')
         return True, fina_df
@@ -127,10 +129,21 @@ try:
     conn_analyze = direct_get_conn(analyze_mysql_conf)
     analyze_cursor = conn_analyze.cursor()
     logger.info(conn_analyze)
-    sql = '''select id unionid,pid parentid,phone,status,nickname,name,sex,FROM_UNIXTIME(addtime,"%Y-%m-%d %H:%i:%s") addtime from luke_sincerechat.user'''
+    # sql = '''select a.id unionid,a.pid parentid,a.phone,b.phone parent_phone,b.nickname parent_nickname,b.name parent_name,a.status,a.nickname,a.name,a.sex,FROM_UNIXTIME(a.addtime,"%Y-%m-%d %H:%i:%s") addtime from luke_sincerechat.user a
+    # left join luke_sincerechat.user b on a.pid = b.id'''
+    sql = '''
+    select a.id unionid,a.pid parentid,a.phone,b.phone parent_phone,b.nickname parent_nickname,b.name parent_name,a.status,a.nickname,a.name,a.sex,FROM_UNIXTIME(a.addtime,"%Y-%m-%d %H:%i:%s") addtime,
+    c.phone bus_parent_phone,c.u_nickname bus_parent_nickname,c.u_name bus_parent_name,c.unionid bus_parentid
+    from luke_sincerechat.user a
+    left join luke_sincerechat.user b on a.pid = b.id
+    left join luke_lukebus.user c on a.pid = c.unionid
+    '''
     logger.info(sql)
     crm_datas = pd.read_sql(sql,conn_crm)
     logger.info(crm_datas.shape)
+
+    #查询禄可商务推荐的上级和手机号码
+    sql = ''''''
 
     sql = '''select unionid,status vertify_status,address,birth,nationality from luke_crm.authentication'''
     auth_datas = pd.read_sql(sql,conn_crm)
@@ -199,6 +212,13 @@ try:
       `unionid` bigint(20) DEFAULT NULL COMMENT '用户id',
       `parentid` bigint(20) DEFAULT NULL COMMENT '推荐id',
       `phone` varchar(20) DEFAULT NULL COMMENT '手机号码',
+      `parent_phone` varchar(20) DEFAULT NULL COMMENT '上级手机号码',
+      `parent_nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '昵称',
+      `parent_name` varchar(50) DEFAULT NULL COMMENT '姓名',
+      `bus_parent_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的上级手机号码',
+      `bus_parent_nickname` varchar(100) DEFAULT NULL COMMENT '禄可商务的上级昵称',
+      `bus_parent_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '禄可商务的上级名字',
+      `bus_parentid` bigint(20) DEFAULT NULL COMMENT '禄可商务的推荐id',
       `status` tinyint(1) DEFAULT '1' COMMENT '1正常 2禁用',
       `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '昵称',
       `name` varchar(50) DEFAULT NULL COMMENT '姓名',
@@ -217,10 +237,12 @@ try:
       `capacity` tinyint(2) DEFAULT NULL COMMENT '1运营中心/公司 2网店主 3带货者 20无身份(普通用户)',
       `exclusive` tinyint(1) DEFAULT NULL COMMENT '网店主类型：1专营店 2自营店',
       `addtime` datetime DEFAULT NULL COMMENT '用户的注册时间 可能在各业务系统',
-      `operate_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
-      `operatename` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
+      `operate_id` bigint(20) DEFAULT NULL COMMENT 'crm运营中心的id',
+      `operatename` varchar(100) DEFAULT NULL COMMENT 'crm用户对应的运营中心',
+      `bus_phone` varchar(20) DEFAULT NULL COMMENT 'crm禄可商务的手机号码',
       `operate_direct_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
       `operatenamedirect` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
+      `direct_bus_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的手机号码',
       `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
       `del_flag` int(1) DEFAULT '0' COMMENT '1：删除'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -232,6 +254,7 @@ try:
     logger.info(tomorrow_time)
 
     # 第一次入库走这个
+    logger.info("数据准备入库")
     conn = sqlalchemy_conn(analyze_mysql_conf)
     last_data.to_sql("crm_user_%s" %tomorrow_time, con=conn, if_exists="append", index=False)
     logger.info("写入成功")
