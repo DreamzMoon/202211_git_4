@@ -53,7 +53,7 @@ def user_relate_mes():
         code_size = ""
         if page and size:
             code_page = (page - 1) * size
-            code_size = page * size
+            code_size = size
 
 
         #先默认查全部
@@ -165,7 +165,7 @@ def user_relate_basicmes():
         code_size = ""
         if page and size:
             code_page = (page - 1) * size
-            code_size = page * size
+            code_size = size
 
         if not user_id and not token:
             return {"code": "10001", "status": "failed", "msg": message["10001"]}
