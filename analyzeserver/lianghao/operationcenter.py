@@ -294,7 +294,7 @@ def operations_order_count():
             group by phone
             '''
         lh_count_sql_sell = '''
-            select sell_phone phone, count(*) sell_order, count(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
+            select sell_phone phone, count(*) sell_order, sum(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
             where del_flag = 0
             and type in (1,4)
             and `status` = 1
