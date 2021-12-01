@@ -13,7 +13,7 @@ import traceback
 from util.help_fun import *
 import pandas as pd
 from analyzeserver.user.sysuser import check_token
-
+from functools import reduce
 
 opbp = Blueprint('operations', __name__, url_prefix='/lh/operations')
 
@@ -286,29 +286,46 @@ def operations_order_count():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         start_time = time.time()
-        lh_count_sql = '''
-            select t1.*, t2.publish_total_price, t2.publish_total_count, t2.publish_sell_count from
-            ((select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price, count(*) sell_order, count(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
+        lh_count_sql_buy = '''
+            select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price from lh_order
             where del_flag = 0
             and type in (1,4)
             and `status` = 1
-            group by phone) t1
-            left join
-            (select sell_phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
+            group by phone
+            '''
+        lh_count_sql_sell = '''
+            select sell_phone phone, count(*) sell_order, count(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee from lh_order
+            where del_flag = 0
+            and type in (1,4)
+            and `status` = 1
+            group by sell_phone
+        '''
+        lh_count_sql_publish = '''
+            select sell_phone phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
             from lh_sell
             where del_flag=0
             and `status` != 1
-            group by sell_phone) t2
-            on t1.phone=t2.sell_phone)
-            '''
-
+            group by sell_phone
+        '''
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh:
             return {"code": "10008", "status": "failed", "msg": message["10008"]}
 
+        user_order_df_list = []
         # 用户订单DataFrame
-        user_order_df = pd.read_sql(lh_count_sql, conn_lh)
+        user_order_buy_df = pd.read_sql(lh_count_sql_buy, conn_lh)
+        user_order_df_list.append(user_order_buy_df)
 
+        user_order_sell_df = pd.read_sql(lh_count_sql_sell, conn_lh)
+        user_order_df_list.append(user_order_sell_df)
+
+        user_order_publish_df = pd.read_sql(lh_count_sql_publish, conn_lh)
+        user_order_df_list.append(user_order_publish_df)
+
+        user_order_df = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), user_order_df_list)
+        user_order_df.to_csv(r'D:/user_order_df.csv', index=False, encoding='gbk')
+        logger.info(user_order_df.shape)
+        logger.info(user_order_df.drop_duplicates('phone').shape)
         # 获取运营中心数据
         result = get_operationcenter_data(user_order_df, search_key, operateid)
         if not result[0]: # 不成功
