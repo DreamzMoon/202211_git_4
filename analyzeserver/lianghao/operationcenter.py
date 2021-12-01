@@ -323,9 +323,6 @@ def operations_order_count():
         user_order_df_list.append(user_order_publish_df)
 
         user_order_df = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), user_order_df_list)
-        user_order_df.to_csv(r'D:/user_order_df.csv', index=False, encoding='gbk')
-        logger.info(user_order_df.shape)
-        logger.info(user_order_df.drop_duplicates('phone').shape)
         # 获取运营中心数据
         result = get_operationcenter_data(user_order_df, search_key, operateid)
         if not result[0]: # 不成功
