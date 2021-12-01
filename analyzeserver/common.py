@@ -415,7 +415,7 @@ def get_all_user_operationcenter(crm_user_data=""):
         exist_center_df = pd.concat(child_df_list)
         fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename','operate_id','bus_phone']], how='left', on='phone')
         conn_crm.close()
-        logger.info('返回用户数据成功')
+        # logger.info('返回用户数据成功')
         return True, fina_df
     except Exception as e:
         logger.exception(traceback.format_exc())
@@ -1165,6 +1165,7 @@ def user_belong_by_df(need_data):
         logger.info(all_operate)
         user_data = user_data.merge(all_operate, how="left", on="phone")
         # logger.info(user_data.info())
+        user_data.fillna("",inplace=True)
         last_data = user_data.to_dict("records")
         return 1, last_data
     except Exception as e:

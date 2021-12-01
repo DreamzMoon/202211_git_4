@@ -763,16 +763,8 @@ def personal_total():
             return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
 
-        # result = user_belong_bus(need_data)
-        #
-        # if result[0] == 1:
-        #     last_data = result[1]
-        #     logger.info(last_data)
-        # else:
-        #     return {"code":"10006","status":"failed","msg":message["10006"]}
-        # msg_data = {"data":last_data,"all_data":all_data}
-        # logger.info("msg_data:%s" %msg_data)
-        # return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
+
+
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())
@@ -987,7 +979,7 @@ def personal_buy_all():
             logger.info(crm_data_result)
             if crm_data_result[0] == True:
                 last_data = crm_data_result[1]
-
+                last_data.fillna("",inplace=True)
                 last_data = last_data.to_dict("records")
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
@@ -1461,7 +1453,7 @@ def personal_sell_all():
             logger.info(crm_data_result)
             if crm_data_result[0] == True:
                 last_data = crm_data_result[1]
-
+                last_data.fillna("", inplace=True)
                 last_data = last_data.to_dict("records")
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
