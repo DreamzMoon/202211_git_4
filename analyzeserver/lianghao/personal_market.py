@@ -1653,9 +1653,9 @@ def person_buy():
             for td in today_data:
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
-                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_order_count"] = int(td[1])
                 td_dict["buy_total_count"] = float(td[2])
-                td_dict["buy_total_price"] = float(td[1])
+                td_dict["buy_total_price"] = float(td[3])
                 today.append(td_dict)
             logger.info(today)
 
@@ -1698,9 +1698,9 @@ def person_buy():
             for td in today_data:
                 td_dict = {}
                 td_dict["statistic_time"] = td[0]
-                td_dict["buy_order_count"] = int(td[3])
+                td_dict["buy_order_count"] = int(td[1])
                 td_dict["buy_total_count"] = float(td[2])
-                td_dict["buy_total_price"] = float(td[1])
+                td_dict["buy_total_price"] = float(td[3])
                 today.append(td_dict)
             logger.info(today)
 
