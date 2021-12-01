@@ -996,6 +996,7 @@ def personal_buy_all():
                 # if not pd.isnull(d["unionid"]):
                 if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
+                    d["total_price"] = round(d["total_price"], 2)
             return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
 
         # return {"code":"0000","status":"success","msg":last_data,"count":df_merged_count}
@@ -1469,6 +1470,7 @@ def personal_sell_all():
                 # if not pd.isnull(d["unionid"]):
                 if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
+                    d["total_price"] = round(d["total_price"], 2)
             return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
 
     except Exception as e:
