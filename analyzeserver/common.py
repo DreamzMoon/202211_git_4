@@ -261,18 +261,18 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
             if search_key and not search_operateid:  # 搜索不为空，运营中心为空
                 if search_key in operatename or search_key in phone or search_key in operate_leader_name:
-                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid, operateid)
                     fina_center_data_list.append(notice_data)
             elif not search_key and search_operateid:  # 搜索为空，运营中心不为空
                 if search_operateid == operateid:
-                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid, operateid)
                     fina_center_data_list.append(notice_data)
             elif search_key and search_operateid:  # 都不为空
                 if (search_key in operatename or search_key in phone or search_key in operate_leader_name) and search_operateid == operateid:
-                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                    notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid, operateid)
                     fina_center_data_list.append(notice_data)
             else:
-                notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid)
+                notice_data = get_notice_data(child_df, operatename, operate_leader_name, phone, operate_leader_unionid, operateid)
                 fina_center_data_list.append(notice_data)
             title_data['buy_order'] += int(child_df['buy_order'].sum())
             title_data['buy_count'] += int(child_df['buy_count'].sum())
@@ -299,7 +299,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
         return False, '10000'
 
 # 运营中心统计结果数据
-def get_notice_data(child_df, operatename, name, phone, unionid):
+def get_notice_data(child_df, operatename, name, phone, unionid, operateid):
     '''
 
     :param child_df: 运营中心下级DataFrame
@@ -311,6 +311,7 @@ def get_notice_data(child_df, operatename, name, phone, unionid):
     '''
     notice_data = {
         'operatename': operatename,  # 运营中心名
+        'operateid': int(operateid),
         'operate_leader_name': name,  # 运营中心负责人
         'operate_leader_phone': phone,  # 手机号
         'operate_leader_unionid': str(int(unionid)),  # unionID

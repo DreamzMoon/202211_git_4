@@ -85,24 +85,24 @@ def operations_order_count_drop():
         # 运营中心数据
         if search_key == "" and form_operatename == "":
             # 运营中心sql
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         # 11位手机号
         elif search_key.isdigit() and len(search_key) == 11 and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and crm = 1'
         elif search_key.isdigit() and len(search_key) == 11 and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and operatename=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and telephone=%s and operatename=%s and crm = 1'
         # unionid
         elif search_key.isdigit() and len(search_key) < 11 and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and crm = 1'
         elif search_key.isdigit() and len(search_key) < 11 and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and operatename=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and unionid=%s and operatename=%s and crm = 1'
         # 名称
         elif search_key and not search_key.isdigit() and not form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and crm = 1'
         elif search_key and not search_key.isdigit() and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and operatename=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and name=%s and operatename=%s and crm = 1'
         elif not search_key and form_operatename:
-            operate_sql = 'select unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and operatename=%s and crm = 1'
+            operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and operatename=%s and crm = 1'
         else: # 手机号输入过长或者unionid输入错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
         logger.info(operate_sql)
@@ -158,6 +158,7 @@ def operations_order_count_drop():
             # 运营中心名称
             operate_data = operate_df.loc[operate_df['telephone'] == phone, :]
             operatename = operate_data['operatename'].values[0]
+            operateid = operate_data['id'].values[0]
             operate_leader_unionid = operate_data['unionid'].values[0]
             operate_leader_name = operate_data['name'].values[0]
             # 子运营中心
@@ -181,6 +182,7 @@ def operations_order_count_drop():
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
             notice_data = {
                 'operatename': operatename,  # 运营中心名
+                'operateid': operateid,
                 'operate_leader_name': operate_leader_name,  # 运营中心负责人
                 'operate_leader_phone': phone,  # 手机号
                 'operate_leader_unionid': str(int(operate_leader_unionid)),  # unionID
