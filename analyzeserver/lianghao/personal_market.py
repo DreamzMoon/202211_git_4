@@ -713,15 +713,23 @@ def personal_total():
 
         all_df = need_data.to_dict("records")
         logger.info("all_df:%s" %all_df)
-        for i in range(0, len(all_df)):
-            all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-            all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-            all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-            all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-            all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-            all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-            all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-            all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+        # for i in range(0, len(all_df)):
+        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
+        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
+        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
+        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
+        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
+        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
+        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
+        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+        all_data["buy_count"] = df_merged["buy_count"].sum()
+        all_data["buy_total_count"] = df_merged["buy_total_count"].sum()
+        all_data["buy_total_price"] = df_merged["buy_total_price"].sum()
+        all_data["sell_count"] = df_merged["sell_count"].sum()
+        all_data["sell_fee"] = df_merged["sell_fee"].sum()
+        all_data["sell_real_money"] = df_merged["sell_real_money"].sum()
+        all_data["sell_total_count"] = df_merged["sell_total_count"].sum()
+        all_data["sell_total_price"] = df_merged["sell_total_price"].sum()
 
         all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
         all_data["sell_fee"] = round(all_data["sell_fee"], 2)
