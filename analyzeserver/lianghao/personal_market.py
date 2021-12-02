@@ -244,9 +244,8 @@ def personal_publish_detail():
 
         order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
-        # 此步合并会存在已发布但是未出售时的pay_type为空，导致二次或者最近出错，因此在进行首次、二次、最近计算时，需要去除为空的数据
-        # 如果提前去除会导致计算publish_count与发布订单接口计算有差异
-        user_publish_df = user_publish_base_df.merge(user_order_df, how='left', on='sell_id')
+        # 此步合并会存在已发布但是未出售时的publish_phone与pay_type为空，导致二次或者最近出错，因此在进行首次、二次、最近计算时，需要去除为空的数据
+        user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)
         user_publish_df.reset_index(drop=True, inplace=True)
         # 数据分析---用户标题总数据
@@ -258,12 +257,13 @@ def personal_publish_detail():
         title_data['pay_type_count'] = pay_type_df.to_dict('records')
 
         title_data_count = user_publish_df.groupby('publish_phone').agg(
-            {"total_price": "sum", "count": "sum", "sell_id": "count"}).reset_index()
-        title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count', 'publish_count']
+            {"total_price": "sum", "count": "sum"}).reset_index()
+        title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count']
         title_data['total_price'] = round(title_data_count['total_price'].values[0], 2)
         title_data['pretty_count'] = int(title_data_count['pretty_count'].values[0])
-        title_data['publish_count'] = int(title_data_count['publish_count'].values[0])
-
+        # title_data['publish_count'] = int(title_data_count['publish_count'].values[0])
+        # 计算发布次数：是否成功出售都进行统计，保持与发布一致
+        title_data['publish_count'] = int(user_publish_base_df['sell_id'].count())
         fina_data['title_data'] = title_data
 
         # 用户首次，二次，最近发布数据
