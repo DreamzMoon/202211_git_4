@@ -166,8 +166,7 @@ def get_busphne_by_id(bus_id):
                 for k in range(0, len(filter_data)):
                     filter_phone_lists.append(filter_data[k]["phone"])
         # 不包含底下直属运营中心
-        # phone_lists = list(set(all_phone_lists) - set(filter_phone_lists)-set(other_operatecenter_phone_list))
-        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists))
+        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists) - set(other_operatecenter_phone_list))
         args_phone_lists = ",".join(phone_lists)
         if args_phone_lists:
             return 1,args_phone_lists
@@ -257,7 +256,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
                 center_df.dropna(subset=['phone'], axis=0, inplace=True)
                 child_center_phone_list.extend(center_df['phone'].tolist())
             ret = list(set(all_data_phone) - set(child_center_phone_list))
-            ret.extend(first_child_center)
+            # ret.extend(first_child_center)
             # 每个运营中心的收入df
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
             if search_key and not search_operateid:  # 搜索不为空，运营中心为空
