@@ -239,15 +239,15 @@ def personal_publish_detail():
         user_base_info['phone'] = phone
         fina_data['user_base_info'] = user_base_info
 
-        publish_sql = '''select id sell_id, count, count(*) publish_count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
+        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
 
         order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
+        # 此步合并会存在已发布但是未出售时的publish_phone与pay_type为空，导致二次或者最近出错，因此在进行首次、二次、最近计算时，需要去除为空的数据
         user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)
         user_publish_df.reset_index(drop=True, inplace=True)
-
         # 数据分析---用户标题总数据
         title_data = {}
 
@@ -257,15 +257,18 @@ def personal_publish_detail():
         title_data['pay_type_count'] = pay_type_df.to_dict('records')
 
         title_data_count = user_publish_df.groupby('publish_phone').agg(
-            {"total_price": "sum", "count": "sum", "publish_count": "sum"}).reset_index()
-        title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count', 'publish_count']
+            {"total_price": "sum", "count": "sum"}).reset_index()
+        title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count']
         title_data['total_price'] = round(title_data_count['total_price'].values[0], 2)
         title_data['pretty_count'] = int(title_data_count['pretty_count'].values[0])
-        title_data['publish_count'] = int(title_data_count['publish_count'].values[0])
-
+        # title_data['publish_count'] = int(title_data_count['publish_count'].values[0])
+        # 计算发布次数：是否成功出售都进行统计，保持与发布一致
+        title_data['publish_count'] = int(user_publish_base_df['sell_id'].count())
         fina_data['title_data'] = title_data
 
         # 用户首次，二次，最近发布数据
+        # 去除空值
+        # user_publish_df = user_publish_df.dropna()
         publish_result = user_first_second_near_publish(user_publish_df)
         if not publish_result[0]:
             return {"code": publish_result[1], "status": "success", "msg": message[publish_result[1]]}
@@ -601,6 +604,8 @@ def personal_total():
             else:
                 return {"code":"11015","status":"failed","msg":message["11015"]}
 
+        logger.info(len(bus_phone))
+
         # 对手机号码差交集
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
@@ -652,9 +657,6 @@ def personal_total():
             public_sql = public_sql + group_sql
         logger.info("public_sql:%s" %public_sql)
         public_order = pd.read_sql(public_sql,conn_read)
-        logger.info(public_order.shape)
-
-
 
         df_list = []
         df_list.append(order_data)
@@ -662,7 +664,6 @@ def personal_total():
         df_list.append(public_order)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
 
-        logger.info(df_merged)
         #无数据返回空
         if df_merged.empty:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
@@ -706,42 +707,42 @@ def personal_total():
             need_data = df_merged[code_page:code_size]
         else:
             need_data = df_merged.copy()
-        logger.info(need_data)
 
         all_df = need_data.to_dict("records")
-        logger.info("all_df:%s" %all_df)
-        for i in range(0, len(all_df)):
-            all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-            all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-            all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-            all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-            all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-            all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-            all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-            all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+        # for i in range(0, len(all_df)):
+        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
+        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
+        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
+        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
+        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
+        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
+        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
+        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+        all_data["buy_count"] = int(df_merged["buy_count"].sum())
+        all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
+        all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(), 2)
+        all_data["sell_count"] = int(df_merged["sell_count"].sum())
+        all_data["sell_fee"] = round(df_merged["sell_fee"].sum(), 2)
+        all_data["sell_real_money"] = round(df_merged["sell_real_money"].sum(), 2)
+        all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
+        all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
 
-        all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
-        all_data["sell_fee"] = round(all_data["sell_fee"], 2)
-        all_data["sell_real_money"] = round(all_data["sell_real_money"], 2)
-        all_data["sell_total_price"] = round(all_data["sell_total_price"], 2)
-        all_data["buy_total_count"] = int(all_data["buy_total_count"])
-        all_data["sell_total_count"] = int(all_data["sell_total_count"])
+        # all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
+        # all_data["sell_fee"] = round(all_data["sell_fee"], 2)
+        # all_data["sell_real_money"] = round(all_data["sell_real_money"], 2)
+        # all_data["sell_total_price"] = round(all_data["sell_total_price"], 2)
+        # all_data["buy_total_count"] = int(all_data["buy_total_count"])
+        # all_data["sell_total_count"] = int(all_data["sell_total_count"])
 
-
-
-
-        logger.info(len(need_data))
         if len(need_data)<200:
             # result = user_belong_bus(need_data)
             result = user_belong_by_df(need_data)
 
             if result[0] == 1:
                 last_data = result[1]
-                logger.info(last_data)
             else:
                 return {"code":"10006","status":"failed","msg":message["10006"]}
             msg_data = {"data":last_data,"all_data":all_data}
-            logger.info("msg_data:%s" %msg_data)
             return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
         else:
             crm_data_result = get_all_user_operationcenter(need_data)
@@ -751,7 +752,6 @@ def personal_total():
                 last_data = last_data.to_dict("records")
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            logger.info(last_data)
             for d in last_data:
                 # logger.info(d)
                 # logger.info(pd.isnull(d["unionid"]))
@@ -761,10 +761,6 @@ def personal_total():
                     d["unionid"] = int(d["unionid"])
             msg_data = {"data": last_data, "all_data": all_data}
             return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
-
-
-
-
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())

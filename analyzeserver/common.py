@@ -166,7 +166,7 @@ def get_busphne_by_id(bus_id):
                 for k in range(0, len(filter_data)):
                     filter_phone_lists.append(filter_data[k]["phone"])
         # 不包含底下直属运营中心
-        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists)-set(other_operatecenter_phone_list))
+        phone_lists = list(set(all_phone_lists) - set(filter_phone_lists) - set(other_operatecenter_phone_list))
         args_phone_lists = ",".join(phone_lists)
         if args_phone_lists:
             return 1,args_phone_lists
@@ -256,7 +256,7 @@ def get_operationcenter_data(user_order_df, search_key, search_operateid):
                 center_df.dropna(subset=['phone'], axis=0, inplace=True)
                 child_center_phone_list.extend(center_df['phone'].tolist())
             ret = list(set(all_data_phone) - set(child_center_phone_list))
-            ret.extend(first_child_center)
+            # ret.extend(first_child_center)
             # 每个运营中心的收入df
             child_df = user_order_df.loc[user_order_df['phone'].isin(ret), :]
             if search_key and not search_operateid:  # 搜索不为空，运营中心为空
@@ -1255,9 +1255,9 @@ if __name__ == "__main__":
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    # result = get_busphne_by_id(4)
-    # logger.info(len(result[1].split(",")))
-    # # time.sleep(2)
+    result = get_busphne_by_id(4)
+    logger.info(len(result[1].split(",")))
+    # time.sleep(2)
     #
     # res = get_operationcenter_child(4)
     # logger.info(len(res[1]))
@@ -1287,5 +1287,5 @@ if __name__ == "__main__":
     #     user_data = lh_user_data.merge(crm_data,how="left",on="phone")
     #     user_data.to_csv("e:/用户对应的运营中心全部都有身份的.csv")
 
-    data = get_all_user_operationcenter()
-    data[1].to_csv(r"D:\match_df.csv", encoding='gb18030')
+    # data = get_all_user_operationcenter()
+    # data[1].to_csv(r"D:\match_df.csv", encoding='gb18030')
