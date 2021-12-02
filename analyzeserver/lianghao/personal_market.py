@@ -604,6 +604,8 @@ def personal_total():
             else:
                 return {"code":"11015","status":"failed","msg":message["11015"]}
 
+        logger.info(len(bus_phone))
+
         # 对手机号码差交集
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
