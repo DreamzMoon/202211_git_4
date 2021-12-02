@@ -47,7 +47,8 @@ elif ENV == "pro":
     discount_category_ids = 88  # 优惠资讯栏目id--测试未给栏目
     financil_activity_category_ids = 89  # 理财生活栏目id--测试未给栏目
 
-    redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+    # redis_host = "r-uf63qf6ypl3joxnq3l.redis.rds.aliyuncs.com"
+    redis_host = "luke-rc-1.redis.rds.aliyuncs.com"
     redis_port = 6379
     redis_password = "operation_analyze:YdusaSKHwUBMEYe6"
     redis_db = 71
