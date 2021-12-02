@@ -1,0 +1,32 @@
+CREATE TABLE `sys_user` (
+  `id` bigint(10) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) DEFAULT NULL COMMENT '用户名',
+  `phone` varchar(11) DEFAULT NULL COMMENT '手机号码',
+  `password` varchar(50) DEFAULT NULL COMMENT '密码8-20位',
+  `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
+  `uptime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delflag` tinyint(1) DEFAULT '0' COMMENT '1:删除 0:未删除',
+  `is_use` int(1) DEFAULT '0' COMMENT '注册平台之后 是否可用 1 可用 0不可用',
+  `is_control_user` int(1) DEFAULT '0' COMMENT '管理用户的权限 1可用 0不可用',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+
+######################### 运营中心关系表 #########################
+CREATE TABLE `operate_relationship_crm` (
+  `id` bigint(20) DEFAULT NULL COMMENT 'id',
+  `unionid` bigint(20) DEFAULT NULL COMMENT 'unionid',
+  `parentid` tinyint(20) DEFAULT NULL COMMENT '邀请人',
+  `name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '姓名',
+  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '联系手机',
+  `operatename` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '运营中心名称',
+  `crm` tinyint(1) DEFAULT NULL COMMENT 'crm支持：1支持 0不支持',
+  `status` tinyint(1) DEFAULT NULL COMMENT '状态：1正常  2关闭',
+  `not_contains` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '不包含下一级运营中心',
+  `contains` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '包含下一级运营中心',
+  `child_center_id` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '包含运营中心id',
+  `sync_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_record` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '更新记录',
+  `del_flag` int(1) NOT NULL DEFAULT '0',
+  `user_type` int(1) DEFAULT '0' COMMENT '0:正常用户 1：开发用户 2：运营 3：测试'''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
