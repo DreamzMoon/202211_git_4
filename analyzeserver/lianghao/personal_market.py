@@ -239,15 +239,16 @@ def personal_publish_detail():
         user_base_info['phone'] = phone
         fina_data['user_base_info'] = user_base_info
 
-        publish_sql = '''select id sell_id, count, count(*) publish_count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
+        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
 
         order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
-        user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
+        # 此步合并会存在已发布但是未出售时的pay_type为空，导致二次或者最近出错，因此在进行首次、二次、最近计算时，需要去除为空的数据
+        # 如果提前去除会导致计算publish_count与发布订单接口计算有差异
+        user_publish_df = user_publish_base_df.merge(user_order_df, how='left', on='sell_id')
         user_publish_df.sort_values('create_time', inplace=True)
         user_publish_df.reset_index(drop=True, inplace=True)
-
         # 数据分析---用户标题总数据
         title_data = {}
 
@@ -257,7 +258,7 @@ def personal_publish_detail():
         title_data['pay_type_count'] = pay_type_df.to_dict('records')
 
         title_data_count = user_publish_df.groupby('publish_phone').agg(
-            {"total_price": "sum", "count": "sum", "publish_count": "sum"}).reset_index()
+            {"total_price": "sum", "count": "sum", "sell_id": "count"}).reset_index()
         title_data_count.columns = ['publish_phone', 'total_price', 'pretty_count', 'publish_count']
         title_data['total_price'] = round(title_data_count['total_price'].values[0], 2)
         title_data['pretty_count'] = int(title_data_count['pretty_count'].values[0])
@@ -266,6 +267,8 @@ def personal_publish_detail():
         fina_data['title_data'] = title_data
 
         # 用户首次，二次，最近发布数据
+        # 去除空值
+        # user_publish_df = user_publish_df.dropna()
         publish_result = user_first_second_near_publish(user_publish_df)
         if not publish_result[0]:
             return {"code": publish_result[1], "status": "success", "msg": message[publish_result[1]]}
