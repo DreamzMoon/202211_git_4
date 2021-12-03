@@ -56,7 +56,10 @@ def deal_person():
             cursor.execute(sql,(data["phone"]))
             user_data = cursor.fetchone()
             logger.info(user_data)
-            data["username"] = user_data["username"]
+            if user_data["username"]:
+                data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
+            if data["phone"]:
+                data["phone"] = data["phone"][0:4]+len(data["phone"][4:])*"*"
 
         return {"code":"0000","status":"success","msg":datas}
 
@@ -133,77 +136,6 @@ def deal_business():
     finally:
         conn_analyze.close()
         conn_lh.close()
-
-
-# 运营中心每小时刷新一次 太慢了 最原始的
-# @homebp.route("deal/bus",methods=["GET"])
-# def deal_bus():
-#     try:
-#         conn_crm = direct_get_conn(crm_mysql_conf)
-#         conn_lh = direct_get_conn(lianghao_mysql_conf)
-#         try:
-#             token = request.headers["Token"]
-#             user_id = request.args.get("user_id")
-#
-#             if not user_id and not token:
-#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
-#
-#             check_token_result = check_token(token, user_id)
-#             if check_token_result["code"] != "0000":
-#                 return check_token_result
-#         except:
-#             return {"code": "10004", "status": "failed", "msg": message["10004"]}
-#
-#         fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
-#         # fifter_operate = ["测试","乔二运营中心"]
-#
-#         logger.info(fifter_operate)
-#         #先查运营中心的人数
-#
-#         cursor_crm = conn_crm.cursor()
-#         cursor_lh = conn_lh.cursor()
-#
-#         bus_sql = '''select operatename from luke_lukebus.operationcenter where operatename not in (%s)''' %(','.join(["'%s'" % item for item in fifter_operate]))
-#
-#         logger.info(bus_sql)
-#         cursor_crm.execute(bus_sql)
-#         operate_datas = cursor_crm.fetchall()
-#
-#         logger.info(operate_datas)
-#         logger.info(len(operate_datas))
-#         operate_list = []
-#         for operate_data in operate_datas:
-#             operate_dict = {}
-#             result = get_lukebus_phone([operate_data["operatename"]])
-#             # result = get_operationcenter_child(operate_data["id"])
-#             operate_dict["phone_list"] = result[1]
-#             operate_dict["operatename"] = operate_data["operatename"]
-#             operate_list.append(operate_dict)
-#         logger.info(operate_list)
-#
-#         return_lists = []
-#         for ol in operate_list:
-#             ol_dict = {}
-#             sql = '''select sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and phone in (%s) and date_format(create_time,"%%Y%%m%%d") = CURRENT_DATE()''' %(ol["phone_list"])
-#             logger.info(sql)
-#             cursor_lh.execute(sql)
-#             ol_dict["operatename"] = ol["operatename"]
-#             ol_dict["total_money"]=cursor_lh.fetchone()[0]
-#             return_lists.append(ol_dict)
-#         logger.info(return_lists)
-#         return_lists = pd.DataFrame(return_lists)
-#         return_lists.sort_values(by="total_money",ascending=False,inplace=True)
-#         logger.info(return_lists.iloc[0:3])
-#         return_lists.iloc[0:3].to_dict("records")
-#         return {"code":"0000","status":"success","msg":return_lists.iloc[0:3].to_dict("records")}
-#
-#
-#     except Exception as e:
-#         logger.exception(traceback.format_exc())
-#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
-#     finally:
-#         conn_crm.close()
-#         conn_lh.close()
 
 
 # 交易中心
@@ -512,6 +444,12 @@ def today_dynamic_transaction():
         else:
             sell_list = []
 
+        for sl in sell_list:
+            if sl["phone"]:
+                sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
+            if sl["username"]:
+                sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
+
         return_data = {
             "sell_dynamic": sell_list,
         }
@@ -578,6 +516,12 @@ def today_dynamic_publish():
             publish_list = publish_fina_df.to_dict("records")
         else:
             publish_list = []
+
+        for pl in publish_list:
+            if pl["phone"]:
+                pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
+            if pl["username"]:
+                pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
 
         return_data = {
             "publish_dynamic": publish_list,
@@ -650,6 +594,12 @@ def today_dynamic_newuser():
             new_user_list = new_user_fina_df.to_dict("records")
         else:
             new_user_list = []
+
+        for nl in new_user_list:
+            if nl["phone"]:
+                nl["phone"] = nl["phone"][0:4]+len(nl["phone"][4:])*"*"
+            if nl["username"]:
+                nl["username"] = nl["username"][0]+len(nl["username"][1:])*"*"
 
         return_data = {
             "new_user": new_user_list
