@@ -30,3 +30,14 @@ CREATE TABLE `operate_relationship_crm` (
   `del_flag` int(1) NOT NULL DEFAULT '0',
   `user_type` int(1) DEFAULT '0' COMMENT '0:正常用户 1：开发用户 2：运营 3：测试'''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+##活动时间表
+CREATE TABLE `sys_activity` (
+  `id` int(11) NOT NULL,
+  `start_time` datetime DEFAULT NULL COMMENT '活动开始时间',
+  `end_time` datetime DEFAULT NULL COMMENT '活动结束时间',
+  `remarks` varchar(255) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `lh_analyze`.`sys_activity` (`id`, `start_time`, `end_time`, `remarks`) VALUES (1, '2021-11-28 00:00:00', '2021-12-12 23:59:59', '双12首页活动时间');

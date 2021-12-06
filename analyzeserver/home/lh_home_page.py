@@ -125,7 +125,7 @@ def deal_business():
         conn_lh.close()
 
 
-# 交易数据中心
+# 交易数据中心累计
 @lhhomebp.route("datacenter",methods=["GET"])
 def data_center():
     try:
@@ -161,6 +161,57 @@ def data_center():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_lh.close()
+
+# 交易数据中心 今日
+@lhhomebp.route("order/datacenter",methods=["GET"])
+def order_data_center():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+
+        sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t1
+union all 
+select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2)t'''
+        logger.info(sql)
+        data = pd.read_sql(sql,conn_lh)
+        data = data.to_dict("records")[0]
+        logger.info(data)
+        return {"code":"0000","status":"success","msg":data}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
+
+# 今日名片网火爆类型交易排行版
+@lhhomebp.route("deal/top",methods=["GET"])
+def deal_top():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+
+        sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
+        select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
+        left join lh_sell s on o.sell_id = s.id
+        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
+        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
+        order by o.create_time desc) t group by pretty_type_name order by total_count desc'''
+
+
+        data = (pd.read_sql(sql, conn_lh)).to_dict("records")
+        return {"code": "0000", "status": "success", "msg": data}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
+
+
 
 # 今日实时交易数据分析
 @lhhomebp.route("/today/data", methods=["POST"])
