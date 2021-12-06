@@ -162,3 +162,283 @@ def data_center():
     finally:
         conn_lh.close()
 
+# 今日实时交易数据分析
+@lhhomebp.route("/today/data", methods=["POST"])
+def today_data():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 4:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            # 1今日 2昨日 3自定义-->必须传起始和结束时间
+            time_type = request.json['time_type']
+            # 首次发布时间
+            start_time = request.json['start_time']
+            end_time = request.json['end_time']
+
+            if (time_type != 3 and start_time and end_time) or time_type not in range(1, 4) or (
+                    time_type == 3 and not start_time and not end_time):
+                return {"code": "10014", "status": "failed", "msg": message["10014"]}
+            # 时间判断
+            elif start_time or end_time:
+                strp_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+                strp_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+                if strp_start_time > strp_end_time:
+                    return {"code": "10012", "status": "failed", "msg": message["10012"]}
+                sub_day = strp_end_time - strp_start_time
+                if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
+                    return {"code": "10015", "status": "failed", "msg": message["10015"]}
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        # 今日
+        today_sql = '''
+            select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
+                (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                union all
+                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                from lh_pretty_client.le_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                ) t1
+            group by today_time
+        '''
+        # 昨日
+        yesterday_sql = '''
+            select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
+                (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+                union all
+                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                from lh_pretty_client.le_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+                ) t1
+            group by today_time
+        '''
+        today_person_sql = '''
+            select today_time, count(distinct phone) person_count from
+                (select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                union all
+                select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.le_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                ) t1
+            group by today_time
+        '''
+        yesterday_person_sql = '''
+            select DATE_FORMAT(create_time, '%Y-%m-%d') yesterday_time, count(distinct phone) person_count from lh_pretty_client.lh_order where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = date_sub(CURDATE(), interval 1 day)
+            group by yesterday_time
+        '''
+
+        today_df = pd.read_sql(today_sql, conn_lh)
+        yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
+        # 今日交易人数
+        today_person_count_df = pd.read_sql(today_person_sql, conn_lh)
+        if today_person_count_df.empty:
+            today_order_person = 0
+        else:
+            today_order_person = int(today_person_count_df['person_count'].values[0])
+
+        # 昨日交易人数
+        yesterday_person_count_df = pd.read_sql(yesterday_person_sql, conn_lh)
+        if yesterday_person_count_df.empty:
+            yesterday_order_person = 0
+        else:
+            yesterday_order_person = int(yesterday_person_count_df['person_count'].values[0])
+
+        today_df['pretty_count'] = today_df['pretty_count'].astype(int)
+        today_data = {
+            'today_price': round(float(today_df['total_price'].sum()), 2), # 今日交易金额
+            'today_order_count': int(today_df['order_count'].sum()), # 今日交易订单数
+            'today_order_person': today_order_person, # 今日交易人数
+        }
+        yesterday_data = {
+            'yesterday_price': round(float(yesterday_df['total_price'].sum()), 2), # 昨日交易金额
+            'yesterday_order_count': int(yesterday_df['order_count'].sum()), # 昨日交易订单数
+            'yesterday_order_person': yesterday_order_person, # 昨日交易人数
+        }
+        return_data = {
+            "today_data": today_data,
+            "yesterday_data": yesterday_data,
+            "day_data": today_df.to_dict("records")
+        }
+
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error((traceback.format_exc()))
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
+
+# 今日交易实时动态
+@lhhomebp.route('/today/dynamic/transaction', methods=["GET"])
+def today_dynamic_transaction():
+    try:
+        try:
+            logger.info(request.json)
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_crm or not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        # 七位
+        # 今日交易时时动态
+        sell_order_sql_7 = '''
+            select t1.sub_time, t1.phone, t2.pretty_type_name from
+            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
+            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+            order by pay_time desc
+            limit 3) t1
+            left join
+            (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
+            on t1.sell_id = t2.id
+        '''
+
+        # 八位
+        sell_order_sql_8 = '''
+            select t1.sub_time, t1.phone, t2.pretty_type_name from
+            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
+            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+            order by pay_time desc
+            limit 3
+            ) t1
+            left join
+            (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
+            where id in
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
+            union all
+            select id, pretty_type_name from lh_pretty_client.le_sell
+            where id in
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
+            ) t2
+            on t1.sell_id = t2.id
+        '''
+        search_name_sql = '''
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+            '''
+
+        order_df_7 = pd.read_sql(sell_order_sql_7, conn_lh)
+        order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
+        order_df = pd.concat([order_df_7, order_df_8], axis=0)
+        if order_df.shape[0] > 0:
+            order_df['sub_time'] = round(order_df['sub_time'], 0).astype(int)
+
+            sell_phone_list = order_df['phone'].tolist()
+            sell_df_list = []
+            for phone in set(sell_phone_list):
+                sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+            sell_df = pd.concat(sell_df_list, axis=0)
+            sell_fina_df = order_df.merge(sell_df, how='left', on='phone')
+            sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
+            sell_fina_df = sell_fina_df[:3]
+            sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
+            sell_list = sell_fina_df.to_dict("records")
+        else:
+            sell_list = []
+
+        for sl in sell_list:
+            if sl["phone"]:
+                sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
+            if sl["username"]:
+                sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
+
+        return_data = {
+            "sell_dynamic": sell_list,
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_crm.close()
+        except:
+            pass
+
+
+@lhhomebp.route('/change/time', methods=["POST"])
+def change_time():
+    try:
+        try:
+            logger.info(request.json)
+            if len(request.json) != 3:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            start_time = request.json['start_time']
+            end_time = request.json['end_time']
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        update_sql = '''
+            update lh_analyze.sys_activity set start_time=%s, end_time=%s where id = 1
+        '''
+        with conn_lh.cursor() as cursor:
+            cursor.execute(update_sql, (start_time, end_time))
+        conn_lh.commit()
+        return {"code": "0000", "status": "success", "msg": '更新成功'}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
