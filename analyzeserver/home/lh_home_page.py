@@ -6,6 +6,9 @@
 # @Email : www@qq.com
 # @File : lh_home_page.py
 import sys
+
+import pandas as pd
+
 sys.path.append("..")
 sys.path.append("../../")
 from flask import *
@@ -163,96 +166,128 @@ def data_center():
         conn_lh.close()
 
 # 今日实时交易数据分析
-@lhhomebp.route("/today/data", methods=["POST"])
+@lhhomebp.route("/today/data", methods=["GET"])
 def today_data():
     try:
-        try:
-            logger.info(request.json)
-            # 参数个数错误
-            if len(request.json) != 4:
-                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        # try:
+        #     logger.info(request.json)
+        #     # 参数个数错误
+        #     if len(request.json) != 4:
+        #         return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-            token = request.headers["Token"]
-            user_id = request.json["user_id"]
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
+            # token = request.headers["Token"]
+            # user_id = request.json["user_id"]
+            #
+            # if not user_id and not token:
+            #     return {"code": "10001", "status": "failed", "msg": message["10001"]}
+            #
+            # check_token_result = check_token(token, user_id)
+            # if check_token_result["code"] != "0000":
+            #     return check_token_result
 
             # 1今日 2昨日 3自定义-->必须传起始和结束时间
-            time_type = request.json['time_type']
-            # 首次发布时间
-            start_time = request.json['start_time']
-            end_time = request.json['end_time']
-
-            if (time_type != 3 and start_time and end_time) or time_type not in range(1, 4) or (
-                    time_type == 3 and not start_time and not end_time):
-                return {"code": "10014", "status": "failed", "msg": message["10014"]}
-            # 时间判断
-            elif start_time or end_time:
-                strp_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
-                strp_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
-                if strp_start_time > strp_end_time:
-                    return {"code": "10012", "status": "failed", "msg": message["10012"]}
-                sub_day = strp_end_time - strp_start_time
-                if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
-                    return {"code": "10015", "status": "failed", "msg": message["10015"]}
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
-
+            # time_type = request.json['time_type']
+            # # 首次发布时间
+            # start_time = request.json['start_time']
+            # end_time = request.json['end_time']
+            #
+            # if (time_type != 3 and start_time and end_time) or time_type not in range(1, 4) or (
+            #         time_type == 3 and not start_time and not end_time):
+            #     return {"code": "10014", "status": "failed", "msg": message["10014"]}
+            # # 时间判断
+            # elif start_time or end_time:
+            #     strp_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+            #     strp_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+            #     if strp_start_time > strp_end_time:
+            #         return {"code": "10012", "status": "failed", "msg": message["10012"]}
+            #     sub_day = strp_end_time - strp_start_time
+            #     if sub_day.days + sub_day.seconds / (60.0 * 60.0) > 24:
+            #         return {"code": "10015", "status": "failed", "msg": message["10015"]}
+        # except Exception as e:
+        #     # 参数名错误
+        #     logger.error(e)
+        #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh:
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
-        # 今日
-        today_sql = '''
+        order_sql= '''
             select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
-                (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                (select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
                 from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 union all
-                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+                select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
                 from lh_pretty_client.le_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 ) t1
             group by today_time
         '''
-        # 昨日
-        yesterday_sql = '''
-            select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
-                (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
-                from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
-                union all
-                select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
-                from lh_pretty_client.le_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
-                ) t1
-            group by today_time
-        '''
-        today_person_sql = '''
+        # CURDATE() DATE_SUB(CURDATE(), interval 1 day)
+
+        person_sql = '''
             select today_time, count(distinct phone) person_count from
-                (select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                (select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, phone from lh_pretty_client.lh_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 union all
-                select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.le_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, phone from lh_pretty_client.le_order
+                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 ) t1
             group by today_time
         '''
-        yesterday_person_sql = '''
-            select DATE_FORMAT(create_time, '%Y-%m-%d') yesterday_time, count(distinct phone) person_count from lh_pretty_client.lh_order where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = date_sub(CURDATE(), interval 1 day)
-            group by yesterday_time
-        '''
+        # # 今日
+        # today_sql = '''
+        #     select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from
+        #         (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+        #         from lh_pretty_client.lh_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+        #         union all
+        #         select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+        #         from lh_pretty_client.le_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+        #         ) t1
+        #     group by today_time
+        # '''
+        # # 昨日
+        # yesterday_sql = '''
+        #     select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from
+        #         (select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+        #         from lh_pretty_client.lh_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+        #         union all
+        #         select DATE_FORMAT(create_time,'%Y-%m-%d %H') today_time, total_price, phone, count
+        #         from lh_pretty_client.le_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = DATE_SUB(CURDATE(), interval 1 day)
+        #         ) t1
+        #     group by today_time
+        # '''
+        # today_person_sql = '''
+        #     select today_time, count(distinct phone) person_count from
+        #         (select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.lh_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+        #         union all
+        #         select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.le_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = CURDATE()
+        #         ) t1
+        #     group by today_time
+        # '''
+        # yesterday_person_sql = '''
+        #     select today_time, count(distinct phone) person_count from
+        #         (select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.lh_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = date_sub(CURDATE(), interval 1 day)
+        #         union all
+        #         select DATE_FORMAT(create_time, '%Y-%m-%d') today_time, phone from lh_pretty_client.le_order
+        #         where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%Y-%m-%d') = date_sub(CURDATE(), interval 1 day)
+        #         ) t1
+        #     group by today_time
+        # '''
+        today_sql = order_sql % ('CURDATE()', 'CURDATE()')
+        yesterday_sql = order_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
 
         today_df = pd.read_sql(today_sql, conn_lh)
         yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
         # 今日交易人数
+        today_person_sql = person_sql % ('CURDATE()', 'CURDATE()')
         today_person_count_df = pd.read_sql(today_person_sql, conn_lh)
         if today_person_count_df.empty:
             today_order_person = 0
@@ -260,6 +295,7 @@ def today_data():
             today_order_person = int(today_person_count_df['person_count'].values[0])
 
         # 昨日交易人数
+        yesterday_person_sql = person_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
         yesterday_person_count_df = pd.read_sql(yesterday_person_sql, conn_lh)
         if yesterday_person_count_df.empty:
             yesterday_order_person = 0
@@ -297,21 +333,21 @@ def today_data():
 @lhhomebp.route('/today/dynamic/transaction', methods=["GET"])
 def today_dynamic_transaction():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # try:
+        #     logger.info(request.json)
+        #     token = request.headers["Token"]
+        #     user_id = request.args.get("user_id")
+        #
+        #     if not user_id and not token:
+        #         return {"code": "10001", "status": "failed", "msg": message["10001"]}
+        #
+        #     check_token_result = check_token(token, user_id)
+        #     if check_token_result["code"] != "0000":
+        #         return check_token_result
+        # except Exception as e:
+        #     # 参数名错误
+        #     logger.error(e)
+        #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_crm = direct_get_conn(crm_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -434,6 +470,52 @@ def change_time():
             cursor.execute(update_sql, (start_time, end_time))
         conn_lh.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
+
+@lhhomebp.route('/search/time', methods=["GET"])
+def search_time():
+    try:
+        # try:
+        #     logger.info(request.json)
+        #     if len(request.json) != 3:
+        #         return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        #
+        #     token = request.headers["Token"]
+        #     user_id = request.json["user_id"]
+        #
+        #     if not user_id and not token:
+        #         return {"code": "10001", "status": "failed", "msg": message["10001"]}
+        #
+        #     check_token_result = check_token(token, user_id)
+        #     if check_token_result["code"] != "0000":
+        #         return check_token_result
+        #
+        #     start_time = request.json['start_time']
+        #     end_time = request.json['end_time']
+        # except Exception as e:
+        #     # 参数名错误
+        #     logger.error(e)
+        #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        search_sql = '''
+            select start_time, end_time from sys_activity where id = 1
+        '''
+        time_data = pd.read_sql(search_sql, conn_lh)
+        time_data['start_time'] = time_data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        time_data['end_time'] = time_data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        time_data = time_data.to_dict("records")[0]
+        return {"code": "0000", "status": "success", "msg": time_data}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "success", "msg": message["10000"]}
