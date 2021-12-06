@@ -130,26 +130,30 @@ def deal_business():
 def data_center():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+        cursor_analyze = conn_analyze.cursor()
+        sql = '''select start_time,end_time from sys_activity where id = 1'''
+        cursor_analyze.execute(sql)
+        time_data = cursor_analyze.fetchone()
+        start_time = time_data[0]
+        end_time = time_data[1]
+        logger.info(start_time)
+        logger.info(end_time)
+        logger.info(type(start_time))
 
         sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
         select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone) t1
+        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
         union all 
         select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone) t2)t'''
-        data = (pd.read_sql(sql,conn_lh)).to_dict("records")
+        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' %(start_time,end_time,start_time,end_time)
+        logger.info(sql)
+        data = pd.read_sql(sql,conn_lh)
+        data = data.to_dict("records")[0]
+        data["start_time"] = datetime.datetime.strftime(start_time, "%Y-%m-%d %H:%M:%S")
+        data["end_time"] = datetime.datetime.strftime(end_time, "%Y-%m-%d %H:%M:%S")
+        logger.info(data)
         return {"code":"0000","status":"success","msg":data}
 
     except:
