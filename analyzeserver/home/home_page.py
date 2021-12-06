@@ -90,15 +90,16 @@ def deal_business():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
+        # fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
 
-        logger.info(fifter_operate)
+        # logger.info(fifter_operate)
         #先查运营中心的人数
 
         cursor_lh = conn_lh.cursor()
         cursor_ana = conn_analyze.cursor()
 
-        bus_sql = '''select operatename,contains from operate_relationship_crm where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
+        # bus_sql = '''select operatename,contains from operate_relationship_crm where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
+        bus_sql = '''select operatename,contains from operate_relationship_crm where crm = 1'''
 
         logger.info(bus_sql)
         cursor_ana.execute(bus_sql)

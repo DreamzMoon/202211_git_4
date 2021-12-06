@@ -144,7 +144,9 @@ def login():
                         return {"code": "11010", "status": "success", "msg": message["11010"]}
                     user_id = data[0]
                     token = create_token(user_id, datetime.datetime.now())
-                    r.set(token, json.dumps({"user_id": user_id, "username": username}),ex=86400)
+                    # r.set(token, json.dumps({"user_id": user_id, "username": username}),ex=86400)
+                    # 86400*30
+                    r.set(token, json.dumps({"user_id": user_id, "username": username}),ex=2592000)
                     return_data = {"user_id": user_id, "token": token}
                     logger.info("return_data:%s" %return_data)
                     return {"code": "0000", "status": "success", "msg": return_data}
