@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, time
-father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
+father_dir = os.path.dirname(__file__).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
 
 from config import *
