@@ -90,15 +90,16 @@ def deal_business():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
+        # fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
 
-        logger.info(fifter_operate)
+        # logger.info(fifter_operate)
         #先查运营中心的人数
 
         cursor_lh = conn_lh.cursor()
         cursor_ana = conn_analyze.cursor()
 
-        bus_sql = '''select operatename,contains from operate_relationship_crm where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
+        # bus_sql = '''select operatename,contains from operate_relationship_crm where operatename not in (%s) and crm = 1''' %(','.join(["'%s'" % item for item in fifter_operate]))
+        bus_sql = '''select operatename,contains from operate_relationship_crm where crm = 1'''
 
         logger.info(bus_sql)
         cursor_ana.execute(bus_sql)
@@ -413,26 +414,23 @@ def today_dynamic_transaction():
 
         # 今日交易时时动态
         sell_order_sql = '''
-                select t1.sub_time, t1.phone, t2.pretty_type_name from
-                (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
-                where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
-                order by pay_time desc
-                limit 3) t1
-                left join
-                (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
-                on t1.sell_id = t2.id
-            '''
-            #
+            select t1.sub_time, t1.phone, t2.pretty_type_name from
+            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
+            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+            order by pay_time desc
+            limit 3) t1
+            left join
+            (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
+            on t1.sell_id = t2.id
+        '''
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
             '''
 
-
         order_df = pd.read_sql(sell_order_sql, conn_lh)
         if order_df.shape[0] > 0:
             order_df['sub_time'] = round(order_df['sub_time'], 0).astype(int)
-
             sell_phone_list = order_df['phone'].tolist()
             sell_df_list = []
             for phone in set(sell_phone_list):

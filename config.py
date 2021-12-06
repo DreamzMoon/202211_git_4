@@ -13,6 +13,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 from datetime import timedelta,date
 from env import *
+import warnings
+warnings.filterwarnings('ignore')
 
 if ENV == "test":
     # 资讯测试
