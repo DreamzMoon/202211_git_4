@@ -125,7 +125,7 @@ def data_center():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         cursor_analyze = conn_analyze.cursor()
-        sql = '''select start_time, end_time, filter_phone from sys_activity where id = 1'''
+        sql = '''select start_time, end_time, filter_phone,remarks from sys_activity where id = 1'''
         cursor_analyze.execute(sql)
         data = cursor_analyze.fetchone()
         logger.info(data)
@@ -133,6 +133,7 @@ def data_center():
         start_time = data[0]
         end_time = data[1]
         filter_phone = data[2]
+        remarks = data[3]
         logger.info(filter_phone[1:-1])
 
         if filter_phone:
@@ -158,6 +159,7 @@ def data_center():
         data = data.to_dict("records")[0]
         data["start_time"] = datetime.datetime.strftime(start_time, "%Y-%m-%d %H:%M:%S")
         data["end_time"] = datetime.datetime.strftime(end_time, "%Y-%m-%d %H:%M:%S")
+        data["remarks"] = remarks
         logger.info(data)
         return {"code":"0000","status":"success","msg":data}
 
