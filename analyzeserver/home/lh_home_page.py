@@ -591,7 +591,7 @@ def search_activity_data():
         data = pd.read_sql(search_sql, conn_lh)
         data['start_time'] = data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         data['end_time'] = data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        data['filter_phone'] = data['filter_phone'].apply(lambda x: json.loads(x))
+        data['filter_phone'] = data['filter_phone'].apply(lambda x: json.loads(x) if x else [])
         data = data.to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
     except Exception as e:
