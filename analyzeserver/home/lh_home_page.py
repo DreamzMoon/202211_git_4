@@ -27,7 +27,7 @@ import threading
 lhhomebp = Blueprint('lhhomepage', __name__, url_prefix='/lhhome')
 r = get_redis()
 
-#个人成交排行
+#8位个人成交排行
 @lhhomebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
@@ -37,14 +37,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #7位 8位个人
-        sql = '''
-        select phone,sum(total_money) total_money from (
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE()  group by phone
-        union all 
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE()  group by phone
-        ) t group by phone 
-         order by total_money desc limit 3
-        '''
+        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
@@ -91,12 +84,8 @@ def deal_business():
         return_lists = []
 
         #取出今天的订单表
-        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone'''
         sql = '''
-        select phone,sum(total_money) total_money from(
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
-        union all 
-        select phone,sum(total_price) total_money from le_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone ) t group by phone
+        select phone,sum(total_price) total_money from le_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
         '''
         cursor_lh.execute(sql)
         order_datas = pd.DataFrame(cursor_lh.fetchall())
@@ -128,7 +117,7 @@ def deal_business():
         conn_lh.close()
 
 
-# 交易数据中心累计
+# 交易数据中心累计 7 8 位
 @lhhomebp.route("datacenter",methods=["GET"])
 def data_center():
     try:
@@ -170,14 +159,8 @@ def data_center():
 def order_data_center():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-
-
-        sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t1
-union all 
-select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2)t'''
+        sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
@@ -196,26 +179,15 @@ def deal_top():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
 
-
-        sql = '''(select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
+        sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from le_order o
         left join (select id,pretty_type_name from le_sell 
         union all
         select id,pretty_type_name from le_second_hand_sell) s on o.sell_id = s.id
         where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE()
         and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        order by o.create_time desc) t group by pretty_type_name  order by total_count desc)
-        union 
-        (select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
-        select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
-        left join lh_sell s on o.sell_id = s.id
-        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE()
-        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        order by o.create_time desc) t group by pretty_type_name order by total_count desc)
-        order by total_count desc
+        order by o.create_time desc) t group by pretty_type_name  order by total_count desc
         '''
-
-
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
 

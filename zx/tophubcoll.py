@@ -26,7 +26,7 @@ proxy_res = requests.get(proxy_url)
 proxy = proxy_res.text.strip()
 
 proxies = {'http': 'http://'+proxy,'https': 'http://'+proxy}
-
+proxies = {}
 headers = {}
 headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
 url = "https://tophub.today/c/tech"
@@ -65,6 +65,7 @@ logger.info(crawl_dict.keys())
 for cl in crawl_dict.keys():
     logger.info(cl)
     if cl.strip() not in ["创业邦","36氪","少年派","IT之家","爱范儿","科普中国网","极客公园"]:
+    # if cl.strip() not in ["创业邦","少年派","IT之家","爱范儿","科普中国网","极客公园"]:
         logger.info("不合适 跳过")
         continue
     time.sleep(2)
@@ -75,9 +76,10 @@ for cl in crawl_dict.keys():
         proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
         proxy_res = requests.get(proxy_url)
         proxy = proxy_res.text.strip()
+        logger.info(proxy)
 
         proxies = {'http': 'http://' + proxy, 'https': 'http://' + proxy}
-
+        proxies = {}
         url,view_count = d_url.split("=_=")
         logger.info("url:%s" %url)
         logger.info("view_count:%s" %view_count)
@@ -219,6 +221,14 @@ for cl in crawl_dict.keys():
             else:
                 continue
             logger.info(detail_dict)
+            time.sleep(2)
+            url = "http://xs.lkkjjt.com/open/content/collection"
+            headers = {"access-key":"skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
+            post_data = {
+
+            }
+
+
             detail_list.append(detail_dict)
             logger.info(detail_list)
         except Exception as e:
@@ -227,4 +237,4 @@ for cl in crawl_dict.keys():
             pass
         logger.info(detail_dict)
 
-logger.info(len(detail_list))
+# logger.info(len(detail_list))
