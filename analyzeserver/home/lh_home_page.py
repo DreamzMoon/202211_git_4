@@ -125,21 +125,34 @@ def data_center():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         cursor_analyze = conn_analyze.cursor()
-        sql = '''select start_time,end_time from sys_activity where id = 1'''
+        sql = '''select start_time, end_time, filter_phone from sys_activity where id = 1'''
         cursor_analyze.execute(sql)
-        time_data = cursor_analyze.fetchone()
-        start_time = time_data[0]
-        end_time = time_data[1]
-        logger.info(start_time)
-        logger.info(end_time)
-        logger.info(type(start_time))
+        data = cursor_analyze.fetchone()
+        logger.info(data)
 
-        sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-        select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
-        union all 
-        select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' %(start_time,end_time,start_time,end_time)
+        start_time = data[0]
+        end_time = data[1]
+        filter_phone = data[2]
+        logger.info(filter_phone[1:-1])
+
+        if filter_phone:
+            filter_phone = filter_phone[1: -1]
+            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
+            union all 
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
+            ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
+        else:
+            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
+            union all 
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' % (
+            start_time, end_time, start_time, end_time)
+
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
@@ -547,13 +560,54 @@ def today_dynamic_publish():
         except:
             pass
 
-# 修改活动时间
-@lhhomebp.route('/change/time', methods=["POST"])
-def change_time():
+# 查看活动数据（时间，名称，筛选条件）
+@lhhomebp.route('/search/activity/data', methods=["GET"])
+def search_activity_data():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        search_sql = '''
+            select id, start_time, end_time, remarks, filter_phone from sys_activity
+        '''
+        data = pd.read_sql(search_sql, conn_lh)
+        data['start_time'] = data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        data['end_time'] = data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        data['filter_phone'] = data['filter_phone'].apply(lambda x: json.loads(x))
+        data = data.to_dict("records")
+        return {"code": "0000", "status": "success", "msg": data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
+
+# 修改活动数据
+@lhhomebp.route('/change/activity/data', methods=["POST"])
+def change_activity_data():
     try:
         try:
             logger.info(request.json)
-            if len(request.json) != 3:
+            if len(request.json) != 6:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -566,8 +620,12 @@ def change_time():
             if check_token_result["code"] != "0000":
                 return check_token_result
 
+            activity_id = request.json['id']
+            remarks = request.json['remarks']
             start_time = request.json['start_time']
             end_time = request.json['end_time']
+            filter_phone = request.json['filter_phone']
+
         except Exception as e:
             # 参数名错误
             logger.error(e)
@@ -578,10 +636,10 @@ def change_time():
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         update_sql = '''
-            update lh_analyze.sys_activity set start_time=%s, end_time=%s where id = 1
+            update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s where id = %s
         '''
         with conn_lh.cursor() as cursor:
-            cursor.execute(update_sql, (start_time, end_time))
+            cursor.execute(update_sql, (start_time, end_time, remarks, json.dumps(filter_phone), activity_id))
         conn_lh.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
     except Exception as e:
@@ -593,49 +651,3 @@ def change_time():
         except:
             pass
 
-# 查看活动时间
-@lhhomebp.route('/search/time', methods=["GET"])
-def search_time():
-    try:
-        # try:
-        #     logger.info(request.json)
-        #     if len(request.json) != 3:
-        #         return {"code": "10004", "status": "failed", "msg": message["10004"]}
-        #
-        #     token = request.headers["Token"]
-        #     user_id = request.json["user_id"]
-        #
-        #     if not user_id and not token:
-        #         return {"code": "10001", "status": "failed", "msg": message["10001"]}
-        #
-        #     check_token_result = check_token(token, user_id)
-        #     if check_token_result["code"] != "0000":
-        #         return check_token_result
-        #
-        #     start_time = request.json['start_time']
-        #     end_time = request.json['end_time']
-        # except Exception as e:
-        #     # 参数名错误
-        #     logger.error(e)
-        #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
-
-        conn_lh = direct_get_conn(analyze_mysql_conf)
-        if not conn_lh:
-            return {"code": "10002", "status": "failer", "msg": message["10002"]}
-
-        search_sql = '''
-            select start_time, end_time from sys_activity where id = 1
-        '''
-        time_data = pd.read_sql(search_sql, conn_lh)
-        time_data['start_time'] = time_data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        time_data['end_time'] = time_data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        time_data = time_data.to_dict("records")[0]
-        return {"code": "0000", "status": "success", "msg": time_data}
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return {"code": "10000", "status": "success", "msg": message["10000"]}
-    finally:
-        try:
-            conn_lh.close()
-        except:
-            pass
