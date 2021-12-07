@@ -24,9 +24,9 @@ import re
 proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
 proxy_res = requests.get(proxy_url)
 proxy = proxy_res.text.strip()
-
+logger.info(proxy)
+proxy = ""
 proxies = {'http': 'http://'+proxy,'https': 'http://'+proxy}
-proxies = {}
 headers = {}
 headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
 url = "https://tophub.today/c/tech"
@@ -76,10 +76,10 @@ for cl in crawl_dict.keys():
         proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
         proxy_res = requests.get(proxy_url)
         proxy = proxy_res.text.strip()
+        proxy = ""
         logger.info(proxy)
 
         proxies = {'http': 'http://' + proxy, 'https': 'http://' + proxy}
-        proxies = {}
         url,view_count = d_url.split("=_=")
         logger.info("url:%s" %url)
         logger.info("view_count:%s" %view_count)
