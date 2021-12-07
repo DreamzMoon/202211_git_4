@@ -625,6 +625,8 @@ def change_activity_data():
             start_time = request.json['start_time']
             end_time = request.json['end_time']
             filter_phone = request.json['filter_phone']
+            if not start_time or not end_time:
+                return {"code": "10016", "status": "failed", "msg": message["10016"]}
 
         except Exception as e:
             # 参数名错误
