@@ -14,6 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 from config import *
 import re
+import json
 
 '''
 采集模块 科技 财经 报刊
@@ -25,8 +26,8 @@ proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&y
 proxy_res = requests.get(proxy_url)
 proxy = proxy_res.text.strip()
 logger.info(proxy)
-proxy = ""
-proxies = {'http': 'http://'+proxy,'https': 'http://'+proxy}
+proxies = {'http': 'http://'+proxy}
+proxies = {}
 headers = {}
 headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
 url = "https://tophub.today/c/tech"
@@ -64,27 +65,29 @@ detail_list = []
 logger.info(crawl_dict.keys())
 for cl in crawl_dict.keys():
     logger.info(cl)
-    if cl.strip() not in ["创业邦","36氪","少年派","IT之家","爱范儿","科普中国网","极客公园"]:
-    # if cl.strip() not in ["创业邦","少年派","IT之家","爱范儿","科普中国网","极客公园"]:
-        logger.info("不合适 跳过")
+    # if cl.strip() not in ["创业邦","36氪","少数派","IT之家","爱范儿","科普中国网","极客公园"]:
+    if cl.strip() not in ["36氪"]:
         continue
     time.sleep(2)
     logger.info("zhunbeikaishi-------------------------")
     detail_urls = crawl_dict[cl]
     for d_url in detail_urls:
-        time.sleep(2)
-        proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
-        proxy_res = requests.get(proxy_url)
-        proxy = proxy_res.text.strip()
-        proxy = ""
-        logger.info(proxy)
-
-        proxies = {'http': 'http://' + proxy, 'https': 'http://' + proxy}
-        url,view_count = d_url.split("=_=")
-        logger.info("url:%s" %url)
-        logger.info("view_count:%s" %view_count)
+        time.sleep(5)
+        # proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
+        # proxy_res = requests.get(proxy_url)
+        # proxy = proxy_res.text.strip()
+        # proxy = ""
+        # logger.info(proxy)
+        #
+        # proxies = {'http': 'http://'+proxy}
+        # view 可能是曝光 可能是标签
+        url,view = d_url.split("=_=")
         logger.info("----------")
         detail_res = requests.get(url=url,headers=headers,proxies=proxies)
+        logger.info(detail_res.status_code)
+        with open("e:/to.html","w+",encoding="utf-8") as f:
+            f.write(detail_res.text)
+        time.sleep(2)
         soup_detail = BeautifulSoup(detail_res.text,"lxml")
         cl = cl.strip()
         #创业邦
@@ -97,7 +100,7 @@ for cl in crawl_dict.keys():
                 detail_dict["title"] = soup_detail.select("h1.article-tit")[0].text
                 detail_dict["des"] = ""
                 detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("span.date-time")[1].text.strip()
                 detail_dict["detail_url"] = url
                 detail_dict["home_img"] = soup_detail.select("div.article-content img")[0].get("src")
@@ -109,24 +112,24 @@ for cl in crawl_dict.keys():
                 detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
                 detail_dict["des"] = soup_detail.select("div.summary")[0].text
                 detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("span.title-icon-item")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
                 detail_dict["imgs"] = []
                 imgs = soup_detail.select("div.common-width")[3].select("img")
                 for img in imgs:
                     detail_dict["imgs"].append(img.get("src"))
                 detail_dict["content"] = soup_detail.select("div.common-width")[3]
-            elif cl == "少年派":
+            elif cl == "少数派":
                 detail_dict["source"] = cl
                 detail_dict["author"] = soup_detail.select("span.nickname")[0].text
                 detail_dict["article_type"] = sssource
                 detail_dict["title"] = soup_detail.select("div.title")[0].text
                 detail_dict["des"] = ""
-                detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["keyword_or_label"] = view
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("div.timer")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("div.content")
                 detail_dict["imgs"] = []
@@ -142,9 +145,9 @@ for cl in crawl_dict.keys():
                 detail_dict["title"] = soup_detail.select("h1.article__title")[0].text
                 detail_dict["des"] = ""
                 detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["show_count"] = view
                 detail_dict["public_time"] = soup_detail.select("span.article__time")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("div#article-content")
                 detail_dict["imgs"] = []
@@ -158,25 +161,25 @@ for cl in crawl_dict.keys():
                 detail_dict["title"] = soup_detail.select("h1.title")[0].text
                 detail_dict["des"] = ""
                 detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["show_count"] = view
                 detail_dict["public_time"] = soup_detail.select("span.news-time")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("div#news-content")
                 detail_dict["imgs"] = []
                 imgs = soup_detail.select("div#news-content img")
                 for img in imgs:
                     detail_dict["imgs"].append(img.get("src"))
-            elif cl == " 爱范儿":
+            elif cl == "爱范儿":
                 detail_dict["source"] = cl
                 detail_dict["author"] = soup_detail.select("p.c-article-header-meta__category")[0].text
                 detail_dict["article_type"] = sssource
                 detail_dict["title"] = soup_detail.select("h1.c-single-normal__title")[0].text
                 detail_dict["des"] = ""
-                detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["keyword_or_label"] = view
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("p.c-article-header-meta__time")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("article.o-single-content__body__content")
                 detail_dict["imgs"] = []
@@ -189,10 +192,10 @@ for cl in crawl_dict.keys():
                 detail_dict["article_type"] = sssource
                 detail_dict["title"] = soup_detail.select("h1")[0].text
                 detail_dict["des"] = ""
-                detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["keyword_or_label"] = view
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("p.tips span")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("div.TRS_Editor")
                 detail_dict["imgs"] = []
@@ -208,9 +211,9 @@ for cl in crawl_dict.keys():
                 detail_dict["title"] = soup_detail.select("h1.topic-title")[0].text
                 detail_dict["des"] = ""
                 detail_dict["keyword_or_label"] = ""
-                detail_dict["show_count"] = view_count
+                detail_dict["show_count"] = ""
                 detail_dict["public_time"] = soup_detail.select("span.release-date")[0].text
-                detail_dict["detail_url"] = d_url
+                detail_dict["detail_url"] = url
 
                 detail_dict["content"] = soup_detail.select("div#article-body")
                 detail_dict["imgs"] = []
@@ -220,21 +223,28 @@ for cl in crawl_dict.keys():
 
             else:
                 continue
-            logger.info(detail_dict)
-            time.sleep(2)
-            url = "http://xs.lkkjjt.com/open/content/collection"
-            headers = {"access-key":"skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
-            post_data = {
-
-            }
-
-
-            detail_list.append(detail_dict)
-            logger.info(detail_list)
+            # logger.info(detail_dict)
+            # time.sleep(2)
+            if detail_dict:
+                url = "http://xs.lkkjjt.com/open/content/collection"
+                headers = {"access-key":"skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
+                post_data = {
+                "source":detail_dict["source"],"author":detail_dict["author"],"type":detail_dict["article_type"],"title":detail_dict["title"],
+                "describes":detail_dict["des"],"tags":detail_dict["keyword_or_label"],"visits_virtual":"","exposure":detail_dict["show_count"],"public_time":detail_dict["public_time"],
+                "ori_url":detail_dict["detail_url"],"sub_images":detail_dict["imgs"],"body_text":str(detail_dict["content"])
+                }
+                res = requests.post(url=url,headers=headers,data=post_data)
+                logger.info("-------------------")
+                logger.info(res.text)
+                logger.info(res.status_code)
+                logger.info("推送成功")
+                time.sleep(2)
+                detail_list.append(detail_dict)
+            # logger.info(detail_list)
         except Exception as e:
             import traceback
             logger.exception(traceback.format_exc())
             pass
-        logger.info(detail_dict)
+        # logger.info(detail_dict)
 
 # logger.info(len(detail_list))
