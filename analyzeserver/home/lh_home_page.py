@@ -27,7 +27,7 @@ import threading
 lhhomebp = Blueprint('lhhomepage', __name__, url_prefix='/lhhome')
 r = get_redis()
 
-#个人成交排行
+#8位个人成交排行
 @lhhomebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
@@ -37,14 +37,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #7位 8位个人
-        sql = '''
-        select phone,sum(total_money) total_money from (
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE()  group by phone
-        union all 
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE()  group by phone
-        ) t group by phone 
-         order by total_money desc limit 3
-        '''
+        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
@@ -91,12 +84,8 @@ def deal_business():
         return_lists = []
 
         #取出今天的订单表
-        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone'''
         sql = '''
-        select phone,sum(total_money) total_money from(
-        select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
-        union all 
-        select phone,sum(total_price) total_money from le_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone ) t group by phone
+        select phone,sum(total_price) total_money from le_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
         '''
         cursor_lh.execute(sql)
         order_datas = pd.DataFrame(cursor_lh.fetchall())
@@ -128,7 +117,7 @@ def deal_business():
         conn_lh.close()
 
 
-# 交易数据中心累计
+# 交易数据中心累计 7 8 位
 @lhhomebp.route("datacenter",methods=["GET"])
 def data_center():
     try:
@@ -136,26 +125,41 @@ def data_center():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         cursor_analyze = conn_analyze.cursor()
-        sql = '''select start_time,end_time from sys_activity where id = 1'''
+        sql = '''select start_time, end_time, filter_phone,remarks from sys_activity where id = 1'''
         cursor_analyze.execute(sql)
-        time_data = cursor_analyze.fetchone()
-        start_time = time_data[0]
-        end_time = time_data[1]
-        logger.info(start_time)
-        logger.info(end_time)
-        logger.info(type(start_time))
+        data = cursor_analyze.fetchone()
+        logger.info(data)
 
-        sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-        select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
-        union all 
-        select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' %(start_time,end_time,start_time,end_time)
+        start_time = data[0]
+        end_time = data[1]
+        filter_phone = data[2]
+        remarks = data[3]
+        logger.info(filter_phone[1:-1])
+
+        if filter_phone:
+            filter_phone = filter_phone[1: -1]
+            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
+            union all 
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
+            ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
+        else:
+            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
+            union all 
+            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' % (
+            start_time, end_time, start_time, end_time)
+
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
         data["start_time"] = datetime.datetime.strftime(start_time, "%Y-%m-%d %H:%M:%S")
         data["end_time"] = datetime.datetime.strftime(end_time, "%Y-%m-%d %H:%M:%S")
+        data["remarks"] = remarks
         logger.info(data)
         return {"code":"0000","status":"success","msg":data}
 
@@ -170,14 +174,8 @@ def data_center():
 def order_data_center():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-
-
-        sql='''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t1
-union all 
-select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2)t'''
+        sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
@@ -196,26 +194,15 @@ def deal_top():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
 
-
-        sql = '''(select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
+        sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from le_order o
         left join (select id,pretty_type_name from le_sell 
         union all
         select id,pretty_type_name from le_second_hand_sell) s on o.sell_id = s.id
         where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE()
         and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        order by o.create_time desc) t group by pretty_type_name  order by total_count desc)
-        union 
-        (select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
-        select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
-        left join lh_sell s on o.sell_id = s.id
-        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE()
-        and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        order by o.create_time desc) t group by pretty_type_name order by total_count desc)
-        order by total_count desc
+        order by o.create_time desc) t group by pretty_type_name  order by total_count desc
         '''
-
-
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
 
@@ -275,11 +262,7 @@ def today_data():
 
         order_sql= '''
             select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
-                (select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
-                from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
-                group by today_time
-                union all
+                (
                 select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
                 from lh_pretty_client.le_order
                 where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
@@ -290,9 +273,7 @@ def today_data():
 
         person_sql = '''
             select today_time, sum(person_count) person_count from
-                (select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, count(distinct phone) person_count from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
-                union all
+                (
                 select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, count(distinct phone) from lh_pretty_client.le_order
                 where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 group by today_time
@@ -344,13 +325,13 @@ def today_data():
         #         ) t1
         #     group by today_time
         # '''
-        today_sql = order_sql % ('CURDATE()', 'CURDATE()')
-        yesterday_sql = order_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
+        today_sql = order_sql % ('CURDATE()')
+        yesterday_sql = order_sql % ('DATE_SUB(CURDATE(), interval 1 day)')
 
         today_df = pd.read_sql(today_sql, conn_lh)
         yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
         # 今日交易人数
-        today_person_sql = person_sql % ('CURDATE()', 'CURDATE()')
+        today_person_sql = person_sql % ('CURDATE()')
         today_person_count_df = pd.read_sql(today_person_sql, conn_lh)
         if today_person_count_df.empty:
             today_order_person = 0
@@ -358,7 +339,7 @@ def today_data():
             today_order_person = int(today_person_count_df['person_count'].values[0])
 
         # 昨日交易人数
-        yesterday_person_sql = person_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
+        yesterday_person_sql = person_sql % ('DATE_SUB(CURDATE(), interval 1 day)')
         yesterday_person_count_df = pd.read_sql(yesterday_person_sql, conn_lh)
         if yesterday_person_count_df.empty:
             yesterday_order_person = 0
@@ -433,42 +414,20 @@ def today_dynamic_transaction():
         '''
 
         # 八位
-        sell_order_sql_8 = '''
-            select t1.sub_time, t1.phone, t2.pretty_type_name from
-            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
-            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
-            order by pay_time desc
-            limit 10
-            ) t1
-            left join
-            (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
-            where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
-            union all
-            select id, pretty_type_name from lh_pretty_client.le_sell
-            where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
-            ) t2
-            on t1.sell_id = t2.id
-        '''
+
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
             '''
 
         order_df_7 = pd.read_sql(sell_order_sql_7, conn_lh)
-        order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
-        order_df = pd.concat([order_df_7, order_df_8], axis=0)
-        if order_df.shape[0] > 0:
-            order_df['sub_time'] = round(order_df['sub_time'], 0).astype(int)
-            sell_phone_list = order_df['phone'].tolist()
+        if order_df_7.shape[0] > 0:
+            order_df_7['sub_time'] = round(order_df_7['sub_time'], 0).astype(int)
+            sell_phone_list = order_df_7['phone'].tolist()
             sell_df_list = []
             for phone in set(sell_phone_list):
                 sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
             sell_df = pd.concat(sell_df_list, axis=0)
-            sell_fina_df = order_df.merge(sell_df, how='left', on='phone')
+            sell_fina_df = order_df_7.merge(sell_df, how='left', on='phone')
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
             sell_fina_df = sell_fina_df[:3]
             sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
@@ -526,30 +485,47 @@ def today_dynamic_publish():
             '''
 
         # 发布时时动态
+        # publish_order_sql = '''
+        #     (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.lh_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by up_time desc
+        #     limit 10)
+        #     union all
+        #     (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.le_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by up_time desc
+        #     limit 10)
+        #     union all
+        #     (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.le_second_hand_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by create_time desc
+        #     limit 10)
+        #     order by sub_time
+        #     limit 3
+        # '''
+
         publish_order_sql = '''
-            (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.lh_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-            order by up_time desc
-            limit 10)
-            union all
-            (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.le_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-            order by up_time desc
-            limit 10)
-            union all
-            (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.le_second_hand_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
-            order by create_time desc
-            limit 10)
-            order by sub_time
-            limit 3
-        '''
+        (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        from lh_pretty_client.le_sell
+        where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        order by up_time desc
+        limit 10)
+        union all
+        (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        from lh_pretty_client.le_second_hand_sell
+        where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+        order by create_time desc
+        limit 10)
+        order by sub_time
+        limit 3'''
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
@@ -586,13 +562,54 @@ def today_dynamic_publish():
         except:
             pass
 
-# 修改活动时间
-@lhhomebp.route('/change/time', methods=["POST"])
-def change_time():
+# 查看活动数据（时间，名称，筛选条件）
+@lhhomebp.route('/search/activity/data', methods=["GET"])
+def search_activity_data():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_lh = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh:
+            return {"code": "10002", "status": "failer", "msg": message["10002"]}
+
+        search_sql = '''
+            select id, start_time, end_time, remarks, filter_phone from sys_activity
+        '''
+        data = pd.read_sql(search_sql, conn_lh)
+        data['start_time'] = data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        data['end_time'] = data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        data['filter_phone'] = data['filter_phone'].apply(lambda x: json.loads(x) if x else [])
+        data = data.to_dict("records")
+        return {"code": "0000", "status": "success", "msg": data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
+
+# 修改活动数据
+@lhhomebp.route('/change/activity/data', methods=["POST"])
+def change_activity_data():
     try:
         try:
             logger.info(request.json)
-            if len(request.json) != 3:
+            if len(request.json) != 6:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -605,8 +622,14 @@ def change_time():
             if check_token_result["code"] != "0000":
                 return check_token_result
 
+            activity_id = request.json['id']
+            remarks = request.json['remarks']
             start_time = request.json['start_time']
             end_time = request.json['end_time']
+            filter_phone = request.json['filter_phone']
+            if not start_time or not end_time:
+                return {"code": "10016", "status": "failed", "msg": message["10016"]}
+
         except Exception as e:
             # 参数名错误
             logger.error(e)
@@ -617,10 +640,10 @@ def change_time():
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         update_sql = '''
-            update lh_analyze.sys_activity set start_time=%s, end_time=%s where id = 1
+            update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s where id = %s
         '''
         with conn_lh.cursor() as cursor:
-            cursor.execute(update_sql, (start_time, end_time))
+            cursor.execute(update_sql, (start_time, end_time, remarks, json.dumps(filter_phone), activity_id))
         conn_lh.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
     except Exception as e:
@@ -632,49 +655,3 @@ def change_time():
         except:
             pass
 
-# 查看活动时间
-@lhhomebp.route('/search/time', methods=["GET"])
-def search_time():
-    try:
-        # try:
-        #     logger.info(request.json)
-        #     if len(request.json) != 3:
-        #         return {"code": "10004", "status": "failed", "msg": message["10004"]}
-        #
-        #     token = request.headers["Token"]
-        #     user_id = request.json["user_id"]
-        #
-        #     if not user_id and not token:
-        #         return {"code": "10001", "status": "failed", "msg": message["10001"]}
-        #
-        #     check_token_result = check_token(token, user_id)
-        #     if check_token_result["code"] != "0000":
-        #         return check_token_result
-        #
-        #     start_time = request.json['start_time']
-        #     end_time = request.json['end_time']
-        # except Exception as e:
-        #     # 参数名错误
-        #     logger.error(e)
-        #     return {"code": "10009", "status": "failed", "msg": message["10009"]}
-
-        conn_lh = direct_get_conn(analyze_mysql_conf)
-        if not conn_lh:
-            return {"code": "10002", "status": "failer", "msg": message["10002"]}
-
-        search_sql = '''
-            select start_time, end_time from sys_activity where id = 1
-        '''
-        time_data = pd.read_sql(search_sql, conn_lh)
-        time_data['start_time'] = time_data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        time_data['end_time'] = time_data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        time_data = time_data.to_dict("records")[0]
-        return {"code": "0000", "status": "success", "msg": time_data}
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return {"code": "10000", "status": "success", "msg": message["10000"]}
-    finally:
-        try:
-            conn_lh.close()
-        except:
-            pass
