@@ -134,7 +134,6 @@ def data_center():
         end_time = data[1]
         filter_phone = data[2]
         remarks = data[3]
-        logger.info(filter_phone[1:-1])
 
         if filter_phone:
             filter_phone = filter_phone[1: -1]
@@ -642,8 +641,13 @@ def change_activity_data():
         update_sql = '''
             update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s where id = %s
         '''
+        if len(filter_phone)==0:
+            filter_phone = None
+        else:
+            filter_phone = json.dumps(filter_phone)
+
         with conn_lh.cursor() as cursor:
-            cursor.execute(update_sql, (start_time, end_time, remarks, json.dumps(filter_phone), activity_id))
+            cursor.execute(update_sql, (start_time, end_time, remarks, filter_phone, activity_id))
         conn_lh.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
     except Exception as e:
