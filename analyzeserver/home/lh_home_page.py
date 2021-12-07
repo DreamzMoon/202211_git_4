@@ -247,11 +247,7 @@ def today_data():
 
         order_sql= '''
             select today_time, sum(total_price) total_price, count(*) order_count, count(distinct phone) order_person, sum(count) pretty_count from 
-                (select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
-                from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
-                group by today_time
-                union all
+                (
                 select DATE_FORMAT(create_time,'%%Y-%%m-%%d %%H') today_time, total_price, phone, count
                 from lh_pretty_client.le_order
                 where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
@@ -262,9 +258,7 @@ def today_data():
 
         person_sql = '''
             select today_time, sum(person_count) person_count from
-                (select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, count(distinct phone) person_count from lh_pretty_client.lh_order
-                where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
-                union all
+                (
                 select DATE_FORMAT(create_time, '%%Y-%%m-%%d') today_time, count(distinct phone) from lh_pretty_client.le_order
                 where del_flag =0 and type in (1, 4) and `status` = 1 and (phone is not null or phone != "") and DATE_FORMAT(create_time,'%%Y-%%m-%%d') = %s
                 group by today_time
@@ -316,13 +310,13 @@ def today_data():
         #         ) t1
         #     group by today_time
         # '''
-        today_sql = order_sql % ('CURDATE()', 'CURDATE()')
-        yesterday_sql = order_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
+        today_sql = order_sql % ('CURDATE()')
+        yesterday_sql = order_sql % ('DATE_SUB(CURDATE(), interval 1 day)')
 
         today_df = pd.read_sql(today_sql, conn_lh)
         yesterday_df = pd.read_sql(yesterday_sql, conn_lh)
         # 今日交易人数
-        today_person_sql = person_sql % ('CURDATE()', 'CURDATE()')
+        today_person_sql = person_sql % ('CURDATE()')
         today_person_count_df = pd.read_sql(today_person_sql, conn_lh)
         if today_person_count_df.empty:
             today_order_person = 0
@@ -330,7 +324,7 @@ def today_data():
             today_order_person = int(today_person_count_df['person_count'].values[0])
 
         # 昨日交易人数
-        yesterday_person_sql = person_sql % ('DATE_SUB(CURDATE(), interval 1 day)', 'DATE_SUB(CURDATE(), interval 1 day)')
+        yesterday_person_sql = person_sql % ('DATE_SUB(CURDATE(), interval 1 day)')
         yesterday_person_count_df = pd.read_sql(yesterday_person_sql, conn_lh)
         if yesterday_person_count_df.empty:
             yesterday_order_person = 0
@@ -405,42 +399,20 @@ def today_dynamic_transaction():
         '''
 
         # 八位
-        sell_order_sql_8 = '''
-            select t1.sub_time, t1.phone, t2.pretty_type_name from
-            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
-            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
-            order by pay_time desc
-            limit 10
-            ) t1
-            left join
-            (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
-            where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
-            union all
-            select id, pretty_type_name from lh_pretty_client.le_sell
-            where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE)
-            ) t2
-            on t1.sell_id = t2.id
-        '''
+
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
             '''
 
         order_df_7 = pd.read_sql(sell_order_sql_7, conn_lh)
-        order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
-        order_df = pd.concat([order_df_7, order_df_8], axis=0)
-        if order_df.shape[0] > 0:
-            order_df['sub_time'] = round(order_df['sub_time'], 0).astype(int)
-            sell_phone_list = order_df['phone'].tolist()
+        if order_df_7.shape[0] > 0:
+            order_df_7['sub_time'] = round(order_df_7['sub_time'], 0).astype(int)
+            sell_phone_list = order_df_7['phone'].tolist()
             sell_df_list = []
             for phone in set(sell_phone_list):
                 sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
             sell_df = pd.concat(sell_df_list, axis=0)
-            sell_fina_df = order_df.merge(sell_df, how='left', on='phone')
+            sell_fina_df = order_df_7.merge(sell_df, how='left', on='phone')
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
             sell_fina_df = sell_fina_df[:3]
             sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
@@ -498,30 +470,47 @@ def today_dynamic_publish():
             '''
 
         # 发布时时动态
+        # publish_order_sql = '''
+        #     (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.lh_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by up_time desc
+        #     limit 10)
+        #     union all
+        #     (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.le_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by up_time desc
+        #     limit 10)
+        #     union all
+        #     (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        #     from lh_pretty_client.le_second_hand_sell
+        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        #     and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by create_time desc
+        #     limit 10)
+        #     order by sub_time
+        #     limit 3
+        # '''
+
         publish_order_sql = '''
-            (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.lh_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-            order by up_time desc
-            limit 10)
-            union all
-            (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.le_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-            order by up_time desc
-            limit 10)
-            union all
-            (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-            from lh_pretty_client.le_second_hand_sell
-            where del_flag=0 and (sell_phone is not null or sell_phone != '')
-            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
-            order by create_time desc
-            limit 10)
-            order by sub_time
-            limit 3
-        '''
+        (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        from lh_pretty_client.le_sell
+        where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+        order by up_time desc
+        limit 10)
+        union all
+        (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        from lh_pretty_client.le_second_hand_sell
+        where del_flag=0 and (sell_phone is not null or sell_phone != '')
+        and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+        order by create_time desc
+        limit 10)
+        order by sub_time
+        limit 3'''
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
