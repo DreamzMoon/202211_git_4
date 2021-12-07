@@ -134,8 +134,6 @@ def data_center():
         end_time = data[1]
         filter_phone = data[2]
         remarks = data[3]
-        logger.info(filter_phone[1:-1])
-
 
         if filter_phone:
             filter_phone = filter_phone[1: -1]
