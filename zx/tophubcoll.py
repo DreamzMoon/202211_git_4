@@ -15,27 +15,45 @@ from bs4 import BeautifulSoup
 from config import *
 import re
 import json
+import random
+from fake_useragent import UserAgent
 
 '''
 采集模块 科技 财经 报刊
 '''
 # coll_urls = ["https://tophub.today/c/tech","https://tophub.today/c/ent","https://tophub.today/c/finance","https://tophub.today/c/epaper"]
 
+ua = UserAgent()
+
+
 #代理获取
-proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
-proxy_res = requests.get(proxy_url)
-proxy = proxy_res.text.strip()
-logger.info(proxy)
-proxies = {'http': 'http://'+proxy}
-proxies = {}
+proxy_lists = []
+for i in range(0,10):
+    proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
+    proxy_res = requests.get(proxy_url)
+    proxy = proxy_res.text.strip()
+    logger.info(proxy)
+    proxy_lists.append(proxy)
+    time.sleep(3)
+
+logger.info(proxy_lists)
+
+user_agent = []
+for i in range(0,100):
+    user_agent.append(ua.chrome)
+    user_agent.append(ua.ie)
+    user_agent.append(ua.random)
+
+proxies = {'http': 'http://'+random.choice(proxy_lists)}
 headers = {}
-headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+# headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+headers["User-Agent"] = random.choice(user_agent)
 url = "https://tophub.today/c/tech"
 
 # crawl_lists = []
 crawl_dict = {}
 sssource = "科技"
-for i in range(1,2):
+for i in range(1,6):
     main_url = url+"?"+ "p=%s" %i
     logger.info(main_url)
     res = requests.get(url=main_url,headers=headers,proxies=proxies)
@@ -64,30 +82,26 @@ detail_dict = {}
 detail_list = []
 logger.info(crawl_dict.keys())
 for cl in crawl_dict.keys():
-    logger.info(cl)
+
     # if cl.strip() not in ["创业邦","36氪","少数派","IT之家","爱范儿","科普中国网","极客公园"]:
-    if cl.strip() not in ["36氪"]:
+    if cl.strip() not in ["爱范儿"]:
         continue
-    time.sleep(2)
-    logger.info("zhunbeikaishi-------------------------")
+
+    logger.info("source:%s" %cl)
+    logger.info("url_length:%s" %len(crawl_dict[cl]))
+
     detail_urls = crawl_dict[cl]
     for d_url in detail_urls:
-        time.sleep(5)
-        # proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
-        # proxy_res = requests.get(proxy_url)
-        # proxy = proxy_res.text.strip()
-        # proxy = ""
-        # logger.info(proxy)
-        #
-        # proxies = {'http': 'http://'+proxy}
+        proxies = {'http': 'http://'+proxy}
         # view 可能是曝光 可能是标签
         url,view = d_url.split("=_=")
-        logger.info("----------")
+        logger.info("url:%s" %url)
+        proxies = {'http': 'http://' + random.choice(proxy_lists)}
+        headers["User-Agent"] = random.choice(user_agent)
         detail_res = requests.get(url=url,headers=headers,proxies=proxies)
         logger.info(detail_res.status_code)
         with open("e:/to.html","w+",encoding="utf-8") as f:
             f.write(detail_res.text)
-        time.sleep(2)
         soup_detail = BeautifulSoup(detail_res.text,"lxml")
         cl = cl.strip()
         #创业邦
@@ -107,19 +121,49 @@ for cl in crawl_dict.keys():
                 detail_dict["content"] = soup_detail.select("div.article-content")[0]
             elif cl == "36氪":
                 detail_dict["source"] = cl
-                detail_dict["author"] = soup_detail.select("a.title-icon-item")[0].text
+                if soup_detail.select("a.title-icon-item"):
+                    detail_dict["author"] = soup_detail.select("a.title-icon-item")[0].text
+                else:
+                    detail_dict["author"] = ""
                 detail_dict["article_type"] = sssource
-                detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
-                detail_dict["des"] = soup_detail.select("div.summary")[0].text
+
+                if soup_detail.select("h1.article-title"):
+                    detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
+                elif soup_detail.select("a.item-title"):
+                    detail_dict["title"] = soup_detail.select("a.item-title")[0].text
+                else:
+                    detail_dict["title"] = ""
+
+                if soup_detail.select("div.summary"):
+                    detail_dict["des"] = soup_detail.select("div.summary")[0].text
+                else:
+                    detail_dict["des"] = ""
+
                 detail_dict["keyword_or_label"] = ""
                 detail_dict["show_count"] = ""
-                detail_dict["public_time"] = soup_detail.select("span.title-icon-item")[0].text
+
+                if soup_detail.select("span.title-icon-item"):
+                    detail_dict["public_time"] = soup_detail.select("span.title-icon-item")[0].text
+                elif soup_detail.select("span.time"):
+                    detail_dict["public_time"] = soup_detail.select("span.time")[0].text
+                else:
+                    detail_dict["public_time"] = ""
                 detail_dict["detail_url"] = url
                 detail_dict["imgs"] = []
-                imgs = soup_detail.select("div.common-width")[3].select("img")
+
+                imgs = []
+                detail_dict["imgs"] = []
+                if soup_detail.select("div.common-width"):
+                    imgs = soup_detail.select("div.common-width")[3].select("img")
                 for img in imgs:
                     detail_dict["imgs"].append(img.get("src"))
-                detail_dict["content"] = soup_detail.select("div.common-width")[3]
+
+                if soup_detail.select("div.common-width"):
+                    detail_dict["content"] = soup_detail.select("div.common-width")[3]
+                elif soup_detail.select("div.item-desc"):
+                    detail_dict["content"] = soup_detail.select("div.item-desc")[0]
+                else:
+                    detail_dict["content"] = ""
             elif cl == "少数派":
                 detail_dict["source"] = cl
                 detail_dict["author"] = soup_detail.select("span.nickname")[0].text
@@ -223,8 +267,7 @@ for cl in crawl_dict.keys():
 
             else:
                 continue
-            # logger.info(detail_dict)
-            # time.sleep(2)
+
             if detail_dict:
                 url = "http://xs.lkkjjt.com/open/content/collection"
                 headers = {"access-key":"skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
@@ -238,7 +281,7 @@ for cl in crawl_dict.keys():
                 logger.info(res.text)
                 logger.info(res.status_code)
                 logger.info("推送成功")
-                time.sleep(2)
+
                 detail_list.append(detail_dict)
             # logger.info(detail_list)
         except Exception as e:
