@@ -584,7 +584,6 @@ def personal_total():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                # return {"code":"11016","status":"failed","msg":message["11016"]}
                 return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
@@ -709,15 +708,7 @@ def personal_total():
             need_data = df_merged.copy()
 
         all_df = need_data.to_dict("records")
-        # for i in range(0, len(all_df)):
-        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+
         all_data["buy_count"] = int(df_merged["buy_count"].sum())
         all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
         all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(), 2)
@@ -727,15 +718,9 @@ def personal_total():
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
         all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
 
-        # all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
-        # all_data["sell_fee"] = round(all_data["sell_fee"], 2)
-        # all_data["sell_real_money"] = round(all_data["sell_real_money"], 2)
-        # all_data["sell_total_price"] = round(all_data["sell_total_price"], 2)
-        # all_data["buy_total_count"] = int(all_data["buy_total_count"])
-        # all_data["sell_total_count"] = int(all_data["sell_total_count"])
+
 
         if len(need_data)<200:
-            # result = user_belong_bus(need_data)
             result = user_belong_by_df(need_data)
 
             if result[0] == 1:
@@ -753,10 +738,7 @@ def personal_total():
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
             for d in last_data:
-                # logger.info(d)
-                # logger.info(pd.isnull(d["unionid"]))
-                # logger.info(pd.isnull("operatename"))
-                # logger.info("-----------------------")
+
                 if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
             msg_data = {"data": last_data, "all_data": all_data}
