@@ -21,41 +21,62 @@ import traceback
 ua = UserAgent()
 
 proxy_lists = []
+proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
 for i in range(0,30):
-    proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
+
     proxy_res = requests.get(proxy_url)
     proxy = proxy_res.text.strip()
-    logger.info(proxy)
     proxy_lists.append(proxy)
     time.sleep(3)
 
-# proxy_lists = ['117.70.40.249:4258', '1.84.253.29:4258', '223.242.21.28:4267', '113.94.19.89:4231', '59.62.54.124:4261', '223.156.166.128:4272', '120.35.178.237:4242', '183.94.230.167:4220', '58.241.203.26:4231', '123.54.45.244:4210']
 
 logger.info(proxy_lists)
-# proxy_lists = ['113.77.87.141:4221', '42.56.238.140:4278', '114.239.120.36:4231', '59.58.19.195:4235', '27.158.236.134:4224']
 
-user_agent = []
-for i in range(0,300):
-    user_agent.append(ua.chrome)
-    user_agent.append(ua.ie)
-    user_agent.append(ua.random)
+# user_agent = []
+# for i in range(0,300):
+#     user_agent.append(ua.chrome)
+#     user_agent.append(ua.ie)
+#     user_agent.append(ua.random)
+
+user_agent = ["Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.163 Safari/535.1",
+              "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20100101 Firefox/6.0",
+              "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
+              "Opera/9.80 (Windows NT 6.1; U; zh-cn) Presto/2.9.168 Version/11.50",
+              "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 2.0.50727; SLCC2; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; Tablet PC 2.0; .NET4.0E)",
+              "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; InfoPath.3)",
+              "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB7.0)",
+              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
+              "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)",
+              "Mozilla/5.0 (Windows; U; Windows NT 6.1; ) AppleWebKit/534.12 (KHTML, like Gecko) Maxthon/3.0 Safari/534.12",
+              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
+              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E; SE 2.X MetaSr 1.0)",
+              "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.3 (KHTML, like Gecko) Chrome/6.0.472.33 Safari/534.3 SE 2.X MetaSr 1.0",
+              "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
+              "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.41 Safari/535.1 QQBrowser/6.9.11079.201",
+              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E) QQBrowser/6.9.11079.201",
+              "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"]
 
 proxies = {'http': 'http://'+random.choice(proxy_lists)}
 headers = {}
 headers["User-Agent"] = random.choice(user_agent)
 
-url_dict = {"36氪":["https://tophub.today/n/Q1Vd5Ko85R","https://tophub.today/n/KqndgapoLl","https://tophub.today/n/qndgNRZvLl","https://tophub.today/n/aqeED7Md9R",
-                   "https://tophub.today/n/3adqr3xeng","https://tophub.today/n/5PdMQGldmg","https://tophub.today/n/anop0GZolZ"],
-            "少数派":["https://tophub.today/n/Y2KeDGQdNP","https://tophub.today/n/NaEdZZXdrO","https://tophub.today/n/Q0orQa2e8B"],
-            "爱范儿":["https://tophub.today/n/proPGY0eq6","https://tophub.today/n/Jndkp4ye3V","https://tophub.today/n/74KvxK7okx"],
-            "IT之家":["https://tophub.today/n/74Kvx59dkx","https://tophub.today/n/m4ejb73exE","https://tophub.today/n/1yjvQDjobg","https://tophub.today/n/qENeY0RdY4","https://tophub.today/n/DpQvNGzdNE"],
-            "极客公园":["https://tophub.today/n/NRrvWYDe5z","https://tophub.today/n/qndgkK0dLl"],
-            "数字尾巴":["https://tophub.today/n/JndkEzQo3V","https://tophub.today/n/n3moBA1eN5"]
+# url_dict = {"36氪":["https://tophub.today/n/Q1Vd5Ko85R","https://tophub.today/n/KqndgapoLl","https://tophub.today/n/qndgNRZvLl","https://tophub.today/n/aqeED7Md9R",
+#                    "https://tophub.today/n/3adqr3xeng","https://tophub.today/n/5PdMQGldmg","https://tophub.today/n/anop0GZolZ"],
+#             "少数派":["https://tophub.today/n/Y2KeDGQdNP","https://tophub.today/n/NaEdZZXdrO","https://tophub.today/n/Q0orQa2e8B"],
+#             "爱范儿":["https://tophub.today/n/proPGY0eq6","https://tophub.today/n/Jndkp4ye3V","https://tophub.today/n/74KvxK7okx"],
+#             "IT之家":["https://tophub.today/n/74Kvx59dkx","https://tophub.today/n/m4ejb73exE","https://tophub.today/n/1yjvQDjobg","https://tophub.today/n/qENeY0RdY4","https://tophub.today/n/DpQvNGzdNE"],
+#             "极客公园":["https://tophub.today/n/NRrvWYDe5z","https://tophub.today/n/qndgkK0dLl"],
+#             "数字尾巴":["https://tophub.today/n/JndkEzQo3V","https://tophub.today/n/n3moBA1eN5"],
+#             "ZAKER":["https://tophub.today/n/5VaobJgoAj","https://tophub.today/n/BwdG02wePx","https://tophub.today/n/ARe1Zylo7n"],
+#             "留学世界":["https://tophub.today/n/YqoXQwXvOD"]
+#             }
 
+url_dict = {
+            "ZAKER":["https://tophub.today/n/5VaobJgoAj","https://tophub.today/n/BwdG02wePx","https://tophub.today/n/ARe1Zylo7n"],
+            "留学世界":["https://tophub.today/n/YqoXQwXvOD"],
+"爱范儿":["https://tophub.today/n/proPGY0eq6","https://tophub.today/n/Jndkp4ye3V","https://tophub.today/n/74KvxK7okx"]
             }
-
-# url_dict = {"数字尾巴":["https://tophub.today/n/JndkEzQo3V","https://tophub.today/n/n3moBA1eN5"]}
-
 type = "科技"
 
 detail_url_dict = {}
@@ -64,15 +85,14 @@ for ud in url_dict.keys():
     source = ud
     detail_url_dict[source] = []
     main_urls = url_dict[source]
-    for main_url in main_urls:
+    for main_url in reversed(main_urls):
         try:
             main_res = requests.get(url=main_url,proxies=proxies,headers=headers,timeout=3)
             main_soup = BeautifulSoup(main_res.text,"lxml")
             # a_href_htmls = main_soup.select("div.jc-c")[0].select("tbody tr td a")
             a_href_htmls = main_soup.select("div.jc-c")[0].select("tbody tr")
-            # a_href_htmls = main_soup.select("div.jc-c")[0].select("tbody tr")
             for a in a_href_htmls:
-                if source in ["36氪","少数派","爱范儿","IT之家","极客公园","数字尾巴"]:
+                if source in ["36氪","少数派","爱范儿","IT之家","极客公园","数字尾巴","ZAKER"]:
                     # detail_url_dict[source].append("https://tophub.today"+a.get("href"))
                     # 拼接url+浏览量
                     detail_url_dict[source].append("https://tophub.today" + a.select("td a")[0].get("href")+"=+_+="+a.select("td")[2].text.split("评")[0])
@@ -95,8 +115,14 @@ for ss in detail_url_dict.keys():
             proxies = {'http': 'http://' + random.choice(proxy_lists)}
             headers["User-Agent"] = random.choice(user_agent)
             detail_res = requests.get(url=u, headers=headers, proxies=proxies,timeout=3)
-
+            logger.info(detail_res.status_code)
             if detail_res.status_code != 200:
+                proxy_lists.remove(proxies["http"].split("//")[1])
+                proxy_res = requests.get(proxy_url)
+                proxy = proxy_res.text.strip()
+                proxy_lists.append(proxy)
+                time.sleep(3)
+                logger.info("换代理了")
                 continue
             soup_detail = BeautifulSoup(detail_res.text, "lxml")
             detail_dict = {}
@@ -252,12 +278,49 @@ for ss in detail_url_dict.keys():
                     if soup_detail.select("div.community_post-recommend-banner"):
                         detail_dict["imgs"].insert(0, soup_detail.select("div.community_post-recommend-banner img")[0].get("src"))
                 except Exception as e:
-                    logger.info("url:%s 采集可能有问题" %url)
+                    logger.info("url:%s 采集可能有问题" %u)
+            elif source ==  "ZAKER":
+                try:
+                    detail_dict["source"] = source
+                    detail_dict["author"] = soup_detail.select("a.article-auther")[0].text
+                    detail_dict["article_type"] = type
+                    detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
+                    detail_dict["des"] = ""
+                    detail_dict["keyword_or_label"] = ""
+                    detail_dict["show_count"] = ""
+                    detail_dict["public_time"] = ""
+                    detail_dict["detail_url"] = detail_res.url
 
+                    detail_dict["content"] = soup_detail.select("div#content")[0]
+                    detail_dict["imgs"] = []
+                    imgs = soup_detail.select("div#content img")
+                    for img in imgs:
+                        detail_dict["imgs"].append(img.get("src"))
                 except Exception as e:
-                    logger.info("xinlang u:%s 采集可能有问题" %u)
+                    logger.info("url:%s 采集可能有问题" %u)
+            elif source == "留学世界":
+                try:
+                    detail_dict["source"] = source
+                    detail_dict["author"] = ""
+                    detail_dict["article_type"] = type
+                    detail_dict["title"] = soup_detail.select("h1.article-title a")[0].text
+                    detail_dict["des"] = ""
+                    detail_dict["keyword_or_label"] = soup_detail.select("div.article-meta span")[1].text.split("：")[1]
+                    detail_dict["show_count"] = re.findall(r"\((.*?)\)",soup_detail.select("div.article-meta span")[2].text)[0]
+                    detail_dict["public_time"] = ""
+                    detail_dict["detail_url"] = detail_res.url
+
+                    detail_dict["content"] = soup_detail.select("article.article-content section section")[0]
+                    detail_dict["imgs"] = []
+                    imgs = soup_detail.select("article.article-content section section img")
+                    for img in imgs:
+                        detail_dict["imgs"].append(img.get("src"))
+                except Exception as e:
+                    logger.info("url:%s 采集可能有问题" %u)
+
             else:
                 continue
+            # 如果title等于空可能被强了  钉钉推送
             if detail_dict:
                 url = "http://xs.lkkjjt.com/open/content/collection"
                 headers = {"access-key": "skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
