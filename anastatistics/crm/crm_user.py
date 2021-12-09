@@ -55,7 +55,7 @@ def get_user_operationcenter_direct(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select id operate_direct_id,unionid, name, telephone, operatename operatenamedirect from luke_lukebus.operationcenter where capacity=1'
+        operate_sql = 'select id operate_direct_id,unionid, name direct_leader, telephone, operatename operatenamedirect from luke_lukebus.operationcenter where capacity=1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
@@ -97,6 +97,8 @@ def get_user_operationcenter_direct(crm_user_data=""):
             operatename = operate_df.loc[operate_df['telephone'] == phone, 'operatenamedirect'].values[0]
             operate_direct_id = operate_df.loc[operate_df['telephone'] == phone, 'operate_direct_id'].values[0]
             direct_bus_phone = operate_df.loc[operate_df['telephone'] == phone, 'telephone'].values[0]
+            direct_leader = operate_df.loc[operate_df['telephone'] == phone, 'direct_leader'].values[0]
+
             # 子运营中心-->包含本身
             center_phone_list = all_data.loc[all_data['operatenamedirect'].notna(), :]['phone'].tolist()
             child_center_phone_list = []  # 子运营中心所有下级
@@ -121,10 +123,11 @@ def get_user_operationcenter_direct(crm_user_data=""):
             child_df['operatenamedirect'] = operatename
             child_df["operate_direct_id"] = operate_direct_id
             child_df["direct_bus_phone"] = direct_bus_phone
+            child_df["direct_leader"] = direct_leader
             child_df_list.append(child_df)
         # 用户数据拼接
         exist_center_df = pd.concat(child_df_list)
-        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatenamedirect','operate_direct_id','direct_bus_phone']], how='left', on='phone')
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatenamedirect','operate_direct_id','direct_bus_phone','direct_leader']], how='left', on='phone')
         conn_crm.close()
         logger.info('返回用户数据成功')
         return True, fina_df
@@ -261,6 +264,8 @@ try:
       `operate_direct_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
       `operatenamedirect` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
       `direct_bus_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的手机号码',
+      `direct_leader` varchar(20) DEFAULT NULL COMMENT '禄可商务对应的负责人',
+      `leader` varchar(20) DEFAULT NULL COMMENT 'crm禄可商务对应的负责人',
       `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
       `del_flag` int(1) DEFAULT '0' COMMENT '1：删除'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
