@@ -584,7 +584,6 @@ def personal_total():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                # return {"code":"11016","status":"failed","msg":message["11016"]}
                 return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
@@ -669,10 +668,12 @@ def personal_total():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         #这里要进行一个crm数据的合并
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
         sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
-        crm_data = pd.read_sql(sql, conn_crm)
-        conn_crm.close()
+        # sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from lh_user_%s''' %current_time
+        logger.info(sql)
+        crm_data = pd.read_sql(sql, conn_analyze)
+        conn_analyze.close()
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
 
         df_merged["parentid"] = df_merged['parentid'].astype(str)
@@ -708,16 +709,7 @@ def personal_total():
         else:
             need_data = df_merged.copy()
 
-        all_df = need_data.to_dict("records")
-        # for i in range(0, len(all_df)):
-        #     all_data["buy_count"] = all_data["buy_count"] + all_df[i]["buy_count"]
-        #     all_data["buy_total_count"] = all_data["buy_total_count"] + all_df[i]["buy_total_count"]
-        #     all_data["buy_total_price"] = all_data["buy_total_price"] + all_df[i]["buy_total_price"]
-        #     all_data["sell_count"] = all_data["sell_count"] + all_df[i]["sell_count"]
-        #     all_data["sell_fee"] = all_data["sell_fee"] + all_df[i]["sell_fee"]
-        #     all_data["sell_real_money"] = all_data["sell_real_money"] + all_df[i]["sell_real_money"]
-        #     all_data["sell_total_count"] = all_data["sell_total_count"] + all_df[i]["sell_total_count"]
-        #     all_data["sell_total_price"] = all_data["sell_total_price"] + all_df[i]["sell_total_price"]
+
         all_data["buy_count"] = int(df_merged["buy_count"].sum())
         all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
         all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(), 2)
@@ -727,40 +719,10 @@ def personal_total():
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
         all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
 
-        # all_data["buy_total_price"] = round(all_data["buy_total_price"], 2)
-        # all_data["sell_fee"] = round(all_data["sell_fee"], 2)
-        # all_data["sell_real_money"] = round(all_data["sell_real_money"], 2)
-        # all_data["sell_total_price"] = round(all_data["sell_total_price"], 2)
-        # all_data["buy_total_count"] = int(all_data["buy_total_count"])
-        # all_data["sell_total_count"] = int(all_data["sell_total_count"])
+        msg_data = {"data": need_data.to_dict("records"), "all_data": all_data}
+        return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
-        if len(need_data)<200:
-            # result = user_belong_bus(need_data)
-            result = user_belong_by_df(need_data)
 
-            if result[0] == 1:
-                last_data = result[1]
-            else:
-                return {"code":"10006","status":"failed","msg":message["10006"]}
-            msg_data = {"data":last_data,"all_data":all_data}
-            return {"code":"0000","status":"success","msg":msg_data,"count":len(df_merged)}
-        else:
-            crm_data_result = get_all_user_operationcenter(need_data)
-            logger.info(crm_data_result)
-            if crm_data_result[0] == True:
-                last_data = crm_data_result[1]
-                last_data = last_data.to_dict("records")
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            for d in last_data:
-                # logger.info(d)
-                # logger.info(pd.isnull(d["unionid"]))
-                # logger.info(pd.isnull("operatename"))
-                # logger.info("-----------------------")
-                if not (d["unionid"] == "nan"):
-                    d["unionid"] = int(d["unionid"])
-            msg_data = {"data": last_data, "all_data": all_data}
-            return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())

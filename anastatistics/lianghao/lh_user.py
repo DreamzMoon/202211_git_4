@@ -61,7 +61,7 @@ def get_operate_relationship(user_df, mode):
             )a left join luke_lukebus.operationcenter b
             on a.id = b.unionid
         '''
-        change_columns = ['phone', 'operatename', 'operate_id', 'bus_phone']
+        change_columns = ['phone', 'leader', 'operatename', 'operate_id', 'bus_phone']
     else:
         # 运营中心
         operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
@@ -78,7 +78,7 @@ def get_operate_relationship(user_df, mode):
             )a left join luke_lukebus.operationcenter b
             on a.id = b.unionid
         '''
-        change_columns = ['phone', 'operatenamedirect', 'operate_direct_id', 'direct_bus_phone']
+        change_columns = ['phone', 'direct_bus_leader', 'operatenamedirect', 'operate_direct_id', 'direct_bus_phone']
     operate_telephone_list = operate_df['telephone'].to_list()
     child_df_list = []
     for phone in operate_telephone_list:
@@ -95,6 +95,8 @@ def get_operate_relationship(user_df, mode):
         operateid = operate_df.loc[operate_df['telephone'] == phone, 'id'].values[0]
         # 运营中心手机号
         phone = operate_df.loc[operate_df['telephone'] == phone, 'telephone'].values[0]
+        # 运营中心负责人
+        name = operate_df.loc[operate_df['telephone'] == phone, 'name'].values[0]
         # 子运营中心-->包含本身
         center_phone_list = all_data.loc[all_data['operatename'].notna(), :]['phone'].tolist()
         child_center_phone_list = []  # 子运营中心所有下级
@@ -116,10 +118,11 @@ def get_operate_relationship(user_df, mode):
         child_df['operatename'] = operatename
         child_df["operatid"] = operateid
         child_df["operate_phone"] = phone
+        child_df['name'] = name
         child_df_list.append(child_df)
     # 用户数据拼接
     exist_center_df = pd.concat(child_df_list)
-    exist_center_df = exist_center_df.loc[:, ['phone', 'operatename', 'operatid', 'operate_phone']]
+    exist_center_df = exist_center_df.loc[:, ['phone', 'name', 'operatename', 'operatid', 'operate_phone']]
     exist_center_df.columns = change_columns
     fina_df = user_df.merge(exist_center_df, how='left', on='phone')
     conn.close()
@@ -218,9 +221,11 @@ def create_table():
         `addtime` datetime DEFAULT NULL COMMENT '用户的注册时间 可能在各业务系统',
         `operate_id` bigint(20) DEFAULT NULL COMMENT 'crm运营中心的id',
         `operatename` varchar(100) DEFAULT NULL COMMENT 'crm用户对应的运营中心',
+        `leader` varchar(100) DEFAULT NULL COMMENT 'crm运营中心负责人',
         `bus_phone` varchar(20) DEFAULT NULL COMMENT 'crm禄可商务的手机号码',
         `operate_direct_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
         `operatenamedirect` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
+        `direct_bus_leader` varchar(100) DEFAULT NULL COMMENT 'crm运营中心负责人',
         `direct_bus_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的手机号码',
         `is_buy_from_official` tinyint(1) DEFAULT '1' COMMENT '是否能从官方购买',
         `is_buy_from_market` tinyint(1) DEFAULT '1' COMMENT '是否能从市场购买',
