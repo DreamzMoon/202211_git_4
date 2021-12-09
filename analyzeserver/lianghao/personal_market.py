@@ -707,7 +707,6 @@ def personal_total():
         else:
             need_data = df_merged.copy()
 
-        all_df = need_data.to_dict("records")
 
         all_data["buy_count"] = int(df_merged["buy_count"].sum())
         all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
@@ -738,7 +737,6 @@ def personal_total():
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
             for d in last_data:
-
                 if not (d["unionid"] == "nan"):
                     d["unionid"] = int(d["unionid"])
             msg_data = {"data": last_data, "all_data": all_data}
