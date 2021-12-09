@@ -16,41 +16,38 @@ from config import *
 import re
 import json
 import random
+
+from fake_useragent import UserAgent
+
 '''
 采集模块 科技 财经 报刊
 '''
 # coll_urls = ["https://tophub.today/c/tech","https://tophub.today/c/ent","https://tophub.today/c/finance","https://tophub.today/c/epaper"]
 
+ua = UserAgent()
+
+
 #代理获取
-# proxy_lists = []
-# for i in range(0,20):
-#     proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
-#     proxy_res = requests.get(proxy_url)
-#     proxy = proxy_res.text.strip()
-#     proxy_lists.append(proxy)
-#     time.sleep(3)
-# logger.info(proxy_lists)
-# logger.info(proxy)
 
-proxy_lists = ['42.84.166.232:4251', '58.243.205.212:4243', '101.27.207.235:4220', '114.99.22.166:4225', '101.74.3.43:4220', '110.80.160.76:4245', '49.89.202.4:4231', '113.237.187.134:4252', '106.40.144.10:4285', '42.54.89.152:4213', '223.215.177.99:4254', '101.72.133.201:4254', '110.230.215.155:4210', '42.84.170.99:4264', '42.56.238.233:4275', '117.27.25.131:4232', '171.15.65.2:4230', '222.241.70.96:4210', '124.113.193.167:4231', '42.57.91.51:4231']
-proxies = {'http': random.choice(proxy_lists)}
+proxy_lists = []
+for i in range(0,10):
+    proxy_url = "http://webapi.http.zhimacangku.com/getip?num=1&type=1&pro=&city=0&yys=0&port=1&pack=125663&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions="
+    proxy_res = requests.get(proxy_url)
+    proxy = proxy_res.text.strip()
+    logger.info(proxy)
+    proxy_lists.append(proxy)
+    time.sleep(3)
+
+logger.info(proxy_lists)
+
+user_agent = []
+for i in range(0,100):
+    user_agent.append(ua.chrome)
+    user_agent.append(ua.ie)
+    user_agent.append(ua.random)
+
+proxies = {'http': 'http://'+random.choice(proxy_lists)}
 headers = {}
-user_agent = ["Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.163 Safari/535.1",
-              "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20100101 Firefox/6.0",
-              "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
-              "Opera/9.80 (Windows NT 6.1; U; zh-cn) Presto/2.9.168 Version/11.50",
-              "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0; .NET CLR 2.0.50727; SLCC2; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; Tablet PC 2.0; .NET4.0E)",
-              "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; WOW64; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; InfoPath.3)",
-              "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB7.0)",
-              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
-              "Mozilla/5.0 (Windows; U; Windows NT 6.1; ) AppleWebKit/534.12 (KHTML, like Gecko) Maxthon/3.0 Safari/534.12",
-              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
-              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E; SE 2.X MetaSr 1.0)",
-              "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.3 (KHTML, like Gecko) Chrome/6.0.472.33 Safari/534.3 SE 2.X MetaSr 1.0",
-              "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E)",
-              "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.41 Safari/535.1 QQBrowser/6.9.11079.201",
-              "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.3; .NET4.0C; .NET4.0E) QQBrowser/6.9.11079.201"]
-
 
 # headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
 headers["User-Agent"] = random.choice(user_agent)
@@ -59,7 +56,9 @@ url = "https://tophub.today/c/tech"
 # crawl_lists = []
 crawl_dict = {}
 sssource = "科技"
-for i in range(2,5):
+
+for i in range(1,6):
+
     main_url = url+"?"+ "p=%s" %i
     logger.info(main_url)
     proxies = {'http': random.choice(proxy_lists), 'https': random.choice(proxy_lists)}
@@ -90,29 +89,28 @@ detail_list = []
 
 for cl in crawl_dict.keys():
 
-    if cl.strip() not in ["创业邦","36氪","少数派","IT之家","爱范儿","科普中国网","极客公园"]:
+
+    # if cl.strip() not in ["创业邦","36氪","少数派","IT之家","爱范儿","科普中国网","极客公园"]:
+    if cl.strip() not in ["爱范儿"]:
         continue
-    logger.info("source:%s" % cl)
+
+    logger.info("source:%s" %cl)
+    logger.info("url_length:%s" %len(crawl_dict[cl]))
+
     detail_urls = crawl_dict[cl]
     for d_url in detail_urls:
-
+        proxies = {'http': 'http://'+proxy}
+        # view 可能是曝光 可能是标签
+        url,view = d_url.split("=_=")
+        logger.info("url:%s" %url)
         proxies = {'http': 'http://' + random.choice(proxy_lists)}
         headers["User-Agent"] = random.choice(user_agent)
-
-        url,view = d_url.split("=_=")
-        logger.info("----------")
-        headers["User-Agent"] = random.choice(user_agent)
-        try:
-            logger.info(url)
-            detail_res = requests.get(url=url,headers=headers,proxies=proxies,timeout=5)
-            with open("e:/tototo.html","w+",encoding="utf-8") as f:
-                f.write(detail_res.text)
-            logger.info(detail_res.text)
-            logger.info(detail_res.status_code)
-            soup_detail = BeautifulSoup(detail_res.text, "lxml")
-            cl = cl.strip()
-        except:
-            continue
+        detail_res = requests.get(url=url,headers=headers,proxies=proxies)
+        logger.info(detail_res.status_code)
+        with open("e:/to.html","w+",encoding="utf-8") as f:
+            f.write(detail_res.text)
+        soup_detail = BeautifulSoup(detail_res.text,"lxml")
+        cl = cl.strip()
 
         #创业邦
         try:
@@ -131,19 +129,49 @@ for cl in crawl_dict.keys():
                 detail_dict["content"] = soup_detail.select("div.article-content")[0]
             elif cl == "36氪":
                 detail_dict["source"] = cl
-                detail_dict["author"] = soup_detail.select("a.title-icon-item")[0].text
+                if soup_detail.select("a.title-icon-item"):
+                    detail_dict["author"] = soup_detail.select("a.title-icon-item")[0].text
+                else:
+                    detail_dict["author"] = ""
                 detail_dict["article_type"] = sssource
-                detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
-                detail_dict["des"] = soup_detail.select("div.summary")[0].text
+
+                if soup_detail.select("h1.article-title"):
+                    detail_dict["title"] = soup_detail.select("h1.article-title")[0].text
+                elif soup_detail.select("a.item-title"):
+                    detail_dict["title"] = soup_detail.select("a.item-title")[0].text
+                else:
+                    detail_dict["title"] = ""
+
+                if soup_detail.select("div.summary"):
+                    detail_dict["des"] = soup_detail.select("div.summary")[0].text
+                else:
+                    detail_dict["des"] = ""
+
                 detail_dict["keyword_or_label"] = ""
                 detail_dict["show_count"] = ""
-                detail_dict["public_time"] = soup_detail.select("span.title-icon-item")[0].text
+
+                if soup_detail.select("span.title-icon-item"):
+                    detail_dict["public_time"] = soup_detail.select("span.title-icon-item")[0].text
+                elif soup_detail.select("span.time"):
+                    detail_dict["public_time"] = soup_detail.select("span.time")[0].text
+                else:
+                    detail_dict["public_time"] = ""
                 detail_dict["detail_url"] = url
                 detail_dict["imgs"] = []
-                imgs = soup_detail.select("div.common-width")[3].select("img")
+
+                imgs = []
+                detail_dict["imgs"] = []
+                if soup_detail.select("div.common-width"):
+                    imgs = soup_detail.select("div.common-width")[3].select("img")
                 for img in imgs:
                     detail_dict["imgs"].append(img.get("src"))
-                detail_dict["content"] = soup_detail.select("div.common-width")[3]
+
+                if soup_detail.select("div.common-width"):
+                    detail_dict["content"] = soup_detail.select("div.common-width")[3]
+                elif soup_detail.select("div.item-desc"):
+                    detail_dict["content"] = soup_detail.select("div.item-desc")[0]
+                else:
+                    detail_dict["content"] = ""
             elif cl == "少数派":
                 detail_dict["source"] = cl
                 detail_dict["author"] = soup_detail.select("span.nickname")[0].text
@@ -247,8 +275,7 @@ for cl in crawl_dict.keys():
 
             else:
                 continue
-            # logger.info(detail_dict)
-            # time.sleep(2)
+
             if detail_dict:
                 url = "http://xs.lkkjjt.com/open/content/collection"
                 headers = {"access-key":"skv6lYagMGf0nwWB460CzeYiRJdMKn4n"}
@@ -262,8 +289,7 @@ for cl in crawl_dict.keys():
                 logger.info(res.text)
                 logger.info(res.status_code)
                 logger.info("推送成功")
-                logger.info(post_data)
-                time.sleep(10)
+
                 detail_list.append(detail_dict)
         except Exception as e:
             import traceback
