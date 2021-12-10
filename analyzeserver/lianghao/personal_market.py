@@ -84,8 +84,8 @@ def personal_publish():
 
         # 发布数据
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        if not conn_lh or not conn_crm:
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         data_sql = '''
             select sell_phone publish_phone, total_price, create_time from lh_pretty_client.lh_sell where del_flag = 0 and (sell_phone is not null or sell_phone != '')
@@ -109,12 +109,17 @@ def personal_publish():
         df_merge = reduce(lambda left, right: pd.merge(left, right, how='left', on='publish_phone'), df_list)
 
         # 用户数据
-        crm_user_sql = '''select id publish_unionid, pid parentid, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name from luke_sincerechat.user where phone is not null or phone != ""'''
-        crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
-        crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
+        # crm_user_sql = '''select id publish_unionid, pid parentid, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_sql = '''
+            select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name, operate_id, operatename
+            from lh_analyze.crm_user_%s
+            where phone is not null
+        ''' % current_time
+        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
+        # crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
         crm_user_df['publish_unionid'] = crm_user_df['publish_unionid'].astype(str)
         crm_user_df['parentid'] = crm_user_df['parentid'].astype(str)
-        count_len = 0
+        # count_len = 0
 
         fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
         # fina_df.fillna("", inplace=True)
@@ -134,6 +139,7 @@ def personal_publish():
         # 价钱圆整
         match_df['total_price'] = match_df['total_price'].apply(lambda x: round(float(x), 2))
         match_df.fillna("", inplace=True)
+        match_df.drop('operate_id', axis=1, inplace=True)
         match_dict_list = match_df.to_dict('records')
         return_data = {
             'data': match_dict_list
@@ -145,7 +151,7 @@ def personal_publish():
     finally:
         try:
             conn_lh.close()
-            conn_crm.close()
+            conn_an.close()
         except:
             pass
 
@@ -197,43 +203,50 @@ def personal_publish_detail():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         # 1.根据手机号查找名称，id，归属运营中心，归属上级手机号
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_an = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        if not conn_crm or not conn_lh:
+        if not conn_an or not conn_lh:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         # 用户基础信息
-        search_user_info_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, id unionid, pid parentid from luke_sincerechat.user where phone=%s''' % phone
-        user_info_df = pd.read_sql(search_user_info_sql, conn_crm)
-        parent_info_sql = '''select id parentid, phone parent_phone from luke_sincerechat.user where id=%s''' % \
-                          user_info_df['parentid'].values[0]
-        parent_df = pd.read_sql(parent_info_sql, conn_crm)
+        # search_user_info_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, id unionid, pid parentid from luke_sincerechat.user where phone=%s''' % phone
+        # user_info_df = pd.read_sql(search_user_info_sql, conn_an)
+        # parent_info_sql = '''select id parentid, phone parent_phone from luke_sincerechat.user where id=%s''' % \
+        #                   user_info_df['parentid'].values[0]
+        # parent_df = pd.read_sql(parent_info_sql, conn_an)
+        # 合并上级手机号
+        # user_base_info_df = user_info_df.merge(parent_df, how='left', on='parentid')
+        # 查找运营中心
+        # operate_sql = '''
+        #             select a.phone, if (crm =0, Null, b.operatename) operatename, b.crm from
+        #             (WITH RECURSIVE temp as (
+        #                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
+        #                     UNION ALL
+        #                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+        #             )
+        #             SELECT * FROM temp
+        #             )a left join luke_lukebus.operationcenter b
+        #             on a.id = b.unionid
+        #             ''' % phone
+        # match_operate_data = pd.read_sql(operate_sql, conn_an)
+        # match_operatename = match_operate_data.loc[
+        #     (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
+        # if match_operatename:
+        #     match_operate_data.loc[0, 'operatename'] = match_operatename[0]
+        # match_user_data = match_operate_data.loc[:0, :]
+        #
+        # # 用户基本信息
+        # user_base_info_df['operatename'] = match_user_data['operatename']
+
 
         # 存储总数据
         fina_data = {}
 
-        # 合并上级手机号
-        user_base_info_df = user_info_df.merge(parent_df, how='left', on='parentid')
-        # 查找运营中心
-        operate_sql = '''
-            select a.phone, if (crm =0, Null, b.operatename) operatename, b.crm from 
-            (WITH RECURSIVE temp as (
-                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
-                    UNION ALL
-                    SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-            )
-            SELECT * FROM temp 
-            )a left join luke_lukebus.operationcenter b
-            on a.id = b.unionid
-            ''' % phone
-        match_operate_data = pd.read_sql(operate_sql, conn_crm)
-        match_operatename = match_operate_data.loc[
-            (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
-        if match_operatename:
-            match_operate_data.loc[0, 'operatename'] = match_operatename[0]
-        match_user_data = match_operate_data.loc[:0, :]
-
-        # 用户基本信息
-        user_base_info_df['operatename'] = match_user_data['operatename']
+        search_user_info_sql = '''
+                    select unionid, phone, parentid, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, operatename
+                    from lh_analyze.crm_user_%s
+                    where phone = %s
+                ''' % (current_time, phone)
+        user_base_info_df = pd.read_sql(search_user_info_sql, conn_an)
         user_base_info_df.fillna("", inplace=True)
         user_base_info = user_base_info_df.to_dict('records')[0]
         user_base_info['phone'] = phone
@@ -286,7 +299,7 @@ def personal_publish_detail():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         try:
-            conn_crm.close()
+            conn_an.close()
             conn_lh.close()
         except:
             pass
@@ -345,16 +358,21 @@ def personal_order_flow():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         # crm用户数据
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_an = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        if not conn_crm or not conn_lh:
+        if not conn_an or not conn_lh:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        crm_user_sql = '''select t1.*, t2.parent_phone from 
-            (select id buyer_unionid, id sell_unionid, pid parentid,phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
-            left join
-            (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
-            on t1.parentid = t2.id'''
-        crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
+        # crm_user_sql = '''select t1.*, t2.parent_phone from
+        #     (select id buyer_unionid, id sell_unionid, pid parentid,phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
+        #     left join
+        #     (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
+        #     on t1.parentid = t2.id'''
+        crm_user_sql = '''
+            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
+            from lh_analyze.crm_user_%s
+            where phone is not null
+        ''' % current_time
+        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
 
         # 订单流水数据
         order_flow_sql = '''
@@ -392,6 +410,7 @@ def personal_order_flow():
         match_df.fillna("", inplace=True)
         match_df = map_type(match_df)
         match_df['order_time'] = match_result[1]['order_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        match_df.drop('operate_id', axis=1, inplace=True)
         match_dict_list = match_df.to_dict('records')
         return_data = {
             "data": match_dict_list
@@ -403,7 +422,7 @@ def personal_order_flow():
     finally:
         try:
             conn_lh.close()
-            conn_crm.close()
+            conn_an.close()
         except:
             pass
 
@@ -481,17 +500,22 @@ def personal_publish_order_flow():
         where del_flag = 0'''
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        if not conn_lh or not conn_crm:
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         publish_order_df = pd.read_sql(publish_sql, conn_lh)
 
-        crm_user_sql = '''select t1.*, t2.parent_phone from 
-            (select id sell_unionid, pid parentid, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
-            left join
-            (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
-            on t1.parentid = t2.id'''
-        crm_user_df = pd.read_sql(crm_user_sql, conn_crm)
+        # crm_user_sql = '''select t1.*, t2.parent_phone from
+        #     (select id sell_unionid, pid parentid, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name from luke_sincerechat.user where phone is not null or phone != "") t1
+        #     left join
+        #     (select id, phone parent_phone from luke_sincerechat.user where phone is not null or phone != "") t2
+        #     on t1.parentid = t2.id'''
+        crm_user_sql = '''
+            select unionid sell_unionid, parentid, parent_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, operate_id, operatename
+            from lh_analyze.crm_user_%s
+            where phone is not null
+        ''' % current_time
+        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
         fina_df['status'] = fina_df['status'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
@@ -503,8 +527,7 @@ def personal_publish_order_flow():
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
 
         if operateid:
-        # 如果不存在运营中心参数
-            ############################
+        # 如果存在运营中心参数
             match_result = if_exist_operate_match_data(fina_df, operateid, request, 'sell_phone', 'publish')
             if not match_result[0]:
                 return {"code": match_result[1], "status": "failed", "msg": message[match_result[1]]}
@@ -524,12 +547,15 @@ def personal_publish_order_flow():
         match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
         match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("nan", ""))
         match_df.fillna("", inplace=True)
+
+        match_df.drop('operate_id', axis=1, inplace=True)
         # 类型映射
         match_df = map_type(match_df)
         match_dict_list = match_df.to_dict('records')
         return_data = {
             "data": match_dict_list
         }
+        logger.info(match_result[2].shape[0])
         return {"code": "0000", "status": "success", "msg": return_data, "count": match_result[2].shape[0]}
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -537,7 +563,7 @@ def personal_publish_order_flow():
     finally:
         try:
             conn_lh.close()
-            conn_crm.close()
+            conn_an.close()
         except:
             pass
 
