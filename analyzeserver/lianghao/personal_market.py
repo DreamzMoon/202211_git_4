@@ -719,6 +719,8 @@ def personal_total():
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
         all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
 
+        # need_data = need_data.fillna("",inplace=True)
+        need_data.fillna("",inplace=True)
         msg_data = {"data": need_data.to_dict("records"), "all_data": all_data}
         return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
