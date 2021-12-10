@@ -861,6 +861,7 @@ def personal_buy_all():
         last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
 
         sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
+
         count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop("create_time",axis=1)
         count_data.rename(columns={"phone":"phone","total_price":"count"},inplace=True)
 
@@ -1009,7 +1010,8 @@ def person_buy():
         user_data = pd.read_sql(crm_sql,conn_analyze)
         user_data = user_data.to_dict("records")
         if not user_data:
-            return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
+            # return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
 
         personal_datas["person"] = user_data
@@ -1448,19 +1450,13 @@ def person_sell():
         except:
             pass
 
-        # user_data_result = one_belong_bus(sell_phone)
-        # if user_data_result[0] == 1:
-        #     user_data = user_data_result[1]
-        # else:
-        #     return {"code": "0000", "status": "success", "msg": [], "count": 0}
-        # personal_datas["person"] = user_data
-
         crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone = %s''' % (current_time, sell_phone)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         user_data = pd.read_sql(crm_sql, conn_analyze)
         user_data = user_data.to_dict("records")
         if not user_data:
-            return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
+            # return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
 
         # 获取所有的数据
