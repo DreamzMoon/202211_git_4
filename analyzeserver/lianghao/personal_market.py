@@ -909,7 +909,7 @@ def personal_buy_all():
             need_data = df_merged[code_page:code_size]
         else:
             need_data = df_merged.copy()
-        last_data.fillna("", inplace=True)
+        need_data.fillna("", inplace=True)
         last_data = need_data.to_dict("records")
         last_data[0]["total_price"] = round(last_data[0]["total_price"], 2)
         logger.info("last_data:%s" %last_data)
@@ -1358,7 +1358,7 @@ def personal_sell_all():
             need_data = df_merged[code_page:code_size]
         else:
             need_data = df_merged.copy()
-        last_data.fillna("", inplace=True)
+        need_data.fillna("", inplace=True)
         last_data = need_data.to_dict("records")
         last_data[0]["total_price"] = round(last_data[0]["total_price"], 2)
         return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
