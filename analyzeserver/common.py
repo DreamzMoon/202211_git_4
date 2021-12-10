@@ -487,7 +487,7 @@ def order_and_user_merge(order_df, user_df):
     try:
         # 买方
         fina_df = order_df.merge(
-            user_df.loc[:, ['buyer_unionid', 'buyer_phone', 'parentid', 'buyer_name', 'parent_phone']], how='left',
+            user_df.loc[:, ['buyer_unionid', 'buyer_phone', 'parentid', 'buyer_name', 'parent_phone', 'operate_id', 'operatename']], how='left',
             on='buyer_phone')
         # 卖方
         fina_df = fina_df.merge(user_df.loc[:, ['sell_unionid', 'sell_phone', 'sell_name']], how='left',
@@ -723,14 +723,15 @@ def match_user_operate(user_df, field):
 # 根据运营中心id及request返回匹配数据
 def if_exist_operate_match_data(fina_df, operateid, request, match_field, mode):
     try:
-        flag_1, child_phone_list = get_operationcenter_child(operateid)
-        if not flag_1:
-            return False, child_phone_list # 10011
-        part_user_df = fina_df.loc[fina_df[match_field].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+        # flag_1, child_phone_list = get_operationcenter_child(operateid)
+        # if not flag_1:
+        #     return False, child_phone_list # 10011
+        # part_user_df = fina_df.loc[fina_df[match_field].isin(child_phone_list[:-1]), :].reset_index(drop=True)
+        part_user_df = fina_df[fina_df['operate_id'] == operateid]
         flag_3, match_attribute_df = match_attribute(part_user_df, request, mode=mode)
         if not flag_3:
             return False, match_attribute_df # 10011
-        match_attribute_df['operatename'] = child_phone_list[-1]
+        # match_attribute_df['operatename'] = child_phone_list[-1]
         if request.json['page'] and request.json['size']:
             start_index = (request.json['page'] - 1) * request.json['size']
             end_index = request.json['page'] * request.json['size']
@@ -753,23 +754,23 @@ def not_exist_operate_match_data(fina_df, request, match_field, mode):
         if request.json['page'] and request.json['size']:
             start_index = (request.json['page'] - 1) * request.json['size']
             end_index = request.json['page'] * request.json['size']
-            cut_data = match_attribute_df[start_index:end_index]
+            match_df = match_attribute_df[start_index:end_index]
         else:
-            cut_data = match_attribute_df.copy()
+            match_df = match_attribute_df.copy()
         # 以1500条数据为界限，以上调用get_all_user_operationcenter,以下直接进行运营中心匹配
-        if cut_data.shape[0] > 1500:
-            # 调用get_all_user_operationcenter
-            all_user_operate_result = get_all_user_operationcenter()
-            if not all_user_operate_result[0]:
-                return False, "10000"
-            all_user_operate_result[1].rename(columns={"phone": match_field}, inplace=True)
-            match_df = cut_data.merge(all_user_operate_result[1].loc[:, [match_field, 'operatename']], how='left',
-                                      on=match_field)
-        else:
-            # 匹配用户运营中心
-            flag_2, match_df = match_user_operate(cut_data, field=match_field)
-            if not flag_2:
-                return False, match_df # 10011
+        # if cut_data.shape[0] > 1500:
+        #     # 调用get_all_user_operationcenter
+        #     all_user_operate_result = get_all_user_operationcenter()
+        #     if not all_user_operate_result[0]:
+        #         return False, "10000"
+        #     all_user_operate_result[1].rename(columns={"phone": match_field}, inplace=True)
+        #     match_df = cut_data.merge(all_user_operate_result[1].loc[:, [match_field, 'operatename']], how='left',
+        #                               on=match_field)
+        # else:
+        #     # 匹配用户运营中心
+        #     flag_2, match_df = match_user_operate(cut_data, field=match_field)
+        #     if not flag_2:
+        #         return False, match_df # 10011
         match_df.drop(['parent_phone'], axis=1, inplace=True)
         return True, match_df, match_attribute_df
     except Exception as e:
