@@ -669,8 +669,8 @@ def personal_total():
 
         #这里要进行一个crm数据的合并
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
-        # sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from lh_user_%s''' %current_time
+        # sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone != "" and phone is not null''' %current_time
         logger.info(sql)
         crm_data = pd.read_sql(sql, conn_analyze)
         conn_analyze.close()
