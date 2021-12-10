@@ -861,7 +861,7 @@ def personal_buy_all():
         last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
 
         sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
-
+        logger.info(sum_data)
         count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop("create_time",axis=1)
         count_data.rename(columns={"phone":"phone","total_price":"count"},inplace=True)
 
@@ -908,6 +908,7 @@ def personal_buy_all():
         else:
             need_data = df_merged.copy()
         last_data = need_data.to_dict("records")
+        logger.info("last_data:%s" %last_data)
         return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
 
     except Exception as e:
