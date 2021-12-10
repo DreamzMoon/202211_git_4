@@ -88,7 +88,7 @@ def personal_publish():
         if not conn_lh or not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         data_sql = '''
-            select sell_phone publish_phone, total_price, create_time from lh_pretty_client.lh_sell where del_flag = 0 and (sell_phone is not null or sell_phone != '')
+            select sell_phone publish_phone, total_price, create_time from lh_pretty_client.lh_sell where del_flag = 0 and `status` != 1 and (sell_phone is not null or sell_phone != '')
         '''
         publish_df = pd.read_sql(data_sql, conn_lh)
 
@@ -252,7 +252,7 @@ def personal_publish_detail():
         user_base_info['phone'] = phone
         fina_data['user_base_info'] = user_base_info
 
-        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s''' % phone
+        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s and `status`!=1''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
 
         order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
