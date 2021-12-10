@@ -43,6 +43,9 @@ def get_requests(url):
             return response
         except Exception as e:
             logger.error(u'URL：%s请求失败，重新请求' % url)
+            logger.info('重新获取代理')
+            proxy_pool.clear()
+            proxy_pool.append(get_proxy())
             time.sleep(3)
 
 # 获取代理
@@ -72,6 +75,8 @@ def save_data(data):
                 logger.info(u"%s通知结果：%s" % (data['title'], response.status_code))
                 if response.status_code == 200:
                     logger.info(u'%s通知完成' % data["title"])
+                    global success_save
+                    success_save +=1
                 else:
                     logger.info(u'%s通知失败: %s' % (data["title"], response.text))
                 break
@@ -135,9 +140,8 @@ def xue_qiu(url, source):
             save_data(data)
         except Exception as e:
             logger.info('爬取异常，异常错误： %s' % e)
-            logger.info(traceback.format_exc())
-            with open(r'D:/%s_%s.html' % (source, int(time.time())), 'w', encoding='utf-8') as f:
-                f.write(today_topic_response.text)
+            logger.info(article_url)
+            time.sleep(10)
 
 # 华尔街见闻
 def hua_er_jie(url, source):
@@ -215,11 +219,8 @@ def hua_er_jie(url, source):
             save_data(data)
         except Exception as e:
             logger.info('爬取异常，异常错误： %s' % e)
-            logger.info(article_soup)
             logger.info(article.get('url'))
-            logger.info(traceback.format_exc())
-            with open(r'D:/error/%s_%s.html' % (source, int(time.time())), 'w', encoding='utf-8') as f:
-                f.write(article_response.text)
+            time.sleep(10)
 
 def xin_hua(url, source):
     start_response = get_requests(url)
@@ -284,9 +285,10 @@ def xin_hua(url, source):
 
 
 if __name__ == '__main__':
+    success_save = 0
     logger.info('获取代理ip')
     # 代理
-    proxy_pool = [{'http': 'http://120.43.97.27:4242'}]
+    proxy_pool = [{'http': 'http://125.87.95.45:4256'}]
     # 起始请求一个代理
     proxy_pool.append(get_proxy())
 
@@ -303,14 +305,16 @@ if __name__ == '__main__':
     base_url_dict["新华网"] = 'https://tophub.today/n/KGoRk0xvl6'
     base_url_dict['华尔街见闻'] = 'https://tophub.today/n/G2me3ndwjq'
 
-    logger.info('开始采集数据')
     for source_name, source_url in base_url_dict.items():
+        logger.info(source_name)
         # 获取新闻对象来源
         if source_name == '雪球':
             pass
             # xue_qiu(source_url, source_name)
         elif source_name == '新华网':
+            logger.info('开始采集%s数据' % source_name)
             xin_hua(source_url, source_name)
         elif source_name == '华尔街见闻':
-            pass
-            # hua_er_jie(source_url, source_name)
+            logger.info('开始采集%s数据' % source_name)
+            hua_er_jie(source_url, source_name)
+    logger.info('成功上传：%s' % success_save)
