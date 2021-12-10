@@ -719,6 +719,8 @@ def personal_total():
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
         all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
 
+        # need_data = need_data.fillna("",inplace=True)
+        need_data.fillna("",inplace=True)
         msg_data = {"data": need_data.to_dict("records"), "all_data": all_data}
         return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
@@ -799,7 +801,6 @@ def personal_buy_all():
             if result[0] == 1:
                 keyword_phone = result[1]
             else:
-                # return {"code":"11016","status":"failed","msg":message["11016"]}
                 return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # 只查一个
         if parent:
@@ -841,13 +842,10 @@ def personal_buy_all():
             buy_sql = buy_sql+time_condition_sql
 
         group_sql = ''' group by phone'''
-        # limit_sql = ''' limit %s,%s''' %(code_page,code_size)
         if query_phone:
             condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
-            # order_sql = buy_sql+condition_sql+group_sql + limit_sql
             order_sql = buy_sql+condition_sql
         else:
-            # order_sql = buy_sql +group_sql + limit_sql
             order_sql = buy_sql
 
         #返回条数
@@ -863,9 +861,9 @@ def personal_buy_all():
         last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
         last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},inplace=True)
         last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-        # last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
+        logger.info(sum_data)
         count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop("create_time",axis=1)
         count_data.rename(columns={"phone":"phone","total_price":"count"},inplace=True)
 
@@ -890,15 +888,15 @@ def personal_buy_all():
         logger.info(df_merged.shape)
 
 
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone != "" and phone is not null''' %current_time
+        crm_data = pd.read_sql(sql, conn_analyze)
+        conn_analyze.close()
 
-        # 这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
-        crm_data = pd.read_sql(sql, conn_crm)
-        conn_crm.close()
+
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
 
-        # df_merged['parentid'] = pd.to_numeric(df_merged['parentid'], errors='coerce')
+
         # 转类型
         df_merged["parentid"] = df_merged['parentid'].astype(str)
         df_merged["unionid"] = df_merged['unionid'].astype(str)
@@ -907,49 +905,20 @@ def personal_buy_all():
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
 
-        # if page and size:
-        #     try:
-        #         df_merged = df_merged[code_page:code_size]
-        #     except:
-        #         pass
-        logger.info(df_merged)
-        time.sleep(10)
-        # 按页码获取个数 如果有页码按需获取 或者集合数量小于100
-        if (page and size) or (len(df_merged) < 100):
-            try:
-                df_merged = df_merged[code_page:code_size]
-            except:
-                pass
-            logger.info(len(df_merged))
-            crm_data_result = user_belong_by_df(df_merged)
-            if crm_data_result[0] == 1:
-                last_data = crm_data_result[1]
-                for d in last_data:
-                    logger.info(d["total_price"])
-                    d["total_price"] = round(d["total_price"], 2)
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
-        # 默认获取全部
+        if page and size:
+            need_data = df_merged[code_page:code_size]
         else:
-            logger.info(df_merged.iloc[0])
-            crm_data_result = get_all_user_operationcenter(df_merged)
-            logger.info(crm_data_result)
-            if crm_data_result[0] == True:
-                last_data = crm_data_result[1]
-                last_data.fillna("",inplace=True)
-                last_data = last_data.to_dict("records")
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            logger.info(last_data)
-            for d in last_data:
-                # if not pd.isnull(d["unionid"]):
-                if not (d["unionid"] == "nan"):
-                    d["unionid"] = int(d["unionid"])
-                    d["total_price"] = round(d["total_price"], 2)
-            return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
+            need_data = df_merged.copy()
 
-        # return {"code":"0000","status":"success","msg":last_data,"count":df_merged_count}
+        need_data.fillna("", inplace=True)
+
+        last_data = need_data.to_dict("records")
+
+        last_data[0]["total_price"] = round(last_data[0]["total_price"],2)
+
+        logger.info("last_data:%s" %last_data)
+        return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
+
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())
@@ -1044,13 +1013,16 @@ def person_buy():
             pass
 
 
-
-        user_data_result = one_belong_bus(phone)
-        if user_data_result[0] == 1:
-            user_data = user_data_result[1]
-        else:
-            # return {"code":"11016","status":"failed","msg":message["11016"]}
+        #通过手机号码直接查运营中心字段 并返回 nickname operate_name parent_phone parentid phone unionid
+        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone = %s''' %(current_time,phone)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        user_data = pd.read_sql(crm_sql,conn_analyze)
+        user_data = user_data.to_dict("records")
+        if not user_data:
+            # return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
+
+
         personal_datas["person"] = user_data
 
 
@@ -1346,7 +1318,6 @@ def personal_sell_all():
 
         last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
         last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},inplace=True)
-        # last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
@@ -1372,14 +1343,13 @@ def personal_sell_all():
 
         result_count = len(df_merged)
 
-        #这里先合并crm的数据 如果有parent要过滤 最后在按需和合并
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
-        crm_data = pd.read_sql(sql,conn_crm)
-        conn_crm.close()
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone != "" and phone is not null''' % current_time
+        crm_data = pd.read_sql(sql, conn_analyze)
+        conn_analyze.close()
+
         df_merged = df_merged.merge(crm_data,how="left",on="phone")
 
-        # df_merged['parentid'] = pd.to_numeric(df_merged['parentid'], errors='coerce')
         # 转类型
         df_merged["parentid"] = df_merged['parentid'].astype(str)
         df_merged["unionid"] = df_merged['unionid'].astype(str)
@@ -1388,40 +1358,14 @@ def personal_sell_all():
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
 
-        # 按页码获取个数 如果有页码按需获取 或者集合数量小于100
-        if (page and size) or (len(df_merged)<100):
-            try:
-                df_merged = df_merged[code_page:code_size]
-            except:
-                pass
-            logger.info(len(df_merged))
-            crm_data_result = user_belong_by_df(df_merged)
-            if crm_data_result[0] == 1:
-                last_data = crm_data_result[1]
-                for d in last_data:
-                    logger.info(d["total_price"])
-                    d["total_price"] = round(d["total_price"], 2)
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
-        # 默认获取全部
+        if page and size:
+            need_data = df_merged[code_page:code_size]
         else:
-            logger.info(df_merged.iloc[0])
-            crm_data_result = get_all_user_operationcenter(df_merged)
-            logger.info(crm_data_result)
-            if crm_data_result[0] == True:
-                last_data = crm_data_result[1]
-                last_data.fillna("", inplace=True)
-                last_data = last_data.to_dict("records")
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            logger.info(last_data)
-            for d in last_data:
-                # if not pd.isnull(d["unionid"]):
-                if not (d["unionid"] == "nan"):
-                    d["unionid"] = int(d["unionid"])
-                    d["total_price"] = round(d["total_price"], 2)
-            return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
+            need_data = df_merged.copy()
+        need_data.fillna("", inplace=True)
+        last_data = need_data.to_dict("records")
+        last_data[0]["total_price"] = round(last_data[0]["total_price"], 2)
+        return {"code": "0000", "status": "success", "msg": last_data, "count": result_count}
 
     except Exception as e:
         logger.error(e)
@@ -1483,7 +1427,6 @@ def person_sell():
         cursor.execute(sql, (sell_phone))
         datas = cursor.fetchall()
 
-        # logger.info(datas)
 
         first_data = {"order_time": "", "order_total_price": "", "order_pay": "", "order_type": "", "order_count": ""}
         second_data = {"order_time": "", "order_total_price": "", "order_pay": "", "order_type": "", "order_count": ""}
@@ -1518,13 +1461,14 @@ def person_sell():
         except:
             pass
 
-        user_data_result = one_belong_bus(sell_phone)
-        if user_data_result[0] == 1:
-            user_data = user_data_result[1]
-        else:
-            # return {"code": "11016", "status": "failed", "msg": message["11016"]}
+        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone = %s''' % (current_time, sell_phone)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        user_data = pd.read_sql(crm_sql, conn_analyze)
+        user_data = user_data.to_dict("records")
+        if not user_data:
+            # return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
-        personal_datas["person"] = user_data
+
 
         # 获取所有的数据
 
