@@ -37,9 +37,9 @@ conn_lh = direct_get_conn(lianghao_mysql_conf)
 # 往后更新前面的
 buy_sql = '''select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,count(*) buy_order_count,sum(count) buy_lh_count,sum(total_price) buy_total_price from lh_order where type in (1,4) and `status`=1 and del_flag = 0 group by statistic_time having statistic_time = date_add(CURRENT_DATE(),INTERVAL -1 day) order by statistic_time desc'''
 sell_sql = '''select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,count(*) sell_order_count,sum(count) sell_lh_count,sum(total_price) sell_total_price from lh_order where type in (1,4) and `status`=1 and del_flag = 0 group by statistic_time having statistic_time = date_add(CURRENT_DATE(),INTERVAL -1 day) order by statistic_time desc'''
-public_sql = '''select DATE_FORMAT(lh_sell.create_time,"%Y-%m-%d") statistic_time,count(*) public_order_count,sum(lh_sell.count) public_lh_count,sum(lh_sell.total_price) public_total_price,sum(sell_fee) total_sell_fee,(sum(lh_sell.total_price)-sum(sell_fee)) total_real_money from lh_sell 
+public_sql = '''select DATE_FORMAT(lh_sell.create_time,"%Y-%m-%d") statistic_time,count(*) public_order_count,sum(lh_sell.count) public_lh_count,sum(lh_sell.total_price) public_total_price,sum(sell_fee) total_sell_fee,(sum(lh_sell.total_price)-sum(sell_fee)) total_real_money from lh_sell
 left join lh_order on lh_sell.id = lh_order.sell_id
-where lh_sell.del_flag = 0 and lh_sell.`status`!=1 and lh_order.del_flag = 0 
+where lh_sell.del_flag = 0 and lh_sell.`status`!=1 and lh_order.del_flag = 0
 group by statistic_time  having statistic_time = date_add(CURRENT_DATE(),INTERVAL -1 day)
 order by statistic_time desc'''
 
