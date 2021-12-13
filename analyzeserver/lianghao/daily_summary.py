@@ -250,7 +250,7 @@ def daily_user_summary():
                 match_data = match_data.loc[(match_data['parentid'] == parent) | (match_data['parent_phone'] == parent), :]
             if operateid:
                 match_data = match_data.loc[match_data['operate_id'].notna(), :]
-                match_data['operate_id'] = match_data['operate_id'].astype(str).astype(int)
+                match_data['operate_id'] = match_data['operate_id'].astype(int)
                 match_data = match_data.loc[match_data['operate_id'] == operateid, :]
             if start_time and end_time:
                 match_data = match_data.loc[(match_data['day_time'] >= start_time) & (match_data['day_time'] <= end_time), :]
