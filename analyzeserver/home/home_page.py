@@ -46,8 +46,8 @@ def deal_person():
 
         logger.info(conn_lh)
 
-        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
-        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") ="2021-12-14" group by phone order by total_money desc limit 3'''
+        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
+        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") ="2021-12-14" group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
@@ -111,8 +111,7 @@ def deal_business():
         return_lists = []
 
         #取出今天的订单表
-        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone'''
-        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = "2021-12-14" group by phone'''
+        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone'''
         cursor_lh.execute(sql)
         order_datas = pd.DataFrame(cursor_lh.fetchall())
         # 如果暂无交易数据，返回空
@@ -163,10 +162,8 @@ def data_center():
 
 
         # cursor = conn_lh.cursor()
-        # sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        # select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
-        sql = '''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-                select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = "2021-12-14" group by phone)t'''
+        sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
         data = (pd.read_sql(sql,conn_lh)).to_dict("records")
         return {"code":"0000","status":"success","msg":data}
 
@@ -196,19 +193,14 @@ def deal_top():
 
 
 
-        # sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
-        # select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
-        # left join lh_sell s on o.sell_id = s.id
-        # where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
-        # and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
-        # order by o.create_time desc) t group by pretty_type_name order by total_count desc'''
-
         sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
         left join lh_sell s on o.sell_id = s.id
-        where DATE_FORMAT(o.create_time,"%Y%m%d") = "2021-12-14"
+        where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
         and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
         order by o.create_time desc) t group by pretty_type_name order by total_count desc'''
+
+
 
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
@@ -425,28 +417,18 @@ def today_dynamic_transaction():
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         # 今日交易时时动态
-        # sell_order_sql = '''
-        #     select t1.sub_time, t1.phone, t2.pretty_type_name from
-        #     (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
-        #     where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-        #     and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
-        #     order by pay_time desc
-        #     limit 3) t1
-        #     left join
-        #     (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
-        #     on t1.sell_id = t2.id
-        # '''
         sell_order_sql = '''
-                    select t1.sub_time, t1.phone, t2.pretty_type_name from
-                    (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
-                    where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-                    and DATE_FORMAT(pay_time,"%Y-%m-%d") = "2021-12-14"
-                    order by pay_time desc
-                    limit 3) t1
-                    left join
-                    (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
-                    on t1.sell_id = t2.id
-                '''
+            select t1.sub_time, t1.phone, t2.pretty_type_name from
+            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
+            where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+            order by pay_time desc
+            limit 3) t1
+            left join
+            (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
+            on t1.sell_id = t2.id
+        '''
+
 
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
@@ -516,22 +498,15 @@ def today_dynamic_publish():
             '''
 
         # 发布时时动态
-        # publish_order_sql = '''
-        #     select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-        #     from lh_pretty_client.lh_sell
-        #     where del_flag=0 and (sell_phone is not null or sell_phone != '')
-        #     and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-        #     order by up_time desc
-        #     limit 3
-        # '''
         publish_order_sql = '''
-                    select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-                    from lh_pretty_client.lh_sell
-                    where del_flag=0 and (sell_phone is not null or sell_phone != '')
-                    and DATE_FORMAT(up_time,"%Y-%m-%d") = "2021-12-14"
-                    order by up_time desc
-                    limit 3
-                '''
+            select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+            from lh_pretty_client.lh_sell
+            where del_flag=0 and (sell_phone is not null or sell_phone != '')
+            and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
+            order by up_time desc
+            limit 3
+        '''
+
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
