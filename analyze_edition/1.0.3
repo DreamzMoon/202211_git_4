@@ -1,0 +1,17 @@
+#每日订单统计表按天统计 不包含当天
+CREATE TABLE `lh_secorder_day` (
+  `statistic_time` date DEFAULT NULL COMMENT '统计时间',
+  `buy_order_count` bigint(20) DEFAULT NULL COMMENT '购买订单数量',
+  `buy_lh_count` bigint(20) DEFAULT NULL COMMENT '购买靓号数量',
+  `buy_total_price` decimal(20,2) DEFAULT NULL COMMENT '采购总金额',
+  `sell_order_count` bigint(20) DEFAULT NULL COMMENT '出售订单数量',
+  `sell_lh_count` bigint(20) DEFAULT NULL COMMENT '出售靓号数量',
+  `sell_total_price` decimal(20,2) DEFAULT NULL COMMENT '出售总价格',
+  `public_order_count` bigint(20) DEFAULT NULL COMMENT '发布订单数量',
+  `public_lh_count` bigint(20) DEFAULT NULL COMMENT '发布靓号数量',
+  `public_total_price` decimal(20,2) DEFAULT NULL COMMENT '发布靓号总价',
+  `total_sell_fee` decimal(20,2) DEFAULT NULL COMMENT '总手续费',
+  `total_real_money` decimal(20,2) DEFAULT NULL COMMENT '总实收金额',
+  `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
+  `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
