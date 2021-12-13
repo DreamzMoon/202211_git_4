@@ -241,13 +241,6 @@ def transfer_buy_order():
                 logger.info(args_list)
             else:
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-        # elif unioinid_lists:
-        #     phone_lists_result = get_lukebus_phone(bus_lists)
-        #     logger.info(phone_lists_result)
-        #     if phone_lists_result[0] == 1:
-        #         args_phone_lists = phone_lists_result[1]
-        #     else:
-        #         return {"code": "10006", "status": "failed", "msg": message["10006"]}
 
         logger.info("args_phone_str10:%s" %args_phone_lists)
 
