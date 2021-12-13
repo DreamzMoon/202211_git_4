@@ -27,12 +27,17 @@ def user_daily_order_data(mode='update'):
 
         # 用户数据
         user_info_sql = '''
-            select unionid, parentid, phone, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, operate_id, operatename
+            select unionid, parentid, phone, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, operate_id, operatename, leader, bus_phone leader_phone, leader_unionid
             from crm_user_%s
             where phone is not null or phone != '' and del_flag=0
         ''' % current_time
         user_info_data = pd.read_sql(user_info_sql, conn_an)
         logger.info(user_info_data.shape)
+
+        # # 运营中心负责人unionid
+        # operate_info = user_info_data.loc[:, ['unionid', 'phone']].rename(columns={"unionid": "leader_unionid", "phone": "leader_phone"})
+        # user_info_data = user_info_data.merge(operate_info, how='left', on='leader_phone')
+        # logger.info(user_info_data.shape)
 
         data_df_list = []
         if mode == 'create':
@@ -86,15 +91,12 @@ def user_daily_order_data(mode='update'):
 
         order_data = pd.read_sql(buy_sql, conn_lh)
         data_df_list.append(order_data)
-        logger.info(order_data.shape)
 
         sell_data = pd.read_sql(sell_sql, conn_lh)
         data_df_list.append(sell_data)
-        logger.info(sell_data.shape)
 
         publish_data = pd.read_sql(publish_sql, conn_lh)
         data_df_list.append(publish_data)
-        logger.info(publish_data.shape)
 
         # 合并靓号统计数据
         df_merge = reduce(lambda left, right: pd.merge(left, right, how='outer', on=['day_time', 'phone']), data_df_list)
@@ -102,6 +104,7 @@ def user_daily_order_data(mode='update'):
 
         # 合并用户数据
         fina_df = df_merge.merge(user_info_data, how='left', on='phone')
+        logger.info(fina_df.shape)
 
         logger.info('插入数据')
         fina_df.to_sql('user_daily_order_data', con=conn_an, if_exists="append", index=False)
