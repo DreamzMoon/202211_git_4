@@ -151,13 +151,83 @@ def daily_plat_summary():
         all_data["total_sell_fee"] = round(df_merged["total_sell_fee"].sum(),2)
         logger.info(all_data)
 
+        df_merged.fillna("",inplace=True)
+        count = len(df_merged)
         return_data = df_merged[code_page:code_size] if page and size else df_merged.copy()
 
-        msg_data = {"all_data":all_data,"form_data":return_data.to_dict("records")}
-        return {"code":"0000","status":"success","msg":msg_data}
+        msg_data = {"all_data":all_data,"data":return_data.to_dict("records")}
+        return {"code":"0000","status":"success","msg":msg_data,"count":count}
 
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_lh.close()
+        conn_analyze.close()
+
+'''运营中心每日订单数据统计报表'''
+@dailybp.route("operate",methods=["POST"])
+def daily_operate():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        page = request.json.get("page")
+        size = request.json.get("size")
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+        keyword = request.json.get("keyword")
+
+        code_page = ""
+        code_size = ""
+
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        sql = '''
+        select day_time,operatename,leader,leader_phone,leader_unionid ,sum(buy_count) buy_count,sum(buy_pretty_count) buy_pretty_count,sum(buy_total_price) buy_total_price,sum(publish_count) publish_count,sum(publish_pretty_count) publish_pretty_count,sum(publish_total_price) publish_total_price,sum(sell_count) sell_count,sum(sell_pretty_count) sell_pretty_count,sum(sell_total_price) sell_total_price,sum(truth_price) truth_price,sum(sell_fee)sell_fee from user_daily_order_data where operatename != "" group by day_time,operatename order by day_time desc,buy_total_price desc
+        '''
+        order_data = pd.read_sql(sql,conn_analyze)
+        order_data["day_time"] = order_data["day_time"].apply(lambda x: x.strftime('%Y-%m-%d'))
+        order_data["leader_unionid"] = order_data["leader_unionid"].astype(str)
+
+        if start_time and end_time:
+            order_data = order_data[(order_data["day_time"] >= start_time) & (order_data["day_time"] <= end_time)]
+        #筛选出关键词
+        order_data = order_data[(order_data["leader_phone"].str.contains(keyword))|(order_data["leader"].str.contains(keyword))|(order_data["leader_unionid"].str.contains(keyword))]
+
+        all_data = {}
+        # 准备算钱
+        all_data["buy_count"] = int(order_data["buy_count"].sum())
+        all_data["buy_pretty_count"] = int(order_data["buy_pretty_count"].sum())
+        all_data["buy_total_price"] = round(order_data["buy_total_price"].sum(), 2)
+        all_data["publish_count"] = int(order_data["publish_count"].sum())
+        all_data["publish_pretty_count"] = int(order_data["publish_pretty_count"].sum())
+        all_data["publish_total_price"] = round(order_data["publish_total_price"].sum(), 2)
+        all_data["sell_count"] = int(order_data["sell_count"].sum())
+        all_data["sell_pretty_count"] = int(order_data["sell_pretty_count"].sum())
+        all_data["sell_total_price"] = round(order_data["sell_total_price"].sum(), 2)
+        all_data["truth_price"] = round(order_data["truth_price"].sum(), 2)
+        all_data["sell_fee"] = round(order_data["sell_fee"].sum(), 2)
+
+        count = len(order_data)
+        return_data = order_data[code_page:code_size] if page and size else order_data.copy()
+        return_data = return_data.to_dict("records")
+        msg_data = {"data":return_data,"all_data":all_data}
+        return {"code": "0000", "status": "success", "msg": msg_data, "count": count}
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
