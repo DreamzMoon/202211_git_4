@@ -22,3 +22,4 @@ from analyzeserver.user.sysuser import check_token
 import numpy as np
 
 ppbp = Blueprint('property', __name__, url_prefix='/lh/property')
+

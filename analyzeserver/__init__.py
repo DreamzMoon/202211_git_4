@@ -56,6 +56,9 @@ app.register_blueprint(lhhomebp)
 from analyzeserver.user.crmuserrelate import userrelatebp
 app.register_blueprint(userrelatebp)
 
+from analyzeserver.lianghao.personal_property import ppbp
+app.register_blueprint(ppbp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)
