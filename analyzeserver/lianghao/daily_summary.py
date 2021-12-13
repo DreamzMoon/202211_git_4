@@ -136,9 +136,25 @@ def daily_plat_summary():
         if start_time and end_time:
             df_merged = df_merged[(df_merged["statistic_time"] >= start_time) & (df_merged["statistic_time"] <= end_time)]
 
+        all_data = {}
+        #准备算钱
+        all_data["buy_order_count"] = int(df_merged["buy_lh_count"].sum())
+        all_data["buy_lh_count"] = int(df_merged["buy_lh_count"].sum())
+        all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(),2)
+        all_data["public_lh_count"] = int(df_merged["public_lh_count"].sum())
+        all_data["public_order_count"] = int(df_merged["public_order_count"].sum())
+        all_data["public_total_price"] = round(df_merged["public_total_price"].sum(),2)
+        all_data["sell_lh_count"] = int(df_merged["sell_lh_count"].sum())
+        all_data["sell_order_count"] = int(df_merged["sell_order_count"].sum())
+        all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(),2)
+        all_data["total_real_money"] = round(df_merged["total_real_money"].sum(),2)
+        all_data["total_sell_fee"] = round(df_merged["total_sell_fee"].sum(),2)
+        logger.info(all_data)
+
         return_data = df_merged[code_page:code_size] if page and size else df_merged.copy()
 
-        return {"code":"0000","status":"success","msg":return_data.to_dict("records")}
+        msg_data = {"all_data":all_data,"form_data":return_data.to_dict("records")}
+        return {"code":"0000","status":"success","msg":msg_data}
 
     except:
         logger.exception(traceback.format_exc())
