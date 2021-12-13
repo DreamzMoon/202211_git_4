@@ -59,6 +59,9 @@ app.register_blueprint(userrelatebp)
 from analyzeserver.lianghao.personal_property import ppbp
 app.register_blueprint(ppbp)
 
+from analyzeserver.lianghao.daily_summary import dailybp
+app.register_blueprint(dailybp)
+
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)

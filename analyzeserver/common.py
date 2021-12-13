@@ -386,6 +386,7 @@ def get_all_user_operationcenter(crm_user_data=""):
             operate_id = operate_df.loc[operate_df['telephone'] == phone, 'operate_id'].values[0]
             bus_phone = operate_df.loc[operate_df['telephone'] == phone, 'telephone'].values[0]
             leader = operate_df.loc[operate_df['telephone'] == phone, 'leader'].values[0]
+            leader_unionid = operate_df.loc[operate_df['telephone'] == phone, 'unionid'].values[0]
 
             # 子运营中心-->包含本身
             center_phone_list = all_data.loc[all_data['operatename'].notna(), :]['phone'].tolist()
@@ -412,10 +413,11 @@ def get_all_user_operationcenter(crm_user_data=""):
             child_df['operate_id'] = operate_id
             child_df["bus_phone"] = bus_phone
             child_df["leader"] = leader
+            child_df["leader_unionid"] = leader_unionid
             child_df_list.append(child_df)
         # 用户数据拼接
         exist_center_df = pd.concat(child_df_list)
-        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename','operate_id','bus_phone','leader']], how='left', on='phone')
+        fina_df = crm_user_df.merge(exist_center_df.loc[:, ['phone', 'operatename','operate_id','bus_phone','leader','leader_unionid']], how='left', on='phone')
         conn_crm.close()
         # logger.info('返回用户数据成功')
         return True, fina_df
