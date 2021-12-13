@@ -122,6 +122,7 @@ def personal_publish():
         # count_len = 0
 
         fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
+        fina_df.sort_values('near_time', ascending=False, inplace=True)
         # fina_df.fillna("", inplace=True)
         if operateid:
             match_result = if_exist_operate_match_data(fina_df, operateid, request, 'publish_phone', 'publish_data')
@@ -389,6 +390,7 @@ def personal_order_flow():
         order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
 
         flag_1, fina_df = order_and_user_merge(order_flow_df, crm_user_df)
+        fina_df.sort_values('order_time', ascending=False, inplace=True)
         if not flag_1:
             # 10000
             return {"code": fina_df, "status": "failed", "msg": message[fina_df]}
@@ -526,6 +528,7 @@ def personal_publish_order_flow():
         fina_df['parentid'] = fina_df['parentid'].astype(str)
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
 
+        fina_df.sort_values('publish_time', ascending=False, inplace=True)
         if operateid:
         # 如果存在运营中心参数
             match_result = if_exist_operate_match_data(fina_df, operateid, request, 'sell_phone', 'publish')
@@ -930,7 +933,7 @@ def personal_buy_all():
         df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
-
+        df_merged.sort_values('last_time', ascending=False, inplace=True)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
@@ -1379,7 +1382,8 @@ def personal_sell_all():
         df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
-
+        # 按时间倒序
+        df_merged.sort_values('last_time', ascending=False, inplace=True)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
