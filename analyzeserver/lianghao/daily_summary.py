@@ -319,6 +319,7 @@ def daily_operate():
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
         keyword = request.json.get("keyword")
+        bus_id = request.json.get("bus_id")
 
         code_page = ""
         code_size = ""
@@ -328,7 +329,7 @@ def daily_operate():
             code_size = page * size
 
         sql = '''
-        select day_time,operatename,leader,leader_phone,leader_unionid ,sum(buy_count) buy_count,sum(buy_pretty_count) buy_pretty_count,sum(buy_total_price) buy_total_price,sum(publish_count) publish_count,sum(publish_pretty_count) publish_pretty_count,sum(publish_total_price) publish_total_price,sum(sell_count) sell_count,sum(sell_pretty_count) sell_pretty_count,sum(sell_total_price) sell_total_price,sum(truth_price) truth_price,sum(sell_fee)sell_fee from user_daily_order_data where operatename != "" group by day_time,operatename order by day_time desc,buy_total_price desc
+        select day_time,operate_id,operatename,leader,leader_phone,leader_unionid ,sum(buy_count) buy_count,sum(buy_pretty_count) buy_pretty_count,sum(buy_total_price) buy_total_price,sum(publish_count) publish_count,sum(publish_pretty_count) publish_pretty_count,sum(publish_total_price) publish_total_price,sum(sell_count) sell_count,sum(sell_pretty_count) sell_pretty_count,sum(sell_total_price) sell_total_price,sum(truth_price) truth_price,sum(sell_fee)sell_fee from user_daily_order_data where operatename != "" group by day_time,operatename order by day_time desc,buy_total_price desc
         '''
         order_data = pd.read_sql(sql,conn_analyze)
         order_data["day_time"] = order_data["day_time"].apply(lambda x: x.strftime('%Y-%m-%d'))
@@ -336,6 +337,11 @@ def daily_operate():
 
         if start_time and end_time:
             order_data = order_data[(order_data["day_time"] >= start_time) & (order_data["day_time"] <= end_time)]
+
+        if bus_id:
+            logger.info("bus_id:%s" %bus_id)
+            order_data = order_data[order_data["operate_id"] == bus_id]
+
         #筛选出关键词
         order_data = order_data[(order_data["leader_phone"].str.contains(keyword))|(order_data["leader"].str.contains(keyword))|(order_data["leader_unionid"].str.contains(keyword))]
 
