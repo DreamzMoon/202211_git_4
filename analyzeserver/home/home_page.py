@@ -162,10 +162,10 @@ def data_center():
 
 
         # cursor = conn_lh.cursor()
-        sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
-        # sql = '''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        #         select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = "2021-12-15" group by phone)t'''
+        # sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        # select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = CURRENT_DATE group by phone)t'''
+        sql = '''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+                select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,"%Y%m%d") = "2021-12-15" group by phone)t'''
         data = (pd.read_sql(sql,conn_lh)).to_dict("records")
         return {"code":"0000","status":"success","msg":data}
 
