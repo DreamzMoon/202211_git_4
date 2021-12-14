@@ -235,6 +235,7 @@ def daily_user_summary():
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         all_data = pd.read_sql(base_sql, conn_an)
+
         # 匹配数据
         all_data['unionid'] = all_data['unionid'].astype(str)
         logger.info(all_data.shape)
@@ -257,6 +258,21 @@ def daily_user_summary():
         else:
             day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
             match_data = all_data.loc[all_data['day_time'] == day_time, :]
+        # 汇总数据
+        tital_data = {}
+        tital_data['buy_count'] = int(match_data['buy_count'].sum())
+        tital_data['buy_pretty_count'] = int(match_data['buy_pretty_count'].sum())
+        tital_data['buy_total_price'] = round(float(match_data['buy_total_price'].sum()), 2)
+        tital_data['publish_count'] = int(match_data['publish_count'].sum())
+        tital_data['publish_pretty_count'] = int(match_data['publish_pretty_count'].sum())
+        tital_data['publish_total_price'] = round(float(match_data['publish_total_price'].sum()), 2)
+        tital_data['sell_count'] = int(match_data['sell_count'].sum())
+        tital_data['sell_pretty_count'] = int(match_data['sell_pretty_count'].sum())
+        tital_data['sell_total_price'] = round(float(match_data['sell_total_price'].sum()), 2)
+        tital_data['truth_price'] = round(float(match_data['truth_price'].sum()), 2)
+        tital_data['sell_fee'] = round(float(match_data['sell_fee'].sum()), 2)
+
+        # 根据采购金额倒叙排序
         match_data.sort_values('buy_total_price', ascending=False, inplace=True)
         match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
         if page and size:
@@ -266,7 +282,10 @@ def daily_user_summary():
         else:
             cut_data = match_data.copy()
         cut_data.fillna("", inplace=True)
-        return_data = cut_data.to_dict('records')
+        return_data = {
+            'tital_data': tital_data,
+            'data': cut_data.to_dict('records')
+        }
         return {"code": "0000", "status": "success", "msg": return_data, "count": len(match_data)}
     except:
         logger.error(traceback.format_exc())
