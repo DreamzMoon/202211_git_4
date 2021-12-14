@@ -274,7 +274,7 @@ def daily_user_summary():
         tital_data['sell_fee'] = round(float(match_data['sell_fee'].sum()), 2)
 
         # 根据采购金额倒叙排序
-        match_data.sort_values('buy_total_price', ascending=False, inplace=True)
+        match_data.sort_values(['day_time', 'buy_total_price'], ascending=False, inplace=True)
         match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
         if page and size:
             start_index = (page - 1) * size
