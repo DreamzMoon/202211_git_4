@@ -100,8 +100,7 @@ def daily_plat_summary():
 
         buy_sql = '''select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,count(*) buy_order_count,sum(count) buy_lh_count,sum(total_price) buy_total_price from lh_order where type in (1,4) and `status`=1 and del_flag = 0'''
         sell_sql = '''select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,count(*) sell_order_count,sum(count) sell_lh_count,sum(total_price) sell_total_price,sum(sell_fee) total_sell_fee,sum(total_price)-sum(sell_fee) total_real_money  from lh_order where type in (1,4) and `status`=1 and del_flag = 0 '''
-        public_sql = '''select DATE_FORMAT(lh_sell.create_time,"%Y-%m-%d") statistic_time,count(*) public_order_count,sum(lh_sell.count) public_lh_count,sum(lh_sell.total_price) public_total_price from lh_sell
-        '''
+        public_sql = '''select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,count(*) public_order_count,sum(count) public_lh_count,sum(total_price) public_total_price from lh_sell where del_flag = 0 and `status`!=1 '''
 
         buy_group_sql = ''' group by statistic_time having statistic_time != CURRENT_DATE'''
         sell_group_sql = ''' group by statistic_time having statistic_time != CURRENT_DATE'''
@@ -110,7 +109,7 @@ def daily_plat_summary():
         if args_list:
             buy_condition = " and phone not in (%s)" % args_list
             sell_condition = " and sell_phone not in (%s)" % args_list
-            public_condition = " and lh_sell.sell_phone not in (%s)" % args_list
+            public_condition = " and sell_phone not in (%s)" % args_list
 
             buy_sql = buy_sql + buy_condition + buy_group_sql
             sell_sql = sell_sql + sell_condition + sell_group_sql
