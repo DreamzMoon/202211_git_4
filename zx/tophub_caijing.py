@@ -185,42 +185,44 @@ def hua_er_jie(url, source):
     logger.info('文章数： %s' % len(all_article_list))
     # 遍历所有文章url
     for article in all_article_list:
-        logger.info(article)
-        data = {
-            "source": source,
-            "type": article_type,
-            "ori_url": "",
-            "describes": "",
-            "tags": "",
-            "visits_virtual": "",
-            "exposure": "",
-            "public_time": "",
-        }
-        article_response = get_requests(article.get('url'))
-        article_soup = BeautifulSoup(article_response.text, 'lxml')
-        try:
-            data["ori_url"] = article_response.url
-            data["title"] = article.get('title')
-            data['exposure'] = article.get('exposure')
-            data["author"] = article_soup.select('span.blk')[0].get_text()
-            describes = article_soup.select('div.article-summary')
-            if describes:
-                data['describes'] = describes[0].get_text().strip()
-            data["body_text"] = str(article_soup.select('div.rich-text')[0])
-            img_soup = article_soup.select('div.rich-text img')
-            if img_soup:
-                img_list = []
-                for img in img_soup:
-                    img_url = img.get('src')
-                    img_list.append(img_url)
-                data["sub_images"] = json.dumps(img_list)[1:-1].replace("\"", '')
-            else:
-                data["sub_images"] = ""
-            save_data(data)
-        except Exception as e:
-            logger.info('爬取异常，异常错误： %s' % e)
-            logger.info(article.get('url'))
-            time.sleep(10)
+        for i in range(3):
+            try:
+                data = {
+                    "source": source,
+                    "type": article_type,
+                    "ori_url": "",
+                    "describes": "",
+                    "tags": "",
+                    "visits_virtual": "",
+                    "exposure": "",
+                    "public_time": "",
+                }
+                article_response = get_requests(article.get('url'))
+                article_soup = BeautifulSoup(article_response.text, 'lxml')
+                data["ori_url"] = article_response.url
+                data["title"] = article.get('title')
+                data['exposure'] = article.get('exposure')
+                data["author"] = article_soup.select('span.blk')[0].get_text()
+                describes = article_soup.select('div.article-summary')
+                if describes:
+                    data['describes'] = describes[0].get_text().strip()
+                data["body_text"] = str(article_soup.select('div.rich-text')[0])
+                img_soup = article_soup.select('div.rich-text img')
+                if img_soup:
+                    img_list = []
+                    for img in img_soup:
+                        img_url = img.get('src')
+                        img_list.append(img_url)
+                    data["sub_images"] = json.dumps(img_list)[1:-1].replace("\"", '')
+                else:
+                    data["sub_images"] = ""
+                save_data(data)
+                break
+            except Exception as e:
+                logger.info('爬取异常，异常错误： %s' % e)
+                logger.info(article.get('url'))
+                time.sleep(10)
+                continue
 
 def xin_hua(url, source):
     start_response = get_requests(url)
@@ -228,7 +230,7 @@ def xin_hua(url, source):
     article_url_list = [base_url + article_url for article_url in start_ele_xpath.xpath(
         '/html/body/div[1]/div[2]/div[2]/div[1]/div[2]/div/div[1]//td[@class="al"]//a/@href')]
     logger.info('文章数：%s' % len(article_url_list))
-    for article_url in article_url_list:
+    for article_url in article_url_list[50:]:
         data = {
             "source": '',
             "type": article_type,
@@ -239,9 +241,9 @@ def xin_hua(url, source):
             "exposure": "",
             "public_time": "",
         }
-        article_response = get_requests(article_url)
-        article_response.encoding = 'utf-8'
         try:
+            article_response = get_requests(article_url)
+            article_response.encoding = 'utf-8'
             data["ori_url"] = article_response.url
             article_soup = BeautifulSoup(article_response.text, 'lxml')
             # 跳过有视频文章
