@@ -47,6 +47,7 @@ def deal_person():
         logger.info(conn_lh)
 
         sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
+        # sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") ="2021-12-14" group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
@@ -198,6 +199,7 @@ def deal_top():
         where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
         and o.del_flag = 0 and o.type in (1,4) and o.`status` = 1
         order by o.create_time desc) t group by pretty_type_name order by total_count desc'''
+
 
 
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
@@ -426,6 +428,8 @@ def today_dynamic_transaction():
             (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
             on t1.sell_id = t2.id
         '''
+
+
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
             '''
@@ -502,6 +506,8 @@ def today_dynamic_publish():
             order by up_time desc
             limit 3
         '''
+
+
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
             publish_order_df['sub_time'] = round(publish_order_df['sub_time'], 0).astype(int)
@@ -572,14 +578,24 @@ def today_dynamic_newuser():
             '''
 
         # 新注册用户
+        # new_user_sql = '''
+        #     select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
+        #     where del_flag=0 and (phone is not null or phone != '')
+        #     and create_time is not null
+        #     and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+        #     order by create_time desc
+        #     limit 3
+        # '''
+
         new_user_sql = '''
-            select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
-            where del_flag=0 and (phone is not null or phone != '')
-            and create_time is not null
-            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
-            order by create_time desc
-            limit 3
-        '''
+                    select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
+                    where del_flag=0 and (phone is not null or phone != '')
+                    and create_time is not null
+                    and DATE_FORMAT(create_time,"%Y-%m-%d") = "2021-12-14"
+                    order by create_time desc
+                    limit 3
+                '''
+
         new_user_df = pd.read_sql(new_user_sql, conn_lh)
         if new_user_df.shape[0] > 0:
             new_user_df['sub_time'] = round(new_user_df['sub_time'], 0).astype(int)
