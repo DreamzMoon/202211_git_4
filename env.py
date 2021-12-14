@@ -6,4 +6,4 @@
 # @Email : www@qq.com
 # @File : env.py
 
-ENV = "local"
+ENV = "test"
