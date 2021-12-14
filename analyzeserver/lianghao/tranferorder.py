@@ -21,6 +21,8 @@ tobp = Blueprint('transfer', __name__, url_prefix='/lh/transfer')
 @tobp.route("/total",methods=["POST"])
 def transfer_all():
     try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
 
         logger.info(request.json)
 
@@ -52,35 +54,32 @@ def transfer_all():
                     logger.info(args_list)
                 #过滤用户id
                 if unioinid_lists:
-                    logger.info(unioinid_lists)
-                    #先去crm查这些人对应的手机号码
+                    # 走统计表
                     try:
-                        conn_crm = direct_get_conn(crm_mysql_conf)
-                        crm_cursor = conn_crm.cursor()
-                        sql = '''select * from luke_sincerechat.user where find_in_set (id,%s)'''
+                        sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
                         ags_list = ",".join(unioinid_lists)
                         logger.info(ags_list)
-                        crm_cursor.execute(sql,ags_list)
-                        phone_lists = crm_cursor.fetchall()
-                        logger.info(phone_lists)
+                        cursor_analyze.execute(sql, ags_list)
+                        phone_lists = cursor_analyze.fetchall()
                         for p in phone_lists:
-                            args_list.append(p["phone"])
+                            args_list.append(p[0])
                         args_list = ",".join(args_list)
                     except Exception as e:
                         logger.exception(e)
                         return {"code": "10006", "status": "failed", "msg": message["10006"]}
-                    finally:
-                        conn_crm.close()
+
+
                 #过滤运营中心的
                 if bus_lists:
-                    # phone_lists = []
-                    phone_lists_result = get_lukebus_phone(bus_lists)
-                    logger.info(phone_lists_result)
-                    if phone_lists_result[0] == 1:
-                        args_list = phone_lists_result[1]
-                        logger.info(args_list)
-                    else:
-                        return {"code": "10006", "status": "failed", "msg": message["10006"]}
+                    str_bus_lists = ",".join(bus_lists)
+                    sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+                    cursor_analyze.execute(sql, str_bus_lists)
+                    phone_lists = cursor_analyze.fetchall()
+                    for p in phone_lists:
+                        ok_p = json.loads(p[0])
+                        for op in ok_p:
+                            args_list.append(op)
+                    args_list = ",".join(args_list)
 
                 logger.info("args:%s" %args_list)
 
@@ -167,7 +166,8 @@ def transfer_all():
 @tobp.route("buy",methods=["POST"])
 def transfer_buy_order():
     try:
-
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
         conn_read = direct_get_conn(lianghao_mysql_conf)
         if not conn_read:
             return {"code":"10008","status":"failed","msg":message["10008"]}
@@ -206,49 +206,35 @@ def transfer_buy_order():
             if daysss.days+ daysss.seconds/(24.0*60.0*60.0) > 30:
                 return {"code":"11018","status":"failed","msg":message["11018"]}
 
-
-
         args_phone_lists = []
-        args_list = []
         if phone_lists:
             args_phone_lists = ",".join(phone_lists)
-        if unioinid_lists:
-            logger.info(unioinid_lists)
-            # 先去crm查这些人对应的手机号码
+        elif unioinid_lists:
+
             try:
-                conn_crm = direct_get_conn(crm_mysql_conf)
-                crm_cursor = conn_crm.cursor()
-                sql = '''select * from luke_sincerechat.user where find_in_set (id,%s)'''
+                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
-                crm_cursor.execute(sql, ags_list)
-                phone_lists = crm_cursor.fetchall()
-                logger.info(phone_lists)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
                 for p in phone_lists:
-                    args_list.append(p["phone"])
-                args_list = ",".join(args_list)
+                    args_phone_lists.append(p[0])
+                args_phone_lists = ",".join(args_phone_lists)
             except Exception as e:
                 logger.exception(e)
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            finally:
-                conn_crm.close()
-        if bus_lists:
-            # phone_lists = []
-            phone_lists_result = get_lukebus_phone(bus_lists)
-            logger.info(phone_lists_result)
-            if phone_lists_result[0] == 1:
-                args_list = phone_lists_result[1]
-                logger.info(args_list)
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-        # elif unioinid_lists:
-        #     phone_lists_result = get_lukebus_phone(bus_lists)
-        #     logger.info(phone_lists_result)
-        #     if phone_lists_result[0] == 1:
-        #         args_phone_lists = phone_lists_result[1]
-        #     else:
-        #         return {"code": "10006", "status": "failed", "msg": message["10006"]}
+        elif bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for p in phone_lists:
+                ok_p = json.loads(p[0])
+                for op in ok_p:
+                    args_phone_lists.append(op)
+            args_phone_lists = ",".join(args_phone_lists)
 
+        logger.info(args_phone_lists)
         logger.info("args_phone_str10:%s" %args_phone_lists)
 
 
@@ -431,6 +417,8 @@ def transfer_buy_order():
 @tobp.route("sell",methods=["POST"])
 def transfer_sell_order():
     try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
 
         conn_read = direct_get_conn(lianghao_mysql_conf)
         if not conn_read:
@@ -471,53 +459,35 @@ def transfer_sell_order():
                 return {"code":"11018","status":"failed","msg":message["11018"]}
                 # 获取两个起始时间相减判断是否一天
 
-
-        # args_phone_lists = []
-        # if phone_lists:
-        #     args_phone_lists = ",".join(phone_lists)
-        # elif unioinid_lists:
-        #     phone_lists_result = get_lukebus_phone(bus_lists)
-        #     logger.info(phone_lists_result)
-        #     if phone_lists_result[0] == 1:
-        #         args_phone_lists = phone_lists_result[1]
-        #     else:
-        #         return {"code": "10006", "status": "failed", "msg": message["10006"]}
-        #
-        # logger.info("args_phone_lists:%s" %args_phone_lists)
         args_phone_lists = []
-        args_list = []
         if phone_lists:
             args_phone_lists = ",".join(phone_lists)
-        if unioinid_lists:
-            logger.info(unioinid_lists)
-            # 先去crm查这些人对应的手机号码
+        elif unioinid_lists:
+
             try:
-                conn_crm = direct_get_conn(crm_mysql_conf)
-                crm_cursor = conn_crm.cursor()
-                sql = '''select * from luke_sincerechat.user where find_in_set (id,%s)'''
+                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
-                crm_cursor.execute(sql, ags_list)
-                phone_lists = crm_cursor.fetchall()
-                logger.info(phone_lists)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
                 for p in phone_lists:
-                    args_list.append(p["phone"])
-                args_list = ",".join(args_list)
+                    args_phone_lists.append(p[0])
+                args_phone_lists = ",".join(args_phone_lists)
             except Exception as e:
                 logger.exception(e)
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            finally:
-                conn_crm.close()
-        if bus_lists:
-            # phone_lists = []
-            phone_lists_result = get_lukebus_phone(bus_lists)
-            logger.info(phone_lists_result)
-            if phone_lists_result[0] == 1:
-                args_list = phone_lists_result[1]
-                logger.info(args_list)
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
-        logger.info("args_phone_lists:%s" % args_phone_lists)
+        elif bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for p in phone_lists:
+                ok_p = json.loads(p[0])
+                for op in ok_p:
+                    args_phone_lists.append(op)
+            args_phone_lists = ",".join(args_phone_lists)
+
+        logger.info(args_phone_lists)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -703,6 +673,8 @@ def transfer_public_order():
     try:
         logger.info("进入")
         conn_read = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
         if not conn_read:
             return {"code":"10008","status":"failed","msg":message["10008"]}
 
@@ -745,32 +717,30 @@ def transfer_public_order():
         if phone_lists:
             args_phone_lists = ",".join(phone_lists)
         elif unioinid_lists:
-            logger.info(unioinid_lists)
-            # 先去crm查这些人对应的手机号码
+
             try:
-                conn_crm = direct_get_conn(crm_mysql_conf)
-                crm_cursor = conn_crm.cursor()
-                sql = '''select * from luke_sincerechat.user where find_in_set (id,%s)'''
+                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
-                crm_cursor.execute(sql, ags_list)
-                phone_lists = crm_cursor.fetchall()
-                logger.info(phone_lists)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
                 for p in phone_lists:
-                    args_phone_lists.append(p["phone"])
+                    args_phone_lists.append(p[0])
                 args_phone_lists = ",".join(args_phone_lists)
             except Exception as e:
                 logger.exception(e)
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
-            finally:
-                conn_crm.close()
         elif bus_lists:
-            phone_lists_result = get_lukebus_phone(bus_lists)
-            logger.info(phone_lists_result)
-            if phone_lists_result[0] == 1:
-                args_phone_lists = phone_lists_result[1]
-            else:
-                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for p in phone_lists:
+                ok_p = json.loads(p[0])
+                for op in ok_p:
+                    args_phone_lists.append(op)
+            args_phone_lists = ",".join(args_phone_lists)
+
         logger.info("args_phone_lists:%s" %args_phone_lists)
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
