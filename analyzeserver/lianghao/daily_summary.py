@@ -138,7 +138,7 @@ def daily_plat_summary():
 
         all_data = {}
         #准备算钱
-        all_data["buy_order_count"] = int(df_merged["buy_lh_count"].sum())
+        all_data["buy_order_count"] = int(df_merged["buy_order_count"].sum())
         all_data["buy_lh_count"] = int(df_merged["buy_lh_count"].sum())
         all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(),2)
         all_data["public_lh_count"] = int(df_merged["public_lh_count"].sum())
