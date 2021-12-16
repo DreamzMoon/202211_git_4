@@ -21,6 +21,89 @@ from analyzeserver.common import *
 import numpy as np
 import time
 
+
+# 持有数量与持有价值
+def hold_count_and_value():
+    try:
+        start_time = time.time()
+        # 数据库连接
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh:
+            return False, message['10002']
+        # 读取持有表
+        hold_table_type_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
+        hold_df_list = []
+        for hold_table_type in hold_table_type_list:
+            print(hold_table_type)
+            pretty_hold_sql = '''
+                select hold_phone, sell_order_sn order_sn, date_format(update_time, '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s where del_flag=0 and `status`=3
+            ''' % hold_table_type
+            hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
+            hold_df_list.append(hold_df)
+        hold_all_df = pd.concat(hold_df_list, axis=0)
+        # 订单表
+        order_sql = '''
+            select order_sn, sum(count) pretty_count, sum(total_price) total_price, date_format(create_time, '%Y-%m-%d') day_time
+            from lh_pretty_client.lh_order
+            where del_flag=0
+            group by day_time, order_sn
+        '''
+        lh_order_df = pd.read_sql(order_sql, conn_lh)
+        # 有订单号的数据根据订单表匹配day_time
+        hold_all_df_notna = hold_all_df.loc[hold_all_df['order_sn'].notna(), ['hold_phone', 'order_sn']]
+        # 订单号不为空进行分组
+        hold_all_df_notna = pd.DataFrame(
+        hold_all_df_notna.groupby(['hold_phone', 'order_sn'])['hold_phone'].count()).rename(
+        columns={"hold_phone": "transferred"}).reset_index()
+        hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
+
+        # 没有订单号的数据如果没有时间或者时间为8888的数据则使用最早的填充
+        hold_all_df_na = hold_all_df.loc[hold_all_df['order_sn'].isna(), ['hold_phone', 'day_time']]
+        # 将8888-08-08 替换成空
+        hold_all_df_na.loc[hold_all_df_na['day_time'] == '8888-08-08', 'day_time'] = None
+
+        # 取出总表时间不为空每个用户最早的时间
+        day_time_notna = hold_all_df.loc[
+            (hold_all_df['day_time'].notna()) & (hold_all_df['day_time'] != '8888-08-08'), ['hold_phone', 'day_time']]
+        day_time_notna['day_time'] = pd.to_datetime(day_time_notna['day_time'])
+        min_day_time = pd.DataFrame(day_time_notna.groupby('hold_phone')['day_time'].min()).reset_index()
+        min_day_time['day_time'] = min_day_time['day_time'].dt.strftime('%Y-%m-%d')
+
+        # 订单号为空中时间为空与不为空
+        hold_all_df_na_day_time_na = hold_all_df_na[hold_all_df_na['day_time'].isna()]
+        hold_all_df_na_day_time_notna = hold_all_df_na[hold_all_df_na['day_time'].notna()]
+        hold_all_df_na_day_time_na.drop('day_time', axis=1, inplace=True)
+        hold_all_df_na_day_time_na = hold_all_df_na_day_time_na.merge(min_day_time, how='left', on='hold_phone')
+
+        # 用户持有最早时间-->用于对订单为空，时间为空或8888-08-08进行填充
+        early_time = pd.to_datetime(
+            hold_all_df[(hold_all_df['day_time'].notna()) & (hold_all_df['day_time'] != '8888-08-08')][
+                'day_time']).min().strftime('%Y-%m-%d')
+
+        # 填充时间，合并为空与非空表
+        hold_all_df_na_day_time_na.loc[hold_all_df_na_day_time_na['day_time'].isna(), 'day_time'] = early_time
+
+        hold_all_df_na = pd.concat([hold_all_df_na_day_time_na, hold_all_df_na_day_time_notna], axis=0)
+
+        hold_all_df_na = pd.DataFrame(hold_all_df_na.groupby(['day_time', 'hold_phone'])['hold_phone'].count())
+        hold_all_df_na = hold_all_df_na.rename(columns={"hold_phone": "transferred"}).reset_index()
+
+        # 合并订单为空与非空表
+        fina_hold_all_df = pd.concat([hold_all_df_na, hold_all_df_notna], axis=0, ignore_index=True)
+        fina_hold_all_df = fina_hold_all_df.groupby(['day_time', 'hold_phone'])[
+            'transferred', 'total_price'].sum().reset_index()
+        end_time = time.time()
+        logger.info(end_time - start_time)
+        return True, fina_hold_all_df
+    except Exception as e:
+        return False, e
+    finally:
+        try:
+            conn_lh.close()
+        except:
+            pass
+
+
 # 发布对应转让中
 def public_lh():
     try:
