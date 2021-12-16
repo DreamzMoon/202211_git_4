@@ -27,7 +27,7 @@ def user_relate_mes():
 
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 9:
+        if len(request.json) != 10:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
@@ -152,7 +152,7 @@ def user_relate_basicmes():
 
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 8:
+        if len(request.json) != 9:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
