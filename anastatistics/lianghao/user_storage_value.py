@@ -256,6 +256,7 @@ def tran_hold():
         # last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True).rename(columns={"guide_price": "hold_price"})
         last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True)
         last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True)
+        return True,last_hold_data,last_tran_data
     except:
         logger.info(traceback.format_exc())
         return False, ""
@@ -330,12 +331,28 @@ def no_tran_lh():
             last_no_tran.append(no_tran_datas)
         # last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
         last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True)
-
+        return True,last_no_tran_data
     except:
         logger.info(traceback.format_exc())
         return False, ""
     finally:
         conn_lh.close()
+
+
+#用户信息
+def user_mes():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        sql = '''
+        select if(`name`,`name`,nickname) nickname,phone,unionid,operatename,parentid from crm_user_20211217 where del_flag = 0 and phone != "" and phone is not null
+        '''
+        user_data = pd.read_sql(sql,conn_analyze)
+        return True,user_data
+    except:
+        logger.info(traceback.format_exc())
+        return False, ""
+    finally:
+        conn_analyze.close()
 
 if __name__ == "__main__":
     # logger.info(public_lh())
