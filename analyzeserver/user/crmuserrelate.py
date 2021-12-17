@@ -60,7 +60,7 @@ def user_relate_mes():
 
         #先默认查全部
         cursor = conn.cursor()
-        sql = '''select nickname,phone,unionid,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
+        sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
         serpro_grade,serpro_status
         from crm_user_%s where del_flag = 0''' %current_time
         count_sql = '''select count(*) count
@@ -122,18 +122,19 @@ def user_relate_mes():
             data_dict["nickname"] = data[0]
             data_dict["phone"] = data[1]
             data_dict["unionid"] = data[2]
-            data_dict["operatename"] = data[3]
-            data_dict["bus_phone"] = data[4]
-            data_dict["parentid"] = data[5]
-            data_dict["capacity"] = data[6]
-            data_dict["bus_parentid"] = data[7]
-            data_dict["operatenamedirect"] = data[8]
-            data_dict["direct_bus_phone"] = data[9]
-            data_dict["vip_grade"] = data[10]
-            data_dict["vip_starttime"] = data[11].strftime("%Y-%m-%d %H:%M:%S") if data[11] else ""
-            data_dict["vip_endtime"] = data[12].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
-            data_dict["serpro_grade"] = data[13]
-            data_dict["serpro_status"] = data[14]
+            data_dict["parent_phone"] = data[3]
+            data_dict["operatename"] = data[4]
+            data_dict["bus_phone"] = data[5]
+            data_dict["parentid"] = data[6]
+            data_dict["capacity"] = data[7]
+            data_dict["bus_parentid"] = data[8]
+            data_dict["operatenamedirect"] = data[9]
+            data_dict["direct_bus_phone"] = data[10]
+            data_dict["vip_grade"] = data[11]
+            data_dict["vip_starttime"] = data[12].strftime("%Y-%m-%d %H:%M:%S") if data[11] else ""
+            data_dict["vip_endtime"] = data[13].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
+            data_dict["serpro_grade"] = data[14]
+            data_dict["serpro_status"] = data[15]
             last_datas.append(data_dict)
 
 
