@@ -164,7 +164,12 @@ def tran_hold():
     try:
         conn_lh = direct_get_conn()
 
-
+        #判断开始时间 脚本从开始时间--结束时间
+        time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
+        start_time = pd.read_sql(time_sql,conn_lh)["start"][0]
+        # start_time.strftime("%Y-%m-%d %H:%M:%S")
+        start_time = start_time.strftime("%Y-%m-%d")
+        end_time = datetime.datetime.now().strftime("%Y-%m-%d")
 
         #可转让 持有
         sql = '''
@@ -187,11 +192,18 @@ def tran_hold():
         '''
         data = pd.read_sql(sql,conn_lh)
 
+        #tran 转让
+        tran_datas = data[(data["status"] == 0) & (data["is_open_vip"] == 0) & (data["is_sell"] == 1) & (data["pay_type"] != 0)]
+
+
+
     except:
         logger.info(traceback.format_exc())
         return False, ""
     finally:
         conn_lh.close()
+
+
 
 if __name__ == "__main__":
     # logger.info(public_lh())
