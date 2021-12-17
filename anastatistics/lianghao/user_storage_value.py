@@ -170,30 +170,43 @@ def tran_hold():
         # start_time.strftime("%Y-%m-%d %H:%M:%S")
         start_time = start_time.strftime("%Y-%m-%d")
         end_time = datetime.datetime.now().strftime("%Y-%m-%d")
+        ergodic_time = start_time
 
         #可转让 持有
         sql = '''
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2)   union all
-        select hold_phone,pretty_type_id,thaw_time from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) 
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0
         '''
         data = pd.read_sql(sql,conn_lh)
 
         #tran 转让
         tran_datas = data[(data["status"] == 0) & (data["is_open_vip"] == 0) & (data["is_sell"] == 1) & (data["pay_type"] != 0)]
+
+        while ergodic_time != end_time:
+            # 满足当前时间的可转让数据
+            current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
+
+            #匹配当前的价格表
+            price_sql = '''select pretty_type_id,guide_price,max(date) price_date from lh_config_guide where %s >= date and del_flag = 0
+            group by pretty_type_id''' %ergodic_time
+            price_data = pd.read_sql(price_sql,conn_lh)
+            current_tran_datas.merge(price_data,)
+
+
 
 
 
