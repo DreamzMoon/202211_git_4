@@ -22,8 +22,8 @@ import numpy as np
 import time
 
 
-# 持有数量与持有价值
-def hold_count_and_value():
+# 已转让数量与价值
+def transferred_count_and_value():
     try:
         start_time = time.time()
         # 数据库连接
@@ -57,7 +57,8 @@ def hold_count_and_value():
         columns={"hold_phone": "transferred"}).reset_index()
         hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
 
-        # 没有订单号的数据如果没有时间或者时间为8888的数据则使用最早的填充
+        # 没有订单号的数据如果没有时间或者时间为8888的数据则使用先使用每个用户对应最早的时间填充
+        # 填充完毕后如果还有时间为空的数据则使用所有用户中最早的时间进行填充
         hold_all_df_na = hold_all_df.loc[hold_all_df['order_sn'].isna(), ['hold_phone', 'day_time']]
         # 将8888-08-08 替换成空
         hold_all_df_na.loc[hold_all_df_na['day_time'] == '8888-08-08', 'day_time'] = None
@@ -103,6 +104,10 @@ def hold_count_and_value():
         except:
             pass
 
+# 持有数量与价值
+def hold_count_and_value():
+    pass
+
 
 # 发布对应转让中
 def public_lh():
@@ -124,9 +129,9 @@ def public_lh():
 
 def use_lh():
     try:
-        conn_lh = direct_get_conn()
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-                select DATE_FORMAT(b.statistic_time,"%Y-%m-%d") day_time,hold_phone,sum(unit_price) total_price from (
+                select DATE_FORMAT(b.statistic_time,"%Y-%m-%d") day_time,hold_phone,sum(unit_price) total_price,count(*) use_count from (
         (
         select hold_0.hold_phone hold_phone,if(hold_0.unit_price,hold_0.unit_price,0) unit_price,hold_0.pretty_id pretty_id from lh_pretty_hold_0 hold_0 where hold_0.del_flag = 0 and (hold_0.`status` = 1 or hold_0.is_open_vip=1) union all 
         select hold_1.hold_phone hold_phone,if(hold_1.unit_price,hold_1.unit_price,0) unit_price,hold_1.pretty_id pretty_id from lh_pretty_hold_1 hold_1 where hold_1.del_flag = 0 and (hold_1.`status` = 1 or hold_1.is_open_vip=1) union all 
@@ -163,68 +168,89 @@ def use_lh():
 def tran_hold():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-
         #判断开始时间 脚本从开始时间--结束时间
         time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
         start_time = pd.read_sql(time_sql,conn_lh)["start"][0]
-        # start_time.strftime("%Y-%m-%d %H:%M:%S")
-        start_time = start_time.strftime("%Y-%m-%d")
         end_time = datetime.datetime.now().strftime("%Y-%m-%d")
-        ergodic_time = start_time
+        ergodic_time = start_time.strftime("%Y-%m-%d")
 
         time_sql = '''select min(date) price_start_time from lh_config_guide where del_flag = 0'''
         price_start_time = pd.read_sql(time_sql,conn_lh)["price_start_time"][0]
-        price_start_time = price_start_time.strftime("%Y-%m-%d")
+        price_start_time = price_start_time
 
         #可转让 持有
         sql = '''
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
-        select hold_phone,pretty_type_id,date_format(thaw_time,"%Y-%m-%d") thaw_time,is_sell,pay_type,status from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0    union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0
         '''
         data = pd.read_sql(sql,conn_lh)
 
-        #tran 转让
+        # tran 转让
         tran_datas = data[(data["status"] == 0) & (data["is_sell"] == 1) & (data["pay_type"] != 0)]
+        # hold持有
+        hold_datas = data.loc[:, ['hold_phone', 'pretty_type_id', 'create_time']]
+
+        days = 1
+        # 转让
+        last_tran = []
+        # 持有
+
+        user_hold_value_df_list = []
 
         while ergodic_time != end_time:
             # 满足当前时间的可转让数据
             current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
+            # 满足当前时间的持有数据
+            current_hold_datas = hold_datas[hold_datas['create_time'] <= ergodic_time]
 
             #查价格前先判断当前时间有没有到指导价的时间 小于 按照19算
             if price_start_time > ergodic_time:
                 current_tran_datas["guide_price"] = 19
-                current_tran_datas["day_time"] = ergodic_time
+                current_hold_datas["guide_price"] = 19
             else:
                 #匹配当前的价格表
-                price_sql = '''select pretty_type_id,guide_price,max(date) price_date from lh_config_guide where "%s" >= date and del_flag = 0
-                group by pretty_type_id''' %ergodic_time
+                price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' %ergodic_time
                 price_data = pd.read_sql(price_sql,conn_lh)
+
+                # 转让
                 current_tran_datas = pd.merge(current_tran_datas,price_data,on="pretty_type_id",how="left")
                 # 找不到的话就19
                 current_tran_datas["guide_price"] = current_tran_datas["guide_price"].fillna(19)
-                current_tran_datas["day_time"] = ergodic_time
-            transfer_data = current_tran_datas[["hold_phone","day_time","guide_price"]]
-            transfer_data.groupby(["hold_phone"]).sum()
 
+                # 持有
+                current_hold_datas = current_hold_datas.merge(price_data, how='left', on='pretty_type_id')
+                current_hold_datas["guide_price"] = current_hold_datas["guide_price"].fillna(19)
+            # 转让
+            transfer_data = current_tran_datas[["hold_phone","guide_price"]]
+            transfer_data = transfer_data.groupby(["hold_phone"])['guide_price'].sum().reset_index()
+            transfer_data["tran_count"] = transfer_data["hold_phone"].count()
+            transfer_data["day_time"] = ergodic_time
 
+            # 持有
+            hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
+            hold_grouped['day_time'] = ergodic_time
+            hold_grouped["tran_count"] = hold_grouped["hold_phone"].count()
+            user_hold_value_df_list.append(hold_grouped)
 
-
-
-
+            ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+            days += 1
+            last_tran.append(transfer_data)
+        last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
+        last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True).rename(columns={"guide_price": "hold_price"})
     except:
         logger.info(traceback.format_exc())
         return False, ""
@@ -232,7 +258,17 @@ def tran_hold():
         conn_lh.close()
 
 
+#不可转让
+def no_tran_lh():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+    except:
+        logger.info(traceback.format_exc())
+        return False, ""
+    finally:
+        conn_lh.close()
 
 if __name__ == "__main__":
     # logger.info(public_lh())
-    use_lh()
+    tran_hold()
