@@ -234,23 +234,28 @@ def tran_hold():
                 # 持有
                 current_hold_datas = current_hold_datas.merge(price_data, how='left', on='pretty_type_id')
                 current_hold_datas["guide_price"] = current_hold_datas["guide_price"].fillna(19)
+
             # 转让
-            transfer_data = current_tran_datas[["hold_phone","guide_price"]]
-            transfer_data = transfer_data.groupby(["hold_phone"])['guide_price'].sum().reset_index()
-            transfer_data["tran_count"] = transfer_data["hold_phone"].count()
+            current_hold_datas["tran_count"] = 0
+            transfer_data = current_tran_datas[["hold_phone","guide_price","tran_count"]]
+            # transfer_data = transfer_data.groupby('hold_phone')['guide_price'].sum().reset_index()
+            transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index()
             transfer_data["day_time"] = ergodic_time
 
             # 持有
-            hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
+            current_hold_datas["hold_count"] = 0
+            # hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
+            hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index()
             hold_grouped['day_time'] = ergodic_time
-            hold_grouped["tran_count"] = hold_grouped["hold_phone"].count()
             user_hold_value_df_list.append(hold_grouped)
 
             ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
             days += 1
             last_tran.append(transfer_data)
-        last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
-        last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True).rename(columns={"guide_price": "hold_price"})
+        # last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
+        # last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True).rename(columns={"guide_price": "hold_price"})
+        last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True)
+        last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True)
     except:
         logger.info(traceback.format_exc())
         return False, ""
@@ -262,6 +267,69 @@ def tran_hold():
 def no_tran_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
+        # 判断开始时间 脚本从开始时间--结束时间
+        time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
+        start_time = pd.read_sql(time_sql, conn_lh)["start"][0]
+        end_time = datetime.datetime.now().strftime("%Y-%m-%d")
+        ergodic_time = start_time.strftime("%Y-%m-%d")
+
+        time_sql = '''select min(date) price_start_time from lh_config_guide where del_flag = 0'''
+        price_start_time = pd.read_sql(time_sql, conn_lh)["price_start_time"][0]
+        price_start_time = price_start_time
+
+        # 可转让 持有
+        sql = '''
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_0 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_0 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all 
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_1 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_1 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_2 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_2 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_3 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_3 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_4 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_4 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_5 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_5 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_6 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_6 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_7 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_7 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_8 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_8 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_9 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_9 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_a WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_a WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_b WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_b WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_c WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_c WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_d WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_d WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_e WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_e WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,update_time FROM lh_pretty_hold_f WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_f WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) 
+        '''
+        no_tran_data = pd.read_sql(sql, conn_lh)
+
+        days = 1
+        # 转让
+        last_no_tran = []
+
+        while ergodic_time != end_time:
+            # 满足当前时间的可转让数据
+            current_no_tran_datas = no_tran_data[no_tran_data["update_time"] <= ergodic_time]
+
+            # 查价格前先判断当前时间有没有到指导价的时间 小于 按照19算
+            if price_start_time > ergodic_time:
+                current_no_tran_datas["guide_price"] = 19
+            else:
+                # 匹配当前的价格表
+                price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
+                price_data = pd.read_sql(price_sql, conn_lh)
+
+                # 转让
+                current_no_tran_datas = pd.merge(current_no_tran_datas, price_data, on="pretty_type_id", how="left")
+                # 找不到的话就19
+                current_no_tran_datas["guide_price"] = current_no_tran_datas["guide_price"].fillna(19)
+
+            current_no_tran_datas["no_tran_count"] = 0
+            # 转让
+            no_tran_datas = current_no_tran_datas[["hold_phone", "guide_price","no_tran_count"]]
+            no_tran_datas = no_tran_datas.groupby("hold_phone").agg({"guide_price": "sum", "no_tran_count": "count"}).reset_index()
+            no_tran_datas["day_time"] = ergodic_time
+
+            ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+            days += 1
+            last_no_tran.append(no_tran_datas)
+        # last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
+        last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True)
 
     except:
         logger.info(traceback.format_exc())
@@ -271,4 +339,5 @@ def no_tran_lh():
 
 if __name__ == "__main__":
     # logger.info(public_lh())
-    tran_hold()
+    # tran_hold()
+    no_tran_lh()
