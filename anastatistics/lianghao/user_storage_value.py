@@ -163,18 +163,15 @@ def use_lh():
 def tran_hold():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-
         #判断开始时间 脚本从开始时间--结束时间
         time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
         start_time = pd.read_sql(time_sql,conn_lh)["start"][0]
-        # start_time.strftime("%Y-%m-%d %H:%M:%S")
-        start_time = start_time.strftime("%Y-%m-%d")
         end_time = datetime.datetime.now().strftime("%Y-%m-%d")
-        ergodic_time = start_time
+        ergodic_time = start_time.strftime("%Y-%m-%d")
 
         time_sql = '''select min(date) price_start_time from lh_config_guide where del_flag = 0'''
         price_start_time = pd.read_sql(time_sql,conn_lh)["price_start_time"][0]
-        price_start_time = price_start_time.strftime("%Y-%m-%d")
+        price_start_time = price_start_time
 
         #可转让 持有
         sql = '''
@@ -199,31 +196,28 @@ def tran_hold():
 
         #tran 转让
         tran_datas = data[(data["status"] == 0) & (data["is_sell"] == 1) & (data["pay_type"] != 0)]
-
+        days = 1
+        last_tran = []
         while ergodic_time != end_time:
             # 满足当前时间的可转让数据
             current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
-
             #查价格前先判断当前时间有没有到指导价的时间 小于 按照19算
             if price_start_time > ergodic_time:
                 current_tran_datas["guide_price"] = 19
-                current_tran_datas["day_time"] = ergodic_time
             else:
                 #匹配当前的价格表
-                price_sql = '''select pretty_type_id,guide_price,max(date) price_date from lh_config_guide where "%s" >= date and del_flag = 0
-                group by pretty_type_id''' %ergodic_time
+                price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' %ergodic_time
                 price_data = pd.read_sql(price_sql,conn_lh)
                 current_tran_datas = pd.merge(current_tran_datas,price_data,on="pretty_type_id",how="left")
                 # 找不到的话就19
                 current_tran_datas["guide_price"] = current_tran_datas["guide_price"].fillna(19)
-                current_tran_datas["day_time"] = ergodic_time
-            transfer_data = current_tran_datas[["hold_phone","day_time","guide_price"]]
-            transfer_data.groupby(["hold_phone"]).sum()
-
-
-
-
-
+            transfer_data = current_tran_datas[["hold_phone","guide_price"]]
+            transfer_data = transfer_data.groupby(["hold_phone"])['guide_price'].sum().reset_index()
+            transfer_data["day_time"] = ergodic_time
+            ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+            days += 1
+            last_tran.append(transfer_data)
+        last_tran_data = pd.concat(last_tran,axis=0,ignore_index=True)
 
     except:
         logger.info(traceback.format_exc())
