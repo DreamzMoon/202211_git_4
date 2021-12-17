@@ -131,7 +131,7 @@ def use_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-                select DATE_FORMAT(b.statistic_time,"%Y-%m-%d") day_time,hold_phone,sum(unit_price) total_price from (
+                select DATE_FORMAT(b.statistic_time,"%Y-%m-%d") day_time,hold_phone,sum(unit_price) total_price,count(*) use_count from (
         (
         select hold_0.hold_phone hold_phone,if(hold_0.unit_price,hold_0.unit_price,0) unit_price,hold_0.pretty_id pretty_id from lh_pretty_hold_0 hold_0 where hold_0.del_flag = 0 and (hold_0.`status` = 1 or hold_0.is_open_vip=1) union all 
         select hold_1.hold_phone hold_phone,if(hold_1.unit_price,hold_1.unit_price,0) unit_price,hold_1.pretty_id pretty_id from lh_pretty_hold_1 hold_1 where hold_1.del_flag = 0 and (hold_1.`status` = 1 or hold_1.is_open_vip=1) union all 
@@ -237,11 +237,13 @@ def tran_hold():
             # 转让
             transfer_data = current_tran_datas[["hold_phone","guide_price"]]
             transfer_data = transfer_data.groupby(["hold_phone"])['guide_price'].sum().reset_index()
+            transfer_data["tran_count"] = transfer_data["hold_phone"].count()
             transfer_data["day_time"] = ergodic_time
 
             # 持有
             hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
             hold_grouped['day_time'] = ergodic_time
+            hold_grouped["tran_count"] = hold_grouped["hold_phone"].count()
             user_hold_value_df_list.append(hold_grouped)
 
             ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
@@ -256,6 +258,16 @@ def tran_hold():
         conn_lh.close()
 
 
+#不可转让
+def no_tran_lh():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+    except:
+        logger.info(traceback.format_exc())
+        return False, ""
+    finally:
+        conn_lh.close()
 
 if __name__ == "__main__":
     # logger.info(public_lh())
