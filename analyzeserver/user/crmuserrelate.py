@@ -27,7 +27,7 @@ def user_relate_mes():
 
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 9:
+        if len(request.json) != 10:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
@@ -49,6 +49,8 @@ def user_relate_mes():
         page = request.json["page"]
         size = request.json["size"]
 
+        phone_lists = request.json["phone_lists"]
+
         code_page = ""
         code_size = ""
         if page and size:
@@ -64,39 +66,42 @@ def user_relate_mes():
         count_sql = '''select count(*) count
         from crm_user_%s where del_flag = 0''' %current_time
 
+        if phone_lists:
+            phone_lists = ",".join(phone_lists)
+            phone_lists_sql = ''' and phone in (%s)''' %phone_lists
+            sql = sql + phone_lists_sql
+            count_sql = count_sql +phone_lists_sql
+        else:
+            if keyword:
+                keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s"''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+                sql = sql + keyword_sql
+                count_sql = count_sql + keyword_sql
 
-        if keyword:
-            keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s"''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
-            sql = sql + keyword_sql
-            count_sql = count_sql + keyword_sql
-            # logger.info(sql)
-            # cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
-            # datas = cursor.fetchall()
 
-        if bus_id:
-            bus_sql = ''' and operate_id = %s''' %(bus_id)
-            sql = sql + bus_sql
-            count_sql = count_sql + bus_sql
+            if bus_id:
+                bus_sql = ''' and operate_id = %s''' %(bus_id)
+                sql = sql + bus_sql
+                count_sql = count_sql + bus_sql
 
-        if parent:
-            parent_sql = ''' and parentid = %s or parent_phone=%s''' %(parent,parent)
-            sql = sql + parent_sql
-            count_sql = count_sql + parent_sql
+            if parent:
+                parent_sql = ''' and parentid = %s or parent_phone=%s''' %(parent,parent)
+                sql = sql + parent_sql
+                count_sql = count_sql + parent_sql
 
-        if serpro_grade:
-            serpro_grade_sql = ''' and serpro_grade = %s''' %serpro_grade
-            sql = sql + serpro_grade_sql
-            count_sql = count_sql + serpro_grade_sql
+            if serpro_grade:
+                serpro_grade_sql = ''' and serpro_grade = %s''' %serpro_grade
+                sql = sql + serpro_grade_sql
+                count_sql = count_sql + serpro_grade_sql
 
-        if capacity:
-            capacity_sql = ''' and capacity = %s''' %capacity
-            sql = sql + capacity_sql
-            count_sql = count_sql + capacity_sql
+            if capacity:
+                capacity_sql = ''' and capacity = %s''' %capacity
+                sql = sql + capacity_sql
+                count_sql = count_sql + capacity_sql
 
-        if bus_parent:
-            bus_parentid_sql = ''' and bus_parentid = %s or bus_parent_phone = %s''' %(bus_parent,bus_parent)
-            sql = sql + bus_parentid_sql
-            count_sql = count_sql + bus_parentid_sql
+            if bus_parent:
+                bus_parentid_sql = ''' and bus_parentid = %s or bus_parent_phone = %s''' %(bus_parent,bus_parent)
+                sql = sql + bus_parentid_sql
+                count_sql = count_sql + bus_parentid_sql
 
         logger.info("code_page:%s" % code_page)
         logger.info("code_size:%s" % code_size)
@@ -147,7 +152,7 @@ def user_relate_basicmes():
 
         logger.info(request.json)
         # 参数个数错误
-        if len(request.json) != 8:
+        if len(request.json) != 9:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         token = request.headers["Token"]
@@ -160,6 +165,7 @@ def user_relate_basicmes():
         end_time = request.json["end_time"]
         page = request.json["page"]
         size = request.json["size"]
+        phone_lists = request.json["phone_lists"]
 
         code_page = ""
         code_size = ""
@@ -179,40 +185,42 @@ def user_relate_basicmes():
 
             if start_time >= end_time:
                 return {"code": "11020", "status": "failed", "msg": message["11020"]}
-            # datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
-            # datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
-            # daysss = datetime_end_time - datetime_start_time
-            # if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
-            #     return {"code": "11018", "status": "failed", "msg": message["11018"]}
 
         logger.info("current_time:%s" %current_time)
         sql = '''select phone,unionid,nickname,`name`,sex,birth,nationality,vertify_status,huoti_status,addtime,`status` from crm_user_%s where del_flag = 0 ''' %current_time
         count_sql = '''select count(*) count from crm_user_%s where del_flag = 0 ''' %current_time
 
 
-        if keyword:
-            keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s"''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
-            sql = sql + keyword_sql
-            count_sql = count_sql + keyword_sql
+        if phone_lists:
+            phone_lists = ",".join(phone_lists)
+            phone_lists_sql = ''' and phone in (%s)''' %phone_lists
+            sql = sql + phone_lists_sql
+            count_sql = count_sql +phone_lists_sql
+        else:
 
-        if status:
-            status_sql = ''' and status = %s''' %status
-            sql = sql + status_sql
-            count_sql = count_sql + status_sql
+            if keyword:
+                keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s"''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
+                sql = sql + keyword_sql
+                count_sql = count_sql + keyword_sql
 
-        if vertify_status:
-            vertify_sql = ''' and vertify_status = %s''' %vertify_status
-            sql = sql + vertify_sql
-            count_sql = count_sql + vertify_sql
+            if status:
+                status_sql = ''' and status = %s''' %status
+                sql = sql + status_sql
+                count_sql = count_sql + status_sql
 
-        if start_time and end_time:
-            time_sql = ''' and addtime >= "%s" and addtime <= "%s"''' %(start_time,end_time)
-            sql = sql + time_sql
-            count_sql = count_sql + time_sql
+            if vertify_status:
+                vertify_sql = ''' and vertify_status = %s''' %vertify_status
+                sql = sql + vertify_sql
+                count_sql = count_sql + vertify_sql
 
-        if page and size:
-            limit_sql = ''' limit %s,%s''' %(code_page,code_size)
-            sql = sql + limit_sql
+            if start_time and end_time:
+                time_sql = ''' and addtime >= "%s" and addtime <= "%s"''' %(start_time,end_time)
+                sql = sql + time_sql
+                count_sql = count_sql + time_sql
+
+            if page and size:
+                limit_sql = ''' limit %s,%s''' %(code_page,code_size)
+                sql = sql + limit_sql
 
         logger.info(sql)
         logger.info(count_sql)
