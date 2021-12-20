@@ -505,12 +505,6 @@ def daily_operate_value():
         keyword = request.json.get("keyword")
         bus_id = request.json.get("bus_id")
 
-        if start_time and end_time:
-            start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-            start_time = datetime.date(start_time.year, start_time.month, start_time.day)
-            end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
-            end_time = datetime.date(end_time.year, end_time.month, end_time.day)
-
         code_page = ""
         code_size = ""
 
@@ -583,11 +577,7 @@ def daily_user_value():
 
             page = request.json['page']
             size = request.json['size']
-            if start_time and end_time:
-                start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-                start_time = datetime.date(start_time.year, start_time.month, start_time.day)
-                end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
-                end_time = datetime.date(end_time.year, end_time.month, end_time.day)
+
 
             #
         except Exception as e:
@@ -644,6 +634,40 @@ def daily_user_value():
             'data': cut_data.to_dict('records')
         }
         return {"code": "0000", "status": "success", "msg": return_data, "count": len(match_data)}
+    except:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_an.close()
+        except:
+            pass
+
+
+@dailybp.route("user/value1",methods=["POST"])
+def daily_ser_value1():
+    try:
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+                    transferred_count, transferred_price, public_count, public_price, use_total_price, 
+                    use_count, hold_price, hold_count, tran_price,tran_count
+                    from lh_analyze.user_storage_value'''
+        value_data = pd.read_sql(sql,conn_an)
+
+
+
     except:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "success", "msg": message["10000"]}
