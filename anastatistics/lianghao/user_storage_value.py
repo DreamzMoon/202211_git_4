@@ -29,7 +29,7 @@ def transferred_count_and_value():
         hold_table_type_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
         hold_df_list = []
         for hold_table_type in hold_table_type_list:
-            print(hold_table_type)
+            logger.info(hold_table_type)
             pretty_hold_sql = '''
                 select hold_phone, sell_order_sn order_sn, date_format(if(update_time,if(update_time!='8888-08-08',update_time,create_time),create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s where del_flag=0 and `status`=3
             ''' % hold_table_type
