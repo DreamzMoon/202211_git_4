@@ -402,6 +402,11 @@ def daily_plat_value():
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
 
+        if start_time and end_time:
+            start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+            start_time = datetime.date(start_time.year, start_time.month, start_time.day)
+            end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+            end_time = datetime.date(end_time.year, end_time.month, end_time.day)
         args_list = []
         # 过滤手机号
         if phone_lists:
@@ -500,6 +505,12 @@ def daily_operate_value():
         keyword = request.json.get("keyword")
         bus_id = request.json.get("bus_id")
 
+        if start_time and end_time:
+            start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+            start_time = datetime.date(start_time.year, start_time.month, start_time.day)
+            end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+            end_time = datetime.date(end_time.year, end_time.month, end_time.day)
+
         code_page = ""
         code_size = ""
 
@@ -572,6 +583,11 @@ def daily_user_value():
 
             page = request.json['page']
             size = request.json['size']
+            if start_time and end_time:
+                start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+                start_time = datetime.date(start_time.year, start_time.month, start_time.day)
+                end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+                end_time = datetime.date(end_time.year, end_time.month, end_time.day)
 
             #
         except Exception as e:
