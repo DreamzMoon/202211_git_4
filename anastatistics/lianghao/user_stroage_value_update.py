@@ -355,7 +355,6 @@ if __name__ == "__main__":
         logger.info('写入数据')
         conn_analyze = pd_conn(analyze_mysql_conf)
         df_merge.to_sql('user_storage_value_1', con=conn_analyze, if_exists="append", index=False)
-        df_merge.to_csv(r'D:/update_df.csv', encoding='gb18030', index=False)
         run_end = time.time()
         logger.info(run_start - run_end)
         break
