@@ -370,3 +370,122 @@ def daily_operate():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_analyze.close()
+
+
+'''平台每日名片网估值'''
+@dailybp.route("plat/value",methods=["POST"])
+def daily_plat_value():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
+
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code":"10001","status":"failed","msg":message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        page = request.json.get("page")
+        size = request.json.get("size")
+
+        unioinid_lists = request.json["unioinid_lists"]
+        phone_lists = request.json["phone_lists"]
+        bus_lists = request.json["bus_lists"]
+
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+
+        args_list = []
+        # 过滤手机号
+        if phone_lists:
+            args_list = ",".join(phone_lists)
+            logger.info(args_list)
+        # 过滤用户id
+        if unioinid_lists:
+            # 走统计表
+            try:
+                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                ags_list = ",".join(unioinid_lists)
+                logger.info(ags_list)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
+                for p in phone_lists:
+                    args_list.append(p[0])
+                args_list = ",".join(args_list)
+            except Exception as e:
+                logger.exception(e)
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+        # 过滤运营中心的
+        if bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for p in phone_lists:
+                ok_p = json.loads(p[0])
+                for op in ok_p:
+                    args_list.append(op)
+            args_list = ",".join(args_list)
+
+        # 过滤手机号码
+        logger.info("args:%s" % args_list)
+
+        code_page = ""
+        code_size = ""
+
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        sql = '''select day_time,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count) public_count,sum(public_price) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count from user_storage_value'''
+        group_sql = '''  group by day_time order by day_time desc'''
+        if args_list:
+            condition_sql = " where hold_phone not in (%s)" % args_list
+            sql = sql + condition_sql +group_sql
+        else:
+            sql = sql + group_sql
+        logger.info(sql)
+        data = pd.read_sql(sql,conn_analyze)
+        logger.info(data)
+        all_data = {}
+        # 准备算钱
+        all_data["no_tran_price"] = round(data["no_tran_price"].sum(),2)
+        all_data["no_tran_count"] = int(data["no_tran_count"].sum())
+        all_data["transferred_count"] = int(data["transferred_count"].sum())
+        all_data["transferred_price"] = round(data["transferred_price"].sum(),2)
+        all_data["public_count"] = int(data["public_count"].sum())
+        all_data["public_price"] = round(data["public_price"].sum(),2)
+        all_data["use_total_price"] = round(data["use_total_price"].sum(),2)
+        all_data["use_count"] = int(data["use_count"].sum())
+        all_data["hold_price"] = round(data["hold_price"].sum(),2)
+        all_data["hold_count"] = int(data["hold_count"].sum())
+        all_data["tran_price"] = round(data["tran_price"].sum(),2)
+        all_data["tran_count"] = int(data["tran_count"].sum())
+
+        if start_time and end_time:
+            data = data[(data["day_time"] >= start_time) & (data["day_time"] <= end_time)]
+
+        data = data.to_dict("records")
+        for d in data:
+            d["day_time"] = datetime.datetime.strftime(d["day_time"], "%Y-%m-%d")
+        count = len(data)
+
+        return_data = data[code_page:code_size] if page and size else data.copy()
+        msg = {"data": return_data, "all_data": all_data}
+
+        return {"code":"0000","status":"success","msg":msg,"count":count}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
+

@@ -51,7 +51,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #7位 8位个人
-        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
+        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         datas = datas.to_dict("records")
@@ -102,7 +102,7 @@ def deal_business():
         cursor_lh = conn_lh.cursor()
         cursor_ana = conn_analyze.cursor()
 
-        bus_sql = '''select operatename,contains from operate_relationship_crm where operatename  crm = 1'''
+        bus_sql = '''select operatename,contains from operate_relationship_crm where crm = 1'''
 
         logger.info(bus_sql)
         cursor_ana.execute(bus_sql)
@@ -130,8 +130,8 @@ def deal_business():
             return_lists = pd.DataFrame(return_lists)
             return_lists.sort_values(by="total_money",ascending=False,inplace=True)
             return_lists['total_money'] = return_lists['total_money'].astype(float)
-            logger.info(return_lists.iloc[0:3])
-            return_data = return_lists.iloc[0:3].to_dict("records")
+            logger.info(return_lists.iloc[0:10])
+            return_data = return_lists.iloc[0:10].to_dict("records")
         else:
             return_data = return_lists
         return {"code":"0000","status":"success","msg":return_data}
