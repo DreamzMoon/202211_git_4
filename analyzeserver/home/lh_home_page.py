@@ -663,17 +663,13 @@ def change_activity_data():
 @lhhomebp.route('/today/dynamic/newuser', methods=["GET"])
 def today_dynamic_newuser():
     try:
-
-
         conn_crm = direct_get_conn(crm_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh or not conn_crm:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
 
         # 用户名搜索
-        search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
-            '''
+        search_name_sql = '''select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"'''
 
         # 新注册用户
         new_user_sql = '''
