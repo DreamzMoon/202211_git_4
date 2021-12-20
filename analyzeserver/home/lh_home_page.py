@@ -659,3 +659,58 @@ def change_activity_data():
         except:
             pass
 
+# 今日新增用户动态
+@lhhomebp.route('/today/dynamic/newuser', methods=["GET"])
+def today_dynamic_newuser():
+    try:
+
+
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_lh or not conn_crm:
+            return {"code": "10002", "status": "failed", "message": message["10002"]}
+
+        # 用户名搜索
+        search_name_sql = '''
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+            '''
+
+        # 新注册用户
+        new_user_sql = '''
+            select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
+            where del_flag=0 and (phone is not null or phone != '')
+            and create_time is not null
+            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+            order by create_time desc
+            limit 3
+        '''
+
+
+        new_user_df = pd.read_sql(new_user_sql, conn_lh)
+        if new_user_df.shape[0] > 0:
+            new_user_df['sub_time'] = round(new_user_df['sub_time'], 0).astype(int)
+
+            new_user_phone_list = new_user_df['phone'].to_list()
+            new_user_df_list = []
+            for phone in set(new_user_phone_list):
+                new_user_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+            user_df = pd.concat(new_user_df_list, axis=0)
+            new_user_fina_df = new_user_df.merge(user_df, how='left', on='phone')
+            new_user_fina_df.sort_values('sub_time', ascending=False, inplace=True)
+            new_user_list = new_user_fina_df.to_dict("records")
+        else:
+            new_user_list = []
+
+        return_data = {
+            "new_user": new_user_list
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_crm.close()
+        except:
+            pass
