@@ -61,10 +61,10 @@ def deal_person():
             cursor.execute(sql,(data["phone"]))
             user_data = cursor.fetchone()
             logger.info(user_data)
-            if user_data["username"]:
-                data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
-            if data["phone"]:
-                data["phone"] = data["phone"][0:4]+len(data["phone"][4:])*"*"
+            # if user_data["username"]:
+            #     data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
+            # if data["phone"]:
+            #     data["phone"] = data["phone"][0:4]+len(data["phone"][4:])*"*"
 
         return {"code":"0000","status":"success","msg":datas}
 
@@ -298,11 +298,11 @@ def today_dynamic_transaction():
         else:
             sell_list = []
 
-        for sl in sell_list:
-            if sl["phone"]:
-                sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
-            if sl["username"]:
-                sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
+        # for sl in sell_list:
+        #     if sl["phone"]:
+        #         sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
+        #     if sl["username"]:
+        #         sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
 
         return_data = {
             "sell_dynamic": sell_list,
@@ -381,11 +381,11 @@ def today_dynamic_publish():
         else:
             publish_list = []
 
-        for pl in publish_list:
-            if pl["phone"]:
-                pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
-            if pl["username"]:
-                pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
+        # for pl in publish_list:
+        #     if pl["phone"]:
+        #         pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
+        #     if pl["username"]:
+        #         pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
 
         return_data = {
             "publish_dynamic": publish_list,
