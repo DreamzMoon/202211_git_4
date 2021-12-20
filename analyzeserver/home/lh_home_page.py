@@ -257,7 +257,7 @@ def today_dynamic_transaction():
 
         # 八位
         sell_order_sql_8 = '''
-                sselect t1.sub_time, t1.phone, t2.pretty_type_name from
+                select t1.sub_time, t1.phone, t2.pretty_type_name from
                 (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
                 where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
