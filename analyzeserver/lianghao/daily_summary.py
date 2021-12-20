@@ -660,12 +660,48 @@ def daily_ser_value1():
         if check_token_result["code"] != "0000":
             return check_token_result
 
+        # 表单选择operateid
+        operateid = request.json['operateid']
+        # 出售人信息
+        search_key = request.json['keyword'].strip()
+        # 归属上级
+        parent = request.json['parent'].strip()
+        # 时间
+        start_time = request.json['start_time']
+        end_time = request.json['end_time']
+
+        page = request.json['page']
+        size = request.json['size']
+
+        condition = []
+        if search_key:
+            condition.append(''' nickname like "%%%s%%" or hold_phone like "%%%s%%" or unionid like "%%%s%%"''' %(search_key,search_key,search_key))
+        if operateid:
+            condition.append(''' operate_id = %s''' %operateid)
+        if parent:
+            condition.append(''' parentid = %s or parent_phone = %s''' %(parent,parent))
+        if start_time and end_time:
+            condition.append(''' day_time>="%s" and day_time <= "%s"''' %(start_time,end_time))
+
         sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
                     transferred_count, transferred_price, public_count, public_price, use_total_price, 
                     use_count, hold_price, hold_count, tran_price,tran_count
                     from lh_analyze.user_storage_value'''
+
+        for i in range(0,len(condition)):
+            if i == 0:
+                sql = sql + " where "+condition[i]
+            else:
+                sql = sql + " and " + condition[i]
+        logger.info(sql)
+
+
         value_data = pd.read_sql(sql,conn_an)
 
+        value_data = value_data.to_dict("records")
+        count = len(value_data)
+
+        return {"code":"0000","status":"success","msg":value_data,"count":count}
 
 
     except:
