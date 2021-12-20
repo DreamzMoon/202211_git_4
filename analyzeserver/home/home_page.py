@@ -580,23 +580,15 @@ def today_dynamic_newuser():
             '''
 
         # 新注册用户
-        # new_user_sql = '''
-        #     select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
-        #     where del_flag=0 and (phone is not null or phone != '')
-        #     and create_time is not null
-        #     and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
-        #     order by create_time desc
-        #     limit 3
-        # '''
-
         new_user_sql = '''
-                    select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
-                    where del_flag=0 and (phone is not null or phone != '')
-                    and create_time is not null
-                    and DATE_FORMAT(create_time,"%Y-%m-%d") = "2021-12-14"
-                    order by create_time desc
-                    limit 3
-                '''
+            select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone from lh_pretty_client.lh_user
+            where del_flag=0 and (phone is not null or phone != '')
+            and create_time is not null
+            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
+            order by create_time desc
+            limit 3
+        '''
+
 
         new_user_df = pd.read_sql(new_user_sql, conn_lh)
         if new_user_df.shape[0] > 0:
