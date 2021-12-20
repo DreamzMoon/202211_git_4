@@ -421,16 +421,15 @@ def today_dynamic_transaction():
         # 今日交易时时动态
         sell_order_sql = '''
             select t1.sub_time, t1.phone, t2.pretty_type_name from
-            (select TIMESTAMPDIFF(second,pay_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
+            (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.lh_order
             where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-            and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
+            and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
             order by pay_time desc
             limit 3) t1
             left join
             (select id, pretty_type_name from lh_pretty_client.lh_sell) t2
             on t1.sell_id = t2.id
         '''
-
 
         search_name_sql = '''
                 select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"

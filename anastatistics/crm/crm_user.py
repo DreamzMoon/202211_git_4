@@ -286,6 +286,15 @@ try:
     last_data.to_sql("crm_user_%s" %tomorrow_time, con=conn, if_exists="append", index=False)
     logger.info("写入成功")
 
+    # 删除前天的表 保留昨天的 万一有用
+    try:
+        delete_sql = '''delete from crm_user_%s''' %yesterday_time
+        analyze_cursor.execute(delete_sql)
+        conn_analyze.commit()
+        logger.info("删除成功")
+    except:
+        logger.info("删表失败")
+
     #后续要走批量更新
     #手机号码为空的过滤
     # logger.info(last_data.shape)
