@@ -508,7 +508,7 @@ def daily_operate_value():
             code_size = page * size
 
         sql = '''
-        select day_time,operate_id,operatename,leader,leader_phone,leader_unionid ,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count) public_count,sum(public_price) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count where operatename != "" group by day_time,operatename order by day_time desc,hold_count desc'''
+        select day_time,operate_id,operatename,leader,leader_phone,leader_unionid ,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count) public_count,sum(public_price) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count from user_storage_value where operatename != "" group by day_time,operatename order by day_time desc,hold_count desc'''
 
 
         order_data = pd.read_sql(sql,conn_analyze)
@@ -579,10 +579,10 @@ def daily_user_value():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        base_sql = '''select day_time, nickname, phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
-                    transferred_count, transferred_price, publish_count, public_price, use_total_price, 
+        base_sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+                    transferred_count, transferred_price, public_count, public_price, use_total_price, 
                     use_count, hold_price, hold_count, tran_price,tran_count
-                    from lh_analyze.user_daily_order_data'''
+                    from lh_analyze.user_storage_value'''
 
         # 数据库连接
         conn_an = direct_get_conn(analyze_mysql_conf)
@@ -598,7 +598,7 @@ def daily_user_value():
         all_data['day_time'] = all_data['day_time'].dt.strftime('%Y-%m-%d')
         if search_key or parent or operateid or (start_time and end_time):
             match_data = all_data.loc[(all_data['unionid'].str.contains(search_key)) | (
-                all_data['nickname'].str.contains(search_key)) | (all_data['phone'].str.contains(search_key)), :]
+                all_data['nickname'].str.contains(search_key)) | (all_data['hold_phone'].str.contains(search_key)), :]
             logger.info(match_data.shape)
             if parent:
                 match_data['parentid'] = match_data['parentid'].astype(str)
@@ -615,7 +615,7 @@ def daily_user_value():
 
 
         # 根据采购金额倒叙排序
-        match_data.sort_values(['day_time', 'buy_total_price'], ascending=False, inplace=True)
+        match_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
         match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
         if page and size:
             start_index = (page - 1) * size
