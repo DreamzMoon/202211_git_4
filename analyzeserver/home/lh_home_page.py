@@ -62,7 +62,6 @@ def deal_person():
             user_data = cursor.fetchone()
             logger.info(user_data)
 
-
             data["username"] = "" if user_data is None else user_data[0]
             # if user_data["username"]:
             #     data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
