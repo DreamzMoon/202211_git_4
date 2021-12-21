@@ -379,6 +379,7 @@ def today_dynamic_publish():
                 publish_df_list.append(pd.read_sql(search_name_sql % ( current_time, phone), conn_analyze))
             publish_df = pd.concat(publish_df_list, axis=0)
             publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
+            publish_fina_df["username"].fillna("", inplace=True)
             publish_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             publish_list = publish_fina_df.to_dict("records")
         else:
