@@ -46,8 +46,8 @@ def deal_person():
 
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        cursor = conn_crm.cursor()
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
 
         logger.info(conn_lh)
         #7位 8位个人
@@ -57,11 +57,12 @@ def deal_person():
         datas = datas.to_dict("records")
         for data in datas:
             logger.info(data)
-            sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = %s'''
-            cursor.execute(sql,(data["phone"]))
+            sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_{} where phone = %s'''.format(current_time)
+            cursor.execute(sql, (data['phone'],))
             user_data = cursor.fetchone()
             logger.info(user_data)
-            data["username"] = user_data["username"]
+            # data["username"] = user_data["username"]
+            data["username"] = user_data[0]
             # if user_data["username"]:
             #     data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
             # if data["phone"]:
@@ -74,7 +75,7 @@ def deal_person():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_lh.close()
-        conn_crm.close()
+        conn_analyze.close()
 
 
 # 运营中心
@@ -251,9 +252,9 @@ def today_dynamic_transaction():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        if not conn_crm or not conn_lh:
+        if not conn_analyze or not conn_lh:
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         # 八位
@@ -280,7 +281,7 @@ def today_dynamic_transaction():
             '''
 
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_%s where phone = "%s"
             '''
 
         order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
@@ -289,7 +290,7 @@ def today_dynamic_transaction():
             sell_phone_list = order_df_8['phone'].tolist()
             sell_df_list = []
             for phone in set(sell_phone_list):
-                sell_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+                sell_df_list.append(pd.read_sql(search_name_sql % (current_time, phone), conn_analyze))
             sell_df = pd.concat(sell_df_list, axis=0)
             sell_fina_df = order_df_8.merge(sell_df, how='left', on='phone')
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
@@ -315,7 +316,7 @@ def today_dynamic_transaction():
     finally:
         try:
             conn_lh.close()
-            conn_crm.close()
+            conn_analyze.close()
         except:
             pass
 
@@ -338,14 +339,14 @@ def today_dynamic_publish():
             # 参数名错误
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        if not conn_lh or not conn_crm:
+        if not conn_lh or not conn_analyze:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
 
         # 用户名称搜索
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_%s where phone = "%s"
             '''
 
 
@@ -374,7 +375,7 @@ def today_dynamic_publish():
             publish_phone_list = publish_order_df['phone'].to_list()
             publish_df_list = []
             for phone in set(publish_phone_list):
-                publish_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+                publish_df_list.append(pd.read_sql(search_name_sql % ( current_time, phone), conn_analyze))
             publish_df = pd.concat(publish_df_list, axis=0)
             publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
             publish_fina_df.sort_values('sub_time', ascending=False, inplace=True)
@@ -398,7 +399,7 @@ def today_dynamic_publish():
     finally:
         try:
             conn_lh.close()
-            conn_crm.close()
+            conn_analyze.close()
         except:
             pass
 
