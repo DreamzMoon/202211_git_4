@@ -23,6 +23,16 @@ import json
 
 dailybp = Blueprint('daily', __name__, url_prefix='/lh/daily')
 
+def str_to_date(x):
+    try:
+        if x:
+           return pd.to_datetime(x).strftime('%Y-%m-%d')
+        else:
+            pass
+    except:
+       return "error_birth"
+
+
 '''平台每日订单数据统计报表'''
 @dailybp.route("plat",methods=["POST"])
 def daily_plat_summary():
@@ -546,106 +556,7 @@ def daily_operate_value():
 
 
 @dailybp.route("user/value",methods=["POST"])
-def daily_user_value():
-    try:
-        try:
-            logger.info(request.json)
-            # 参数个数错误
-            if len(request.json) != 8:
-                return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-            # token校验
-            token = request.headers["Token"]
-            user_id = request.json["user_id"]
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-
-            # 表单选择operateid
-            operateid = request.json['operateid']
-            # 出售人信息
-            search_key = request.json['keyword'].strip()
-            # 归属上级
-            parent = request.json['parent'].strip()
-            # 时间
-            start_time = request.json['start_time']
-            end_time = request.json['end_time']
-
-            page = request.json['page']
-            size = request.json['size']
-
-
-            #
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
-
-        base_sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
-                    transferred_count, transferred_price, public_count, public_price, use_total_price, 
-                    use_count, hold_price, hold_count, tran_price,tran_count
-                    from lh_analyze.user_storage_value'''
-
-        # 数据库连接
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        if not conn_an:
-            return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        all_data = pd.read_sql(base_sql, conn_an)
-
-        # 匹配数据
-        all_data['unionid'] = all_data['unionid'].astype(str)
-        logger.info(all_data.shape)
-
-        all_data['day_time'] = pd.to_datetime(all_data['day_time'])
-        all_data['day_time'] = all_data['day_time'].dt.strftime('%Y-%m-%d')
-        if search_key or parent or operateid or (start_time and end_time):
-            match_data = all_data.loc[(all_data['unionid'].str.contains(search_key)) | (
-                all_data['nickname'].str.contains(search_key)) | (all_data['hold_phone'].str.contains(search_key)), :]
-            logger.info(match_data.shape)
-            if parent:
-                match_data['parentid'] = match_data['parentid'].astype(str)
-                match_data = match_data.loc[(match_data['parentid'] == parent) | (match_data['parent_phone'] == parent), :]
-            if operateid:
-                match_data = match_data.loc[match_data['operate_id'].notna(), :]
-                match_data['operate_id'] = match_data['operate_id'].astype(int)
-                match_data = match_data.loc[match_data['operate_id'] == operateid, :]
-            if start_time and end_time:
-                match_data = match_data.loc[(match_data['day_time'] >= start_time) & (match_data['day_time'] <= end_time), :]
-        else:
-            day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
-            match_data = all_data.loc[all_data['day_time'] == day_time, :]
-
-
-        # 根据采购金额倒叙排序
-        match_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
-        match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
-        if page and size:
-            start_index = (page - 1) * size
-            end_index = page * size
-            cut_data = match_data[start_index:end_index]
-        else:
-            cut_data = match_data.copy()
-        cut_data.fillna("", inplace=True)
-        return_data = {
-            'data': cut_data.to_dict('records')
-        }
-        return {"code": "0000", "status": "success", "msg": return_data, "count": len(match_data)}
-    except:
-        logger.error(traceback.format_exc())
-        return {"code": "10000", "status": "success", "msg": message["10000"]}
-    finally:
-        try:
-            conn_an.close()
-        except:
-            pass
-
-
-@dailybp.route("user/value1",methods=["POST"])
-def daily_ser_value1():
+def daily_ser_value():
     try:
         conn_an = direct_get_conn(analyze_mysql_conf)
         logger.info(request.json)
@@ -688,20 +599,36 @@ def daily_ser_value1():
                     use_count, hold_price, hold_count, tran_price,tran_count
                     from lh_analyze.user_storage_value'''
 
+
+
         for i in range(0,len(condition)):
             if i == 0:
                 sql = sql + " where "+condition[i]
             else:
                 sql = sql + " and " + condition[i]
-        logger.info(sql)
 
+
+        logger.info(sql)
+        # order_sql = ''' order by day_time desc, hold_count desc'''
+        # sql = sql + order_sql
 
         value_data = pd.read_sql(sql,conn_an)
+        logger.info(value_data)
+        value_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
 
+        # value_data['day_time'] = value_data['day_time'].apply(lambda x: str_to_date(x))
         value_data = value_data.to_dict("records")
         count = len(value_data)
 
-        return {"code":"0000","status":"success","msg":value_data,"count":count}
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        return_data = value_data[code_page:code_size] if page and size else value_data.copy()
+        for r in return_data:
+            r["day_time"] = datetime.datetime.strftime(r["day_time"], "%Y-%m-%d")
+        msg_data = {"return_data":return_data}
+        return {"code":"0000","status":"success","msg":msg_data,"count":count}
 
 
     except:
@@ -712,3 +639,103 @@ def daily_ser_value1():
             conn_an.close()
         except:
             pass
+
+
+#
+# @dailybp.route("user/value",methods=["POST"])
+# def daily_user_value():
+#     try:
+#         try:
+#             logger.info(request.json)
+#             # 参数个数错误
+#             if len(request.json) != 8:
+#                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+#
+#             # token校验
+#             token = request.headers["Token"]
+#             user_id = request.json["user_id"]
+#
+#             if not user_id and not token:
+#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#             check_token_result = check_token(token, user_id)
+#             if check_token_result["code"] != "0000":
+#                 return check_token_result
+#
+#             # 表单选择operateid
+#             operateid = request.json['operateid']
+#             # 出售人信息
+#             search_key = request.json['keyword'].strip()
+#             # 归属上级
+#             parent = request.json['parent'].strip()
+#             # 时间
+#             start_time = request.json['start_time']
+#             end_time = request.json['end_time']
+#
+#             page = request.json['page']
+#             size = request.json['size']
+#
+#
+#             #
+#         except Exception as e:
+#             # 参数名错误
+#             logger.error(e)
+#             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+#
+#         base_sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+#                     transferred_count, transferred_price, public_count, public_price, use_total_price,
+#                     use_count, hold_price, hold_count, tran_price,tran_count
+#                     from lh_analyze.user_storage_value'''
+#
+#         # 数据库连接
+#         conn_an = direct_get_conn(analyze_mysql_conf)
+#         if not conn_an:
+#             return {"code": "10002", "status": "failed", "msg": message["10002"]}
+#         all_data = pd.read_sql(base_sql, conn_an)
+#         logger.info(all_data)
+#         # 匹配数据
+#         all_data['unionid'] = all_data['unionid'].astype(str)
+#         logger.info(all_data.shape)
+#
+#         all_data['day_time'] = pd.to_datetime(all_data['day_time'])
+#         all_data['day_time'] = all_data['day_time'].dt.strftime('%Y-%m-%d')
+#         if search_key or parent or operateid or (start_time and end_time):
+#             match_data = all_data.loc[(all_data['unionid'].str.contains(search_key)) | (
+#                 all_data['nickname'].str.contains(search_key)) | (all_data['hold_phone'].str.contains(search_key)), :]
+#             logger.info(match_data.shape)
+#             if parent:
+#                 match_data['parentid'] = match_data['parentid'].astype(str)
+#                 match_data = match_data.loc[(match_data['parentid'] == parent) | (match_data['parent_phone'] == parent), :]
+#             if operateid:
+#                 match_data = match_data.loc[match_data['operate_id'].notna(), :]
+#                 match_data['operate_id'] = match_data['operate_id'].astype(int)
+#                 match_data = match_data.loc[match_data['operate_id'] == operateid, :]
+#             if start_time and end_time:
+#                 match_data = match_data.loc[(match_data['day_time'] >= start_time) & (match_data['day_time'] <= end_time), :]
+#         else:
+#             day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
+#             match_data = all_data.loc[all_data['day_time'] == day_time, :]
+#
+#
+#         # 根据采购金额倒叙排序
+#         match_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
+#         match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
+#         if page and size:
+#             start_index = (page - 1) * size
+#             end_index = page * size
+#             cut_data = match_data[start_index:end_index]
+#         else:
+#             cut_data = match_data.copy()
+#         cut_data.fillna("", inplace=True)
+#         return_data = {
+#             'data': cut_data.to_dict('records')
+#         }
+#         return {"code": "0000", "status": "success", "msg": return_data, "count": len(match_data)}
+#     except:
+#         logger.error(traceback.format_exc())
+#         return {"code": "10000", "status": "success", "msg": message["10000"]}
+#     finally:
+#         try:
+#             conn_an.close()
+#         except:
+#             pass
