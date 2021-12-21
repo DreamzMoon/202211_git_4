@@ -61,6 +61,7 @@ def deal_person():
             cursor.execute(sql,(data["phone"]))
             user_data = cursor.fetchone()
             logger.info(user_data)
+            data["username"] = user_data["username"]
             # if user_data["username"]:
             #     data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
             # if data["phone"]:
