@@ -29,42 +29,42 @@ def transferred_count_and_value():
         for hold_table_type in hold_table_type_list:
             logger.info(hold_table_type)
             pretty_hold_sql = '''
-                        select hold_phone, sell_order_sn order_sn, date_format(if(update_time,if(update_time!='8888-08-08',update_time,create_time),create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s where del_flag=0 and `status`=3
-                    ''' % hold_table_type
+                select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s
+                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = date_sub(current_date, interval 1 day)
+            ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
         hold_all_df = pd.concat(hold_df_list, axis=0)
         # 订单表
         order_sql = '''
-                    select order_sn, total_price transferred_price, date_format(create_time, '%Y-%m-%d') day_time
-                    from lh_pretty_client.lh_order
-                    where del_flag=0
-                '''
+            select order_sn, total_price transferred_price
+            from lh_pretty_client.lh_order
+            where del_flag=0
+        '''
         lh_order_df = pd.read_sql(order_sql, conn_lh)
-        # 有订单号的数据根据订单表匹配day_time
-        hold_all_df_notna = hold_all_df.loc[hold_all_df['order_sn'].notna(), ['hold_phone', 'order_sn']]
-        # 订单号不为空进行分组
-        hold_all_df_notna = pd.DataFrame(
-            hold_all_df_notna.groupby(['hold_phone', 'order_sn'])['hold_phone'].count()).rename(
-            columns={"hold_phone": "transferred_count"}).reset_index()
-        hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
-
-        # 订单号为空
+        # 订单为空
         hold_all_df_na = hold_all_df.loc[hold_all_df['order_sn'].isna(), ['hold_phone', 'day_time']]
-        # 订单为价格填充为19，再根据日期和手机号进行分组统计
-        hold_all_df_na['transferred_price'] = 19
-        hold_all_df_na = hold_all_df_na.groupby(['day_time', 'hold_phone']).agg(
-            {"hold_phone": "count", "transferred_price": "sum"}).rename(
-            columns={"hold_phone": "transferred_count"}).reset_index()
+        hold_all_df_notna = hold_all_df.loc[hold_all_df['order_sn'].notna(), :]
 
-        # 合并订单为空与非空表
-        fina_hold_all_df = pd.concat([hold_all_df_na, hold_all_df_notna], axis=0, ignore_index=True)
+        # 订单不为空数据去重
+        hold_all_df_notna = pd.DataFrame(
+            hold_all_df_notna.groupby(['day_time', 'hold_phone', 'order_sn'])['hold_phone'].count()).rename(
+            columns={"hold_phone": "transferred_count"}).reset_index()
+        # 合并订单不为空数据
+        hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
+        hold_all_df_notna.drop('order_sn', axis=1, inplace=True)
+
+        # 订单为价格填充为19，再根据日期和手机号进行分组统计
+        hold_all_df_na['total_price'] = 19
+        hold_all_df_na = hold_all_df_na.groupby(['day_time', 'hold_phone']).agg(
+            {"hold_phone": "count", "total_price": "sum"}).rename(
+            columns={"hold_phone": "transferred_count", "total_price": "transferred_price"}).reset_index()
+
+        # 合并订单为空与不为空数据
+        fina_hold_all_df = pd.concat([hold_all_df_na, hold_all_df_notna], axis=0)
+
         fina_hold_all_df = fina_hold_all_df.groupby(['day_time', 'hold_phone'])[
             'transferred_count', 'transferred_price'].sum().reset_index()
-        # 剔除今日--->update_time更正日期为2021-12-20
-        today = (datetime.datetime.now() + timedelta(days=-1)).strftime("%Y-%m-%d")
-        # today = datetime.datetime.now().strftime("%Y-%m-%d")
-        fina_hold_all_df = fina_hold_all_df[fina_hold_all_df['day_time'] == today]
         return True, fina_hold_all_df
     except Exception as e:
         logger.info(traceback.format_exc())
