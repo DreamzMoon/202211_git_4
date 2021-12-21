@@ -272,7 +272,7 @@ try:
       `leader_unionid` bigint(20) DEFAULT NULL COMMENT 'crm运营中心负责人的id',
       `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
       `del_flag` int(1) DEFAULT '0' COMMENT '1：删除'
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='crm用户表';
         '''  %tomorrow_time
 
     analyze_cursor.execute(create_sql)
@@ -288,7 +288,7 @@ try:
 
     # 删除前天的表 保留昨天的 万一有用
     try:
-        delete_sql = '''delete from crm_user_%s''' %yesterday_time
+        delete_sql = '''drop crm_user_%s''' %yesterday_time
         analyze_cursor.execute(delete_sql)
         conn_analyze.commit()
         logger.info("删除成功")
