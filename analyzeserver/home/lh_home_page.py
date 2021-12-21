@@ -296,6 +296,7 @@ def today_dynamic_transaction():
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
             sell_fina_df = sell_fina_df[:3]
             sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
+            sell_fina_df["username"].fillna("",inplace=True)
             sell_list = sell_fina_df.to_dict("records")
         else:
             sell_list = []
