@@ -598,41 +598,52 @@ def daily_ser_value():
                     transferred_count, transferred_price, public_count, public_price, use_total_price, 
                     use_count, hold_price, hold_count, tran_price,tran_count
                     from lh_analyze.user_storage_value'''
-
+        count_sql = '''
+        select count(*) count 
+                    from lh_analyze.user_storage_value
+        '''
 
 
         for i in range(0,len(condition)):
             if i == 0:
                 sql = sql + " where "+condition[i]
+                count_sql = count_sql + " where "+condition[i]
             else:
                 sql = sql + " and " + condition[i]
+                count_sql = count_sql + " and " + condition[i]
+
+        count = int(pd.read_sql(count_sql,conn_an)["count"][0])
 
 
+
+        logger.info(count_sql)
+
+        order_sql = ''' order by day_time desc,hold_count desc '''
+        limit_sql = ''' limit %s,%s''' %((page-1)*size,page*size)
+        sql = sql + order_sql + limit_sql
         logger.info(sql)
-        # order_sql = ''' order by day_time desc, hold_count desc'''
-        # sql = sql + order_sql
-
         value_data = pd.read_sql(sql,conn_an)
-        logger.info(value_data)
-        value_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
 
-        # value_data['day_time'] = value_data['day_time'].apply(lambda x: str_to_date(x))
+        # value_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
         value_data = value_data.to_dict("records")
-        count = len(value_data)
 
-        if page and size:
-            code_page = (page - 1) * size
-            code_size = page * size
+        # if page and size:
+        #     code_page = (page - 1) * size
+        #     code_size = page * size
 
-        return_data = value_data[code_page:code_size] if page and size else value_data.copy()
-        for r in return_data:
+        # return_data = value_data[code_page:code_size] if page and size else value_data.copy()
+        logger.info("count:%s" %count)
+        logger.info(type(value_data))
+        for r in value_data:
             r["day_time"] = datetime.datetime.strftime(r["day_time"], "%Y-%m-%d")
-        msg_data = {"return_data":return_data}
+        logger.info(value_data)
+        msg_data = {"data":value_data}
         return {"code":"0000","status":"success","msg":msg_data,"count":count}
 
 
-    except:
+    except Exception as e:
         logger.error(traceback.format_exc())
+
         return {"code": "10000", "status": "success", "msg": message["10000"]}
     finally:
         try:
