@@ -604,7 +604,7 @@ def today_dynamic_newuser():
             new_user_phone_list = new_user_df['phone'].to_list()
             new_user_df_list = []
             for phone in set(new_user_phone_list):
-                new_user_df_list.append(pd.read_sql(search_name_sql % phone, conn_crm))
+                new_user_df_list.append(pd.read_sql(search_name_sql % phone, conn_an))
             user_df = pd.concat(new_user_df_list, axis=0)
             new_user_fina_df = new_user_df.merge(user_df, how='left', on='phone')
             new_user_fina_df.sort_values('sub_time', ascending=False, inplace=True)
