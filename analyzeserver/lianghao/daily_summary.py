@@ -625,6 +625,7 @@ def daily_ser_value():
         value_data = pd.read_sql(sql,conn_an)
 
         # value_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
+        value_data.fillna("",inplace=True)
         value_data = value_data.to_dict("records")
 
         # if page and size:
