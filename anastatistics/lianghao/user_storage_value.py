@@ -32,69 +32,42 @@ def transferred_count_and_value():
             logger.info(hold_table_type)
             '''TODO'8888-08-08'时间问题待进行8位靓号数据分析改进'''
             pretty_hold_sql = '''
-                select hold_phone, sell_order_sn order_sn, date_format(if(update_time,if(update_time!='8888-08-08',update_time,create_time),create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s where del_flag=0 and `status`=3
+                select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s
+                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') < current_date
             ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
         hold_all_df = pd.concat(hold_df_list, axis=0)
         # 订单表
         order_sql = '''
-            select order_sn, total_price transferred_price, date_format(create_time, '%Y-%m-%d') day_time
+            select order_sn, total_price transferred_price
             from lh_pretty_client.lh_order
             where del_flag=0
         '''
         lh_order_df = pd.read_sql(order_sql, conn_lh)
-        # 有订单号的数据根据订单表匹配day_time
-        hold_all_df_notna = hold_all_df.loc[hold_all_df['order_sn'].notna(), ['hold_phone', 'order_sn']]
-        # 订单号不为空进行分组
-        hold_all_df_notna = pd.DataFrame(
-        hold_all_df_notna.groupby(['hold_phone', 'order_sn'])['hold_phone'].count()).rename(
-        columns={"hold_phone": "transferred_count"}).reset_index()
-        hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
-
-        # 订单号为空
+        # 订单为空
         hold_all_df_na = hold_all_df.loc[hold_all_df['order_sn'].isna(), ['hold_phone', 'day_time']]
-        # 订单为价格填充为19，再根据日期和手机号进行分组统计
-        hold_all_df_na['transferred_price'] = 19
-        hold_all_df_na = hold_all_df_na.groupby(['day_time', 'hold_phone']).agg(
-            {"hold_phone": "count", "transferred_price": "sum"}).rename(
+        hold_all_df_notna = hold_all_df.loc[hold_all_df['order_sn'].notna(), :]
+
+        # 订单不为空数据去重
+        hold_all_df_notna = pd.DataFrame(
+            hold_all_df_notna.groupby(['day_time', 'hold_phone', 'order_sn'])['hold_phone'].count()).rename(
             columns={"hold_phone": "transferred_count"}).reset_index()
+        # 合并订单不为空数据
+        hold_all_df_notna = hold_all_df_notna.merge(lh_order_df, how='left', on='order_sn')
+        hold_all_df_notna.drop('order_sn', axis=1, inplace=True)
 
-        # # 将8888-08-08 替换成空
-        # hold_all_df_na.loc[hold_all_df_na['day_time'] == '8888-08-08', 'day_time'] = None
-        #
-        # # 取出总表时间不为空每个用户最早的时间
-        # day_time_notna = hold_all_df.loc[
-        #     (hold_all_df['day_time'].notna()) & (hold_all_df['day_time'] != '8888-08-08'), ['hold_phone', 'day_time']]
-        # day_time_notna['day_time'] = pd.to_datetime(day_time_notna['day_time'])
-        # min_day_time = pd.DataFrame(day_time_notna.groupby('hold_phone')['day_time'].min()).reset_index()
-        # min_day_time['day_time'] = min_day_time['day_time'].dt.strftime('%Y-%m-%d')
-        #
-        # # 订单号为空中时间为空与不为空
-        # hold_all_df_na_day_time_na = hold_all_df_na[hold_all_df_na['day_time'].isna()]
-        # hold_all_df_na_day_time_notna = hold_all_df_na[hold_all_df_na['day_time'].notna()]
-        # hold_all_df_na_day_time_na.drop('day_time', axis=1, inplace=True)
-        # hold_all_df_na_day_time_na = hold_all_df_na_day_time_na.merge(min_day_time, how='left', on='hold_phone')
-        #
-        # # 用户持有最早时间-->用于对订单为空，时间为空或8888-08-08进行填充
-        # early_time = pd.to_datetime(
-        #     hold_all_df[(hold_all_df['day_time'].notna()) & (hold_all_df['day_time'] != '8888-08-08')][
-        #         'day_time']).min().strftime('%Y-%m-%d')
-        #
-        # # 填充时间，合并为空与非空表
-        # hold_all_df_na_day_time_na.loc[hold_all_df_na_day_time_na['day_time'].isna(), 'day_time'] = early_time
-        #
-        # hold_all_df_na = pd.concat([hold_all_df_na_day_time_na, hold_all_df_na_day_time_notna], axis=0)
-        #
-        # hold_all_df_na = pd.DataFrame(hold_all_df_na.groupby(['day_time', 'hold_phone'])['hold_phone'].count())
-        # hold_all_df_na = hold_all_df_na.rename(columns={"hold_phone": "transferred_count"}).reset_index()
+        # 订单为价格填充为19，再根据日期和手机号进行分组统计
+        hold_all_df_na['total_price'] = 19
+        hold_all_df_na = hold_all_df_na.groupby(['day_time', 'hold_phone']).agg(
+            {"hold_phone": "count", "total_price": "sum"}).rename(
+            columns={"hold_phone": "transferred_count", "total_price": "transferred_price"}).reset_index()
 
-        # 合并订单为空与非空表
-        fina_hold_all_df = pd.concat([hold_all_df_na, hold_all_df_notna], axis=0, ignore_index=True)
-        fina_hold_all_df = fina_hold_all_df.groupby(['day_time', 'hold_phone'])['transferred_count', 'transferred_price'].sum().reset_index()
-        # 剔除今日--->update_time更正日期为2021-12-20
-        today = (date.today()).strftime("%Y-%m-%d")
-        fina_hold_all_df.drop(fina_hold_all_df[fina_hold_all_df['day_time'] == today].index, axis=0, inplace=True)
+        # 合并订单为空与不为空数据
+        fina_hold_all_df = pd.concat([hold_all_df_na, hold_all_df_notna], axis=0)
+
+        fina_hold_all_df = fina_hold_all_df.groupby(['day_time', 'hold_phone'])[
+            'transferred_count', 'transferred_price'].sum().reset_index()
         return True, fina_hold_all_df
     except Exception as e:
         logger.info(traceback.format_exc())
