@@ -56,7 +56,8 @@ def deal_person():
             sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone = %s'''.format(current_time)
             cursor.execute(sql,(data["phone"]))
             user_data = cursor.fetchone()
-            data["username"] = user_data[0]
+            # data["username"] = user_data[0]
+            data["username"] = "" if user_data is None else user_data[0]
         logger.info(datas)
         return {"code":"0000","status":"success","msg":datas}
 
