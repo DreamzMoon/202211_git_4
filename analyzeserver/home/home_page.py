@@ -608,6 +608,7 @@ def today_dynamic_newuser():
             user_df = pd.concat(new_user_df_list, axis=0)
             new_user_fina_df = new_user_df.merge(user_df, how='left', on='phone')
             new_user_fina_df.sort_values('sub_time', ascending=False, inplace=True)
+            new_user_fina_df["username"].fillna("",inplace=True)
             new_user_list = new_user_fina_df.to_dict("records")
         else:
             new_user_list = []
