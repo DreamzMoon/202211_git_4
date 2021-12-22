@@ -4,7 +4,7 @@
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
-# @File : home_page.py
+# @File : lh7_home_page.py
 
 import sys
 sys.path.append("..")

@@ -47,10 +47,10 @@ app.register_blueprint(typebp)
 from analyzeserver.user.sysuser import sysuserbp
 app.register_blueprint(sysuserbp)
 
-from analyzeserver.home.home_page import homebp
+from analyzeserver.home.lh7_home_page import homebp
 app.register_blueprint(homebp)
 
-from analyzeserver.home.lh_eight_second_home_page import lhhomebp
+from analyzeserver.home.lh8_second_home_page import lhhomebp
 app.register_blueprint(lhhomebp)
 
 from analyzeserver.user.crmuserrelate import userrelatebp
@@ -61,6 +61,17 @@ app.register_blueprint(ppbp)
 
 from analyzeserver.lianghao.daily_summary import dailybp
 app.register_blueprint(dailybp)
+
+
+#首页
+from analyzeserver.home.lh7_home_page import homebp
+app.register_blueprint(homebp)
+
+from analyzeserver.home.lh8_second_home_page import lhhomebp
+app.register_blueprint(lhhomebp)
+
+from analyzeserver.home.lh8_wholesale_home import lhpfhome8
+app.register_blueprint(lhpfhome8)
 
 if __name__ == "__main__":
     # app.run()
