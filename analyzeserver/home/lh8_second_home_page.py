@@ -362,20 +362,11 @@ def today_dynamic_publish():
 
 
         publish_order_sql = '''
-        (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-        from lh_pretty_client.le_sell
-        where del_flag=0 and (sell_phone is not null or sell_phone != '')
-        and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-        order by up_time desc
-        limit 10)
-        union all
         (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
         from lh_pretty_client.le_second_hand_sell
         where del_flag=0 and (sell_phone is not null or sell_phone != '')
         and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
         order by create_time desc
-        limit 10)
-        order by sub_time
         limit 3'''
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
