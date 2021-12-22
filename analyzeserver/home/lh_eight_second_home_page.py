@@ -4,7 +4,7 @@
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
-# @File : lh_home_page.py
+# @File : lh_eight_second_home_page.py
 import sys
 
 import pandas as pd
@@ -52,7 +52,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #8位个人
-        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
+        sql = '''select phone,sum(total_price) total_money from lh_pretty_client.le_order where del_flag = 0 and `status`=1 and type=4 and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         # datas = datas.to_dict("records")
@@ -123,7 +123,7 @@ def deal_business():
 
         #取出今天的订单表
         sql = '''
-        select phone,sum(total_price) total_money from le_order where del_flag = 0 and type in (1,4) and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
+        select phone,sum(total_price) total_money from lh_pretty_client.le_order where del_flag = 0 and type=4 and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
         '''
         cursor_lh.execute(sql)
         order_datas = pd.DataFrame(cursor_lh.fetchall())
@@ -177,10 +177,10 @@ def data_center():
             filter_phone = filter_phone[1: -1]
             sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
             select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
             union all 
             select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
             ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
         else:
             sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
@@ -226,7 +226,7 @@ def order_data_center():
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type=4 and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
@@ -270,7 +270,7 @@ def today_dynamic_transaction():
         sell_order_sql_8 = '''
                 select t1.sub_time, t1.phone, t2.pretty_type_name from
                 (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
-                where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                where del_flag=0 and type=4 and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
                 order by pay_time desc
                 limit 10
@@ -278,12 +278,12 @@ def today_dynamic_transaction():
                 left join
                 (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
                 where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type=4 and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
                 union all
                 select id, pretty_type_name from lh_pretty_client.le_sell
                 where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type=4 and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
                 ) t2
                 on t1.sell_id = t2.id

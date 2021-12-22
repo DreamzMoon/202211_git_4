@@ -50,7 +50,7 @@ app.register_blueprint(sysuserbp)
 from analyzeserver.home.home_page import homebp
 app.register_blueprint(homebp)
 
-from analyzeserver.home.lh_home_page import lhhomebp
+from analyzeserver.home.lh_eight_second_home_page import lhhomebp
 app.register_blueprint(lhhomebp)
 
 from analyzeserver.user.crmuserrelate import userrelatebp
