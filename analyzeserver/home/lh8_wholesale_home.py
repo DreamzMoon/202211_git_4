@@ -352,6 +352,7 @@ def today_dynamic_publish():
         except:
             pass
 
+# 今日类型排行版
 @lhpfhome8.route("deal/top",methods=["GET"])
 def deal_top():
     try:
