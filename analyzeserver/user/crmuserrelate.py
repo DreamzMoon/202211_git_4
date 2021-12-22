@@ -73,7 +73,7 @@ def user_relate_mes():
             count_sql = count_sql +phone_lists_sql
         else:
             if keyword:
-                keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s"''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
@@ -84,7 +84,7 @@ def user_relate_mes():
                 count_sql = count_sql + bus_sql
 
             if parent:
-                parent_sql = ''' and parentid = %s or parent_phone=%s''' %(parent,parent)
+                parent_sql = ''' and (parentid = %s or parent_phone=%s)''' %(parent,parent)
                 sql = sql + parent_sql
                 count_sql = count_sql + parent_sql
 
@@ -200,7 +200,7 @@ def user_relate_basicmes():
         else:
 
             if keyword:
-                keyword_sql = ''' and nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s"''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
+                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s")''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
