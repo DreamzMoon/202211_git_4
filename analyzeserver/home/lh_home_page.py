@@ -31,6 +31,7 @@ r = get_redis()
 @lhhomebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
+
         try:
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
@@ -50,23 +51,31 @@ def deal_person():
         cursor = conn_analyze.cursor()
 
         logger.info(conn_lh)
-        #7位 8位个人
+        #8位个人
         sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
+        # datas = datas.to_dict("records")
+        # logger.info(len(datas))
+        phone_lists = datas["phone"].tolist()
+
+        logger.info(phone_lists)
+        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone in ({})'''.format(current_time,",".join(phone_lists))
+        logger.info(sql)
+        user_data = pd.read_sql(sql,conn_analyze)
+        datas = datas.merge(user_data,on="phone",how="left")
+        logger.info(datas)
+        datas["username"].fillna("",inplace=True)
         datas = datas.to_dict("records")
-        for data in datas:
-            logger.info(data)
-            sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_{} where phone = %s'''.format(current_time)
-            cursor.execute(sql, (data['phone'],))
-            user_data = cursor.fetchone()
-            logger.info(user_data)
-            # data["username"] = user_data["username"]
-            data["username"] = user_data[0]
-            # if user_data["username"]:
-            #     data["username"] = user_data["username"][0]+len(user_data["username"][1:])*"*"
-            # if data["phone"]:
-            #     data["phone"] = data["phone"][0:4]+len(data["phone"][4:])*"*"
+        # for data in datas:
+        #     logger.info(data)
+        #     sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone = %s'''.format(current_time)
+        #     cursor.execute(sql, (data['phone']))
+        #     user_data = cursor.fetchone()
+        #     logger.info(user_data)
+        #     logger.info("---------------")
+        #
+        #     data["username"] = "" if user_data is None else user_data[0]
 
         return {"code":"0000","status":"success","msg":datas}
 
@@ -296,6 +305,7 @@ def today_dynamic_transaction():
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
             sell_fina_df = sell_fina_df[:3]
             sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
+            sell_fina_df["username"].fillna("",inplace=True)
             sell_list = sell_fina_df.to_dict("records")
         else:
             sell_list = []
@@ -378,6 +388,7 @@ def today_dynamic_publish():
                 publish_df_list.append(pd.read_sql(search_name_sql % ( current_time, phone), conn_analyze))
             publish_df = pd.concat(publish_df_list, axis=0)
             publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
+            publish_fina_df["username"].fillna("", inplace=True)
             publish_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             publish_list = publish_fina_df.to_dict("records")
         else:
