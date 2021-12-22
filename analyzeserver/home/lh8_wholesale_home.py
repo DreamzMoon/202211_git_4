@@ -52,7 +52,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #8位个人
-        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 7'''
+        sql = '''select phone,sum(total_price) total_money from le_order where del_flag = 0 and `status`=1 and type in (1) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
 
@@ -131,8 +131,8 @@ def deal_business():
             return_lists = pd.DataFrame(return_lists)
             return_lists.sort_values(by="total_money",ascending=False,inplace=True)
             return_lists['total_money'] = return_lists['total_money'].astype(float)
-            logger.info(return_lists.iloc[0:7])
-            return_data = return_lists.iloc[0:7].to_dict("records")
+            logger.info(return_lists.iloc[0:10])
+            return_data = return_lists.iloc[0:10].to_dict("records")
         else:
             return_data = return_lists
         return {"code":"0000","status":"success","msg":return_data}
@@ -257,7 +257,7 @@ def today_dynamic_transaction():
             sell_df = pd.concat(sell_df_list, axis=0)
             sell_fina_df = order_df_8.merge(sell_df, how='left', on='phone')
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
-            sell_fina_df = sell_fina_df[:5]
+            sell_fina_df = sell_fina_df[:3]
             sell_fina_df.sort_values('sub_time', ascending=False, inplace=True)
             sell_fina_df["username"].fillna("",inplace=True)
             sell_list = sell_fina_df.to_dict("records")
@@ -329,7 +329,7 @@ def today_dynamic_publish():
             where del_flag=0 and (sell_phone is not null or sell_phone != '')
             and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
             order by up_time desc
-            limit 5
+            limit 3
         '''
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
@@ -392,7 +392,7 @@ def deal_top():
                 where DATE_FORMAT(o.create_time,"%Y%m%d") = CURRENT_DATE
                 and o.del_flag = 0 and o.type=1 and o.`status` = 1
                 order by o.create_time desc) t group by pretty_type_name order by total_count desc
-                limit 5
+                limit 3
         '''
 
         data = (pd.read_sql(sql, conn_lh)).to_dict("records")
