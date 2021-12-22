@@ -362,7 +362,7 @@ def today_dynamic_publish():
 
 
         publish_order_sql = '''
-        (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
+        select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
         from lh_pretty_client.le_second_hand_sell
         where del_flag=0 and (sell_phone is not null or sell_phone != '')
         and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
