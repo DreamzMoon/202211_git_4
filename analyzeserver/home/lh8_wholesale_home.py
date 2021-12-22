@@ -166,7 +166,7 @@ def order_data_center():
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1 and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
+select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1) and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
@@ -218,12 +218,12 @@ def today_dynamic_transaction():
                 left join
                 (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
                 where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1) and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
                 union all
                 select id, pretty_type_name from lh_pretty_client.le_sell
                 where id in
-                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
+                (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1) and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
                 ) t2
                 on t1.sell_id = t2.id
@@ -250,12 +250,6 @@ def today_dynamic_transaction():
         else:
             sell_list = []
 
-        # for sl in sell_list:
-        #     if sl["phone"]:
-        #         sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
-        #     if sl["username"]:
-        #         sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
-
         return_data = {
             "sell_dynamic": sell_list,
         }
@@ -269,3 +263,4 @@ def today_dynamic_transaction():
             conn_analyze.close()
         except:
             pass
+
