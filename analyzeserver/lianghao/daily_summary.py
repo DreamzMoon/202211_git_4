@@ -586,11 +586,11 @@ def daily_ser_value():
 
         condition = []
         if search_key:
-            condition.append(''' nickname like "%%%s%%" or hold_phone like "%%%s%%" or unionid like "%%%s%%"''' %(search_key,search_key,search_key))
+            condition.append(''' (nickname like "%%%s%%" or hold_phone like "%%%s%%" or unionid like "%%%s%%")''' %(search_key,search_key,search_key))
         if operateid:
             condition.append(''' operate_id = %s''' %operateid)
         if parent:
-            condition.append(''' parentid = %s or parent_phone = %s''' %(parent,parent))
+            condition.append(''' (parentid = %s or parent_phone = %s)''' %(parent,parent))
         if start_time and end_time:
             condition.append(''' day_time>="%s" and day_time <= "%s"''' %(start_time,end_time))
 
