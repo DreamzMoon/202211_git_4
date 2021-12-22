@@ -200,7 +200,8 @@ def user_relate_basicmes():
         else:
 
             if keyword:
-                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s")''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
+                # keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s" or name like "%s")''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
+                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s")''' % ("%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%")
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
