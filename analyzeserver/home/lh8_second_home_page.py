@@ -31,8 +31,11 @@ r = get_redis()
 @lhhomebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
-
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
         try:
+            logger.info("env:%s" %ENV)
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
 
@@ -46,9 +49,7 @@ def deal_person():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
-        cursor = conn_analyze.cursor()
+
 
         logger.info(conn_lh)
         #8位个人
