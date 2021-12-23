@@ -683,16 +683,16 @@ def transfer_sell_order():
             #今日
 
             if time_type == 1:
-                circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                 circle_conn = " union all"
-                circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
             else:
                 query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
                 yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
 
-                circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
                 circle_conn = " union all"
-                circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %yesterday_query_time
+                circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %yesterday_query_time
 
             # #直接拼接sql 不然会有很多重复的代码 很烦人
             circle_sql = ""
@@ -712,9 +712,9 @@ def transfer_sell_order():
             }
 
             if time_type == 1:
-                today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
+                today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
             else:
-                today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
 
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
@@ -746,16 +746,16 @@ def transfer_sell_order():
             circle_sql = ""
             if args_phone_lists:
                 circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and sell_phone not in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and sell_phone not in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
                             union all
                             select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and sell_phone not in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(args_phone_lists,query_range[0],query_range[1],args_phone_lists,query_range[2],query_range[3])
+                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and sell_phone not in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(args_phone_lists,query_range[0],query_range[1],args_phone_lists,query_range[2],query_range[3])
             else:
                 circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
                 union all
                 select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) b'''  %(query_range[0],query_range[1],query_range[2],query_range[3])
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) b'''  %(query_range[0],query_range[1],query_range[2],query_range[3])
 
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
@@ -765,7 +765,7 @@ def transfer_sell_order():
                 "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
             }
 
-            week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
+            week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
             if args_phone_lists:
@@ -797,19 +797,19 @@ def transfer_sell_order():
 
             if args_phone_lists:
                 circle_sql = '''
-                                select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and create_time<="%s" and create_time>="%s" and sell_phone not in (%s) group by statistic_time order by statistic_time asc) a
-                                union all
-                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and create_time<="%s" and create_time>="%s" and sell_phone not in (%s) group by statistic_time order by statistic_time asc) b 
-                                ''' % (end_time, start_time,args_phone_lists,before_end_time, before_start_time, args_phone_lists)
+                    select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and create_time<="%s" and create_time>="%s" and sell_phone not in (%s) group by statistic_time order by statistic_time asc) a
+                    union all
+                    select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and create_time<="%s" and create_time>="%s" and sell_phone not in (%s) group by statistic_time order by statistic_time asc) b 
+                ''' % (end_time, start_time,args_phone_lists,before_end_time, before_start_time, args_phone_lists)
             else:
                 circle_sql = '''
-                select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
-                union all
-                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b 
+                    select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
+                    union all
+                    select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b 
                 ''' %(end_time,start_time,before_end_time,before_start_time)
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
@@ -822,7 +822,7 @@ def transfer_sell_order():
                 "yes_sell_order_count": circle_data[1][2]
             }
 
-            sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 4 and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
+            sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
             if args_phone_lists:
                 condition_sql = ''' and sell_phone not in (%s)''' %(args_phone_lists)
@@ -933,16 +933,16 @@ def transfer_public_order():
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
             if time_type == 1:
-                circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                 circle_conn = " union all"
-                circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
             else:
                 query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
                 yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
 
-                circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
                 circle_conn = " union all"
-                circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
+                circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
 
             # #直接拼接sql 不然会有很多重复的代码 很烦人
             circle_sql = ""
@@ -962,9 +962,9 @@ def transfer_public_order():
             }
 
             if time_type == 1:
-                today_sql = '''select DATE_FORMAT(create_time, '%Y%m%d %H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                today_sql = '''select DATE_FORMAT(create_time, '%Y%m%d %H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
             else:
-                today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
 
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
@@ -998,23 +998,23 @@ def transfer_public_order():
 
             if args_phone_lists:
                 circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
                 group by statistic_time order by statistic_time desc
                 ) a
                 union all
                 select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
                 group by statistic_time order by statistic_time desc) b''' %(args_phone_lists,query_range[0],query_range[1],args_phone_lists,query_range[2],query_range[3])
             else:
                 circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 
                 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
                 group by statistic_time order by statistic_time desc) a
                 union all
                 select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1
                 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
                 group by statistic_time order by statistic_time desc) b''' %(query_range[0],query_range[1],query_range[2],query_range[3])
 
@@ -1027,7 +1027,7 @@ def transfer_public_order():
                 "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],"yes_publish_sell_count": circle_data[1][2]}
 
             # 本周
-            week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)'''  %(query_range[0],query_range[1])
+            week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)'''  %(query_range[0],query_range[1])
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
             if args_phone_lists:
@@ -1060,23 +1060,23 @@ def transfer_public_order():
 
             if args_phone_lists:
                 circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 and create_time <= "%s" and create_time >= "%s"
                 group by statistic_time order by statistic_time desc
                 ) a
                 union all
                 select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and sell_phone not in (%s) 
                 and create_time <= "%s" and create_time >= "%s"
                 group by statistic_time order by statistic_time desc) b''' %(args_phone_lists,end_time,start_time,args_phone_lists,before_end_time,before_start_time)
             else:
                 circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1
                 and create_time <= "%s" and create_time >= "%s"
                 group by statistic_time order by statistic_time desc) a
                 union all
                 select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1
+                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1
                 and create_time <= "%s" and create_time >= "%s"
                 group by statistic_time order by statistic_time desc) b''' %(end_time,start_time,before_end_time,before_start_time)
 
@@ -1092,7 +1092,7 @@ def transfer_public_order():
                 "yes_publish_sell_count": circle_data[1][2]}
 
             # 自定义
-            sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1  and create_time <= "%s" and create_time >= "%s"''' %(end_time,start_time)
+            sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1  and create_time <= "%s" and create_time >= "%s"''' %(end_time,start_time)
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
             if args_phone_lists:
                 condition_sql = ''' and sell_phone not in (%s)''' %(args_phone_lists)
