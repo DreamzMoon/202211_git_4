@@ -1198,7 +1198,7 @@ def get_phone_by_keyword(keyword):
 
             sql = '''select * from (select * from luke_sincerechat.user where phone like %s or id like %s or name like %s or nickname like %s) t where t.phone is not null'''
             logger.info(sql)
-            cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
+            cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
             datas = cursor.fetchall()
 
             if datas:
@@ -1260,8 +1260,8 @@ if __name__ == "__main__":
     # result = get_phone_by_keyword("6425")
     # logger.info(result)
 
-    result = get_busphne_by_id(4)
-    logger.info(len(result[1].split(",")))
+    # result = get_busphne_by_id(4)
+    # logger.info(len(result[1].split(",")))
     # time.sleep(2)
     #
     # res = get_operationcenter_child(4)
@@ -1294,3 +1294,8 @@ if __name__ == "__main__":
 
     # data = get_all_user_operationcenter()
     # data[1].to_csv(r"D:\match_df.csv", encoding='gb18030')
+
+
+    keyword = "施鸿"
+    result = get_phone_by_keyword(keyword)
+    logger.info(result)
