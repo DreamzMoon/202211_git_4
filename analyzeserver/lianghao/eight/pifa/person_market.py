@@ -111,7 +111,7 @@ def personal_total():
         logger.info("-------------------")
 
         # 采购
-        order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 4'''
+        order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1'''
         group_sql = ''' group by phone'''
         order_condition = []
         if query_phone:
@@ -125,7 +125,7 @@ def personal_total():
         order_data = pd.read_sql(order_sql,conn_read)
 
         # 出售
-        sell_sql = '''select sell_phone phone,count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee from le_order where `status` = 1 and  del_flag = 0 and type = 4'''
+        sell_sql = '''select sell_phone phone,count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee from le_order where `status` = 1 and  del_flag = 0 and type = 1'''
         group_sql = ''' group by sell_phone'''
         sell_condition = []
         if query_phone:
@@ -139,7 +139,7 @@ def personal_total():
         sell_order = pd.read_sql(sell_sql,conn_read)
 
         # 发布
-        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1'''
+        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag=0 and status != 1'''
         group_sql = ''' group by sell_phone '''
         public_condition = []
         if query_phone:
