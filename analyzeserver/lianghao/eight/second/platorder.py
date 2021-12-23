@@ -20,7 +20,7 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 
 
-platsecondbp = Blueprint('sectran', __name__, url_prefix='/lh/second')
+platsecondbp = Blueprint('sectran', __name__, url_prefix='/le/second')
 
 @platsecondbp.route("/plat/total",methods=["POST"])
 def transfer_all():
@@ -131,7 +131,7 @@ def transfer_all():
                     sell_data = cursor.fetchone()
                     logger.info(sell_data)
 
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 4'''
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
@@ -139,9 +139,9 @@ def transfer_all():
                     cursor.execute(sql)
                     all_order_data = cursor.fetchone()
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
+                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 '''
                     if start_time and end_time:
-                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
+                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
                     cursor.execute(sql)
                     all_sell_data = cursor.fetchone()
