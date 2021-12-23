@@ -29,10 +29,10 @@ homebp = Blueprint('homepage', __name__, url_prefix='/home')
 def deal_person():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        # conn_crm = direct_get_conn(crm_mysql_conf)
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        cursor = conn_an.cursor()
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
         try:
+            logger.info("env:%s" %ENV)
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
 
@@ -45,20 +45,29 @@ def deal_person():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        logger.info(conn_lh)
 
-        sql = '''select phone,sum(total_price) total_money from lh_order where del_flag = 0 and `status`=1 and type in (1,4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
+
+
+        logger.info(conn_lh)
+        #8位个人
+        sql = '''select phone,sum(total_price) total_money from lh_pretty_client.lh_order where del_flag = 0 and `status`=1 and type in (1, 4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
-        datas = datas.to_dict("records")
-        for data in datas:
-            logger.info(data)
-            sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone = %s'''.format(current_time)
-            cursor.execute(sql,(data["phone"]))
-            user_data = cursor.fetchone()
-            # data["username"] = user_data[0]
-            data["username"] = "" if user_data is None else user_data[0]
+        # datas = datas.to_dict("records")
+        # logger.info(len(datas))
+        phone_lists = datas["phone"].tolist()
+
+        logger.info(phone_lists)
+        if not phone_lists:
+            return {"code":"0000","status":"success","msg":[]}
+        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone in ({})'''.format(current_time,",".join(phone_lists))
+        logger.info(sql)
+        user_data = pd.read_sql(sql,conn_analyze)
+        datas = datas.merge(user_data,on="phone",how="left")
         logger.info(datas)
+        datas["username"].fillna("",inplace=True)
+        datas = datas.to_dict("records")
+
         return {"code":"0000","status":"success","msg":datas}
 
     except Exception as e:
@@ -66,10 +75,8 @@ def deal_person():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_lh.close()
-        # conn_crm.close()
-        conn_an.cursor()
+        conn_analyze.close()
 
-# 运营中心每小时刷新一次
 @homebp.route("deal/bus",methods=["GET"])
 def deal_business():
     try:
