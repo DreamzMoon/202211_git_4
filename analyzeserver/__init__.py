@@ -41,7 +41,7 @@ app.register_blueprint(pmbp)
 from analyzeserver.perfect_choose.center import ocbp
 app.register_blueprint(ocbp)
 
-from analyzeserver.perfect_choose.type import typebp
+from analyzeserver.perfect_choose.lh_type import typebp
 app.register_blueprint(typebp)
 
 from analyzeserver.user.sysuser import sysuserbp
