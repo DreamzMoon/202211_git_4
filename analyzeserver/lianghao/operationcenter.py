@@ -148,6 +148,9 @@ def operations_order_count():
             'true_price': round(float(operate_data_df['true_price'].sum()), 2),  # 出售时实收金额
             'sell_fee': round(float(operate_data_df['sell_fee'].sum()), 2),  # 出售手续费
         }
+        # 填充，再根据采购金额降序排列
+        operate_data_df.fillna(0, inplace=True)
+        operate_data_df.sort_values("buy_price", ascending=False, inplace=True)
         if size and page:
             start_index = (page - 1) * size
             end_index = size * page
@@ -161,8 +164,7 @@ def operations_order_count():
         data['sell_price'] = round(data['sell_price'].astype(float), 2)
         data['true_price'] = round(data['true_price'].astype(float), 2)
         data['sell_fee'] = round(data['sell_fee'].astype(float), 2)
-        data.fillna(0, inplace=True)
-        data.sort_values("buy_price", ascending=False, inplace=True)
+
 
 
         return_data = {
