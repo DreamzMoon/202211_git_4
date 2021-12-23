@@ -140,7 +140,8 @@ zx_collect_page = 1
 # 关键字
 zx_pass_word_list = ['我爱卡', '微信搜索', '公众号', '动态横版二维码', '来源']
 
-
+# 靓号已关闭运营中心数据是否在列表展示
+check_close_operate = False
 
 #服务端相应的数据
 message = {

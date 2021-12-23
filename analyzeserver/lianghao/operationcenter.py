@@ -76,11 +76,8 @@ def operations_order_count():
         else:
             time_sql = ''
         lh_count_sql_buy = lh_count_sql_buy.format(time_sql)
-        logger.info(lh_count_sql_buy)
         lh_count_sql_sell = lh_count_sql_sell.format(time_sql)
-        logger.info(lh_count_sql_sell)
         lh_count_sql_publish = lh_count_sql_publish.format(time_sql)
-        logger.info(lh_count_sql_publish)
 
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -116,9 +113,20 @@ def operations_order_count():
         # if not result[0]: # 不成功
         #     return {"code": result[1], "status": "failed", "msg": message[result[1]]}
         fina_df = user_order_df.merge(user_info_df, how='left', on='phone')
-        operate_data_df = fina_df.groupby('operatename')['buy_order', 'buy_count', 'buy_price', 'publish_total_count', 'publish_sell_count', 'publish_total_price', 'sell_order', 'sell_price', 'sell_count', 'true_price', 'sell_fee'].sum().reset_index()
-        operate_data_df = operate_data_df.merge(operate_info_df, how='left', on='operatename')
+        operate_data_df = fina_df.groupby('operateid')['buy_order', 'buy_count', 'buy_price', 'publish_total_count', 'publish_sell_count', 'publish_total_price', 'sell_order', 'sell_price', 'sell_count', 'true_price', 'sell_fee'].sum().reset_index()
+        operate_data_df = operate_data_df.merge(operate_info_df, how='outer', on='operateid')
         logger.info(operate_data_df.shape)
+        # 查询运营中心已关闭的id,为防止crm库出现问题，加上异常捕获 [15, 58, 80]
+        if not check_close_operate:
+            try:
+                conn_crm = direct_get_conn(crm_mysql_conf)
+                close_id_sql = '''select id from luke_lukebus.operationcenter where crm=1 and capacity=1 and status=2'''
+                close_id_df = pd.read_sql(close_id_sql, conn_crm)
+                close_id_list = close_id_df['id'].tolist()
+                conn_crm.close()
+                operate_data_df = operate_data_df[~operate_data_df['operateid'].isin(close_id_list)]
+            except:
+                logger.info(traceback.format_exc())
 
         if search_key:
             operate_data_df['operate_leader_unionid'] = operate_data_df['operate_leader_unionid'].astype(str)
