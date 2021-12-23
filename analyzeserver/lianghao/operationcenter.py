@@ -23,7 +23,7 @@ def operations_order_count():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 5:
+            if len(request.json) != 7:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -38,20 +38,22 @@ def operations_order_count():
 
             search_key = request.json['key']
             operateid = request.json['operateid']
+            start_time = request.json['start_time']
+            end_time = request.json['end_time']
             size = request.json['size']
             page = request.json['page']
-            num = size
         except:
             # 参数名错误
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        start_time = time.time()
+        run_start = time.time()
+
         lh_count_sql_buy = '''
             select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price
             from lh_pretty_client.lh_order
             where del_flag = 0
             and type in (1,4)
-            and `status` = 1
+            and `status` = 1{}
             group by phone
             '''
         lh_count_sql_sell = '''
@@ -59,16 +61,25 @@ def operations_order_count():
             from lh_pretty_client.lh_order
             where del_flag = 0
             and type in (1,4)
-            and `status` = 1
+            and `status` = 1{}
             group by sell_phone
         '''
         lh_count_sql_publish = '''
             select sell_phone phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
             from lh_pretty_client.lh_sell
             where del_flag=0
-            and `status` != 1
+            and `status` != 1{}
             group by sell_phone
         '''
+        if start_time and end_time:
+            time_sql = ''' and date_format(create_time, "%Y-%m-%d") >= "{}" and date_format(create_time, "%Y-%m-%d") <= "{}"'''.format(start_time, end_time)
+        else:
+            time_sql = ''
+        lh_count_sql_buy = lh_count_sql_buy.format(time_sql)
+        lh_count_sql_sell = lh_count_sql_sell.format(time_sql)
+        lh_count_sql_publish = lh_count_sql_publish.format(time_sql)
+
+
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_an =direct_get_conn(analyze_mysql_conf)
         if not conn_lh or not conn_an:
@@ -94,7 +105,7 @@ def operations_order_count():
         operate_unionid_df = user_info_df.loc[:, ['unionid', 'phone']].rename(columns={"unionid": "operate_leader_unionid", "phone": "operate_leader_phone"})
         user_info_df = user_info_df.merge(operate_unionid_df, how='left', on='operate_leader_phone')
 
-        # 运营中心信息
+        # # 运营中心信息
         operate_info_df = user_info_df.loc[:, ['operate_leader_name', 'operatename', 'operateid', 'operate_leader_phone', 'operate_leader_unionid']].drop_duplicates('operate_leader_phone')
 
         # 获取运营中心数据
@@ -102,9 +113,28 @@ def operations_order_count():
         # if not result[0]: # 不成功
         #     return {"code": result[1], "status": "failed", "msg": message[result[1]]}
         fina_df = user_order_df.merge(user_info_df, how='left', on='phone')
-        operate_data_df = fina_df.groupby('operatename')['buy_order', 'buy_count', 'buy_price', 'publish_total_count', 'publish_sell_count', 'publish_total_price', 'sell_order', 'sell_price', 'sell_count', 'true_price', 'sell_fee'].sum().reset_index()
-        operate_data_df = operate_data_df.merge(operate_info_df, how='left', on='operatename')
+        operate_data_df = fina_df.groupby('operateid')['buy_order', 'buy_count', 'buy_price', 'publish_total_count', 'publish_sell_count', 'publish_total_price', 'sell_order', 'sell_price', 'sell_count', 'true_price', 'sell_fee'].sum().reset_index()
+        operate_data_df = operate_data_df.merge(operate_info_df, how='outer', on='operateid')
         logger.info(operate_data_df.shape)
+        # 查询运营中心已关闭的id,为防止crm库出现问题，加上异常捕获 [15, 58, 80]
+        if not check_close_operate:
+            try:
+                conn_crm = direct_get_conn(crm_mysql_conf)
+                close_id_sql = '''select id from luke_lukebus.operationcenter where crm=1 and capacity=1 and status=2'''
+                close_id_df = pd.read_sql(close_id_sql, conn_crm)
+                close_id_list = close_id_df['id'].tolist()
+                conn_crm.close()
+                operate_data_df = operate_data_df[~operate_data_df['operateid'].isin(close_id_list)]
+            except:
+                logger.info(traceback.format_exc())
+
+        if search_key:
+            operate_data_df['operate_leader_unionid'] = operate_data_df['operate_leader_unionid'].astype(str)
+            operate_data_df = operate_data_df.loc[(operate_data_df['operate_leader_name'].str.contains(search_key))
+                                                    | (operate_data_df['operate_leader_phone'].str.contains(search_key))
+                                                    | (operate_data_df['operate_leader_unionid'].str.contains(search_key))]
+        if operateid:
+            operate_data_df = operate_data_df.loc[operate_data_df['operateid'] == operateid, :]
         title_data = {
             'buy_order': operate_data_df['buy_order'].sum(),  # 采购订单数量
             'buy_count': operate_data_df['buy_count'].sum(),  # 采购靓号数量
@@ -118,16 +148,9 @@ def operations_order_count():
             'true_price': round(float(operate_data_df['true_price'].sum()), 2),  # 出售时实收金额
             'sell_fee': round(float(operate_data_df['sell_fee'].sum()), 2),  # 出售手续费
         }
-        if search_key:
-            operate_data_df['operate_leader_unionid'] = operate_data_df['operate_leader_unionid'].astype(str)
-            operate_data_df = operate_data_df.loc[(operate_data_df['operate_leader_name'].str.contains(search_key))
-                                                    | (operate_data_df['operate_leader_phone'].str.contains(search_key))
-                                                    | (operate_data_df['operate_leader_unionid'].str.contains(search_key))]
-        if operateid:
-            operate_data_df = operate_data_df.loc[operate_data_df['operateid'] == operateid, :]
-        if num and page:
-            start_index = (page - 1) * num
-            end_index = num * page
+        if size and page:
+            start_index = (page - 1) * size
+            end_index = size * page
             data = operate_data_df[start_index:end_index]
             logger.info(data.shape)
         else:
@@ -139,12 +162,13 @@ def operations_order_count():
         data['true_price'] = round(data['true_price'].astype(float), 2)
         data['sell_fee'] = round(data['sell_fee'].astype(float), 2)
 
+
         return_data = {
             'title_data': title_data,
             'data': data.to_dict('records')
         }
-        end_time = time.time()
-        logger.info(end_time - start_time)
+        run_end = time.time()
+        logger.info(run_end - run_start)
         return {"code": "0000", "status": "success", "msg": return_data,'count': len(operate_data_df)}
     except Exception as e:
         logger.error(traceback.format_exc())

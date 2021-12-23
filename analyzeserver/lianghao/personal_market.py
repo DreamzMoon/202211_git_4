@@ -600,6 +600,9 @@ def personal_total():
         # bus = request.json["bus"]
         bus_id = request.json["bus_id"]
 
+        start_time = request.json["start_time"]
+        end_time = request.json["end_time"]
+
         # 字符串拼接的手机号码
         query_phone = ""
         keyword_phone = []
@@ -656,33 +659,41 @@ def personal_total():
 
         order_sql = '''select phone,count(*) buy_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
         group_sql = ''' group by phone'''
+        order_condition = []
         if query_phone:
-            condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
-            order_sql = order_sql+condition_sql+group_sql
-        else:
-            order_sql = order_sql +group_sql
+            order_condition.append(''' phone in (%s) ''' %(",".join(query_phone)))
+        if start_time and end_time:
+            order_condition.append(''' date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time))
+        for i in range(0,len(order_condition)):
+            order_sql = order_sql + " and " + order_condition[i]
+        order_sql = order_sql + group_sql
         logger.info("order_sql:%s" %order_sql)
         order_data = pd.read_sql(order_sql,conn_read)
-        logger.info(order_data.shape)
+
 
         sell_sql = '''select sell_phone phone,count(*) sell_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_money,sum(sell_fee) sell_fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
         group_sql = ''' group by sell_phone'''
+        sell_condition = []
         if query_phone:
-            condition_sql = ''' and sell_phone in (%s)''' % (",".join(query_phone))
-            sell_sql = sell_sql + condition_sql + group_sql
-        else:
-            sell_sql = sell_sql + group_sql
+            sell_condition.append(''' sell_phone in (%s) ''' % (",".join(query_phone)))
+        if start_time and end_time:
+            sell_condition.append(''' date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time))
+        for i in range(0, len(sell_condition)):
+            sell_sql = sell_sql + " and " + sell_condition[i]
+        sell_sql = sell_sql + group_sql
         logger.info("sell_sql:%s" %sell_sql)
         sell_order = pd.read_sql(sell_sql,conn_read)
-        logger.info(sell_order.shape)
 
         public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
         group_sql = ''' group by sell_phone '''
+        public_condition = []
         if query_phone:
-            condition_sql = ''' and sell_phone in (%s)''' % (",".join(query_phone))
-            public_sql = public_sql + condition_sql + group_sql
-        else:
-            public_sql = public_sql + group_sql
+            public_condition.append(''' sell_phone in (%s) ''' % (",".join(query_phone)))
+        if start_time and end_time:
+            public_condition.append(''' date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time))
+        for i in range(0, len(public_condition)):
+            public_sql = public_sql + " and " + public_condition[i]
+        public_sql = public_sql + group_sql
         logger.info("public_sql:%s" %public_sql)
         public_order = pd.read_sql(public_sql,conn_read)
 
@@ -698,7 +709,6 @@ def personal_total():
 
         #这里要进行一个crm数据的合并
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        # sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
         sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user_%s where phone != "" and phone is not null and del_flag=0''' %current_time
         logger.info(sql)
         crm_data = pd.read_sql(sql, conn_analyze)
@@ -741,16 +751,17 @@ def personal_total():
 
         all_data["buy_count"] = int(df_merged["buy_count"].sum())
         all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
-        all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(), 2)
+        all_data["buy_total_price"] = round(float(df_merged["buy_total_price"].sum()), 2)
         all_data["sell_count"] = int(df_merged["sell_count"].sum())
-        all_data["sell_fee"] = round(df_merged["sell_fee"].sum(), 2)
-        all_data["sell_real_money"] = round(df_merged["sell_real_money"].sum(), 2)
+        all_data["sell_fee"] = round(float(df_merged["sell_fee"].sum()), 2)
+        all_data["sell_real_money"] = round(float(df_merged["sell_real_money"].sum()), 2)
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
-        all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
+        all_data["sell_total_price"] = round(float(df_merged["sell_total_price"].sum()), 2)
 
         # need_data = need_data.fillna("",inplace=True)
         need_data.fillna("",inplace=True)
         msg_data = {"data": need_data.to_dict("records"), "all_data": all_data}
+        logger.info(msg_data)
         return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
 

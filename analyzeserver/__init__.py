@@ -25,7 +25,7 @@ def hello():
 def hellohello():
     return 'hellohello'
 
-
+# 7位
 from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
 
@@ -41,7 +41,7 @@ app.register_blueprint(pmbp)
 from analyzeserver.perfect_choose.center import ocbp
 app.register_blueprint(ocbp)
 
-from analyzeserver.perfect_choose.type import typebp
+from analyzeserver.perfect_choose.lh_type import typebp
 app.register_blueprint(typebp)
 
 from analyzeserver.user.sysuser import sysuserbp
@@ -62,6 +62,19 @@ app.register_blueprint(ppbp)
 from analyzeserver.lianghao.daily_summary import dailybp
 app.register_blueprint(dailybp)
 
+# 8位 二手
+from analyzeserver.lianghao.eight.second.platorder import platsecondbp
+app.register_blueprint(platsecondbp)
+
+from analyzeserver.lianghao.eight.second.person_market import personsecondbp
+app.register_blueprint(personsecondbp)
+
+# 8位 批发
+from analyzeserver.lianghao.eight.pifa.platorder import platpfbp
+app.register_blueprint(platpfbp)
+
+from analyzeserver.lianghao.eight.pifa.person_market import personpfbp
+app.register_blueprint(personpfbp)
 
 #首页
 from analyzeserver.home.lh7_home_page import homebp

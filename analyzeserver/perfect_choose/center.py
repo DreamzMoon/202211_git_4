@@ -39,12 +39,18 @@ def center_list():
             sql = '''
                 select id, operatename from
                 (
-                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from luke_lukebus.operationcenter where capacity = 1 and crm = 1
+                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from luke_lukebus.operationcenter where capacity = 1 and crm = 1{}
                     order by sort_type asc
                 )t1
             '''
+            if check_close_operate:
+                check_sql = ''
+            else:
+                check_sql = ' and status=1'
+            sql = sql.format(check_sql)
             cursor.execute(sql)
             datas = cursor.fetchall()
+            logger.info(len(datas))
             logger.info(datas)
             return {"code":"0000","status":"success","msg":datas}
     except:

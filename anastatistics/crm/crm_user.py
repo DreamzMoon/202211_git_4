@@ -288,7 +288,7 @@ try:
 
     # 删除前天的表 保留昨天的 万一有用
     try:
-        delete_sql = '''drop crm_user_%s''' %yesterday_time
+        delete_sql = '''drop TABLE crm_user_%s''' %yesterday_time
         analyze_cursor.execute(delete_sql)
         conn_analyze.commit()
         logger.info("删除成功")

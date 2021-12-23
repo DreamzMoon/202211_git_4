@@ -147,6 +147,7 @@ def ssh_redis():
 
 def get_redis():
     try:
+        logger.info("redis_host:%s redis_port:%s redis_pass:%s db:%s" %(redis_host,redis_port,redis_port,redis_db))
         if redis_password:
             rclient = redis.Redis(host=redis_host,
                                   port=redis_port,
