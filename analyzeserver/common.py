@@ -1196,9 +1196,15 @@ def get_phone_by_keyword(keyword):
             # datas = cursor.fetchall()
             # # logger.info(datas)
 
-            sql = '''select * from (select * from luke_sincerechat.user where phone like %s or id like %s or name like %s or nickname like %s) t where t.phone is not null'''
+            # sql = '''select * from (select * from luke_sincerechat.user where phone like %s or id like %s or name like %s or nickname like %s) t where t.phone is not null'''
+            # 优化sql 只能收到对应的内容
+            sql = '''
+            select * from (
+            select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname
+            ,phone from luke_sincerechat.user where phone like %s or id like %s or `name` like %s or nickname like %s) t where t.phone is not null and t.nickname like %s
+            '''
             logger.info(sql)
-            cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
+            cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
             datas = cursor.fetchall()
 
             if datas:
