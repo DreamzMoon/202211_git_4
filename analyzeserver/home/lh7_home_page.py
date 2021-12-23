@@ -50,7 +50,7 @@ def deal_person():
 
         logger.info(conn_lh)
         #8位个人
-        sql = '''select phone,sum(total_price) total_money from lh_pretty_client.lh_order where del_flag = 0 and `status`=1 and type in (1, 4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 10'''
+        sql = '''select phone,sum(total_price) total_money from lh_pretty_client.lh_order where del_flag = 0 and `status`=1 and type in (1, 4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql,conn_lh)
         # datas = datas.to_dict("records")
