@@ -139,7 +139,7 @@ def personal_total():
         sell_order = pd.read_sql(sell_sql,conn_read)
 
         # 发布
-        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 '''
+        public_sql = '''select sell_phone phone,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1'''
         group_sql = ''' group by sell_phone '''
         public_condition = []
         if query_phone:
