@@ -10,6 +10,9 @@ from flask import Flask
 from flask_cors import *
 import sys
 
+sys.path.append("../")
+sys.path.append(".")
+
 from analyzeserver.other.user import userbp
 from analyzeserver.lianghao.tranferorder import tobp
 from analyzeserver.lianghao.operationcenter import opbp
@@ -31,8 +34,7 @@ from analyzeserver.home.lh8_second_home_page import lhhomebp
 from analyzeserver.home.lh8_wholesale_home import lhpfhome8
 
 
-sys.path.append("../")
-sys.path.append(".")
+
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
