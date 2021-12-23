@@ -69,6 +69,13 @@ app.register_blueprint(platsecondbp)
 from analyzeserver.lianghao.eight.second.person_market import personsecondbp
 app.register_blueprint(personsecondbp)
 
+# 8位 批发
+from analyzeserver.lianghao.eight.pifa.platorder import platpfbp
+app.register_blueprint(platsecondbp)
+
+from analyzeserver.lianghao.eight.pifa.person_market import personpfbp
+app.register_blueprint(personsecondbp)
+
 #首页
 from analyzeserver.home.lh7_home_page import homebp
 app.register_blueprint(homebp)

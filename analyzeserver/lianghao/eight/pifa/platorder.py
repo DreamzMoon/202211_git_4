@@ -24,9 +24,9 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 from functools import reduce
 
-platsecondbp = Blueprint('sectran', __name__, url_prefix='/le/pifa')
+platpfbp = Blueprint('pifatran', __name__, url_prefix='/le/pifa')
 
-@platsecondbp.route("/plat/total",methods=["POST"])
+@platpfbp.route("/plat/total",methods=["POST"])
 def transfer_all():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -189,7 +189,7 @@ def transfer_all():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 # 运营中心
-@platsecondbp.route("/operations/center",methods=["POST"])
+@platpfbp.route("/operations/center",methods=["POST"])
 def operations_order_count():
     try:
         try:
@@ -353,7 +353,7 @@ def operations_order_count():
 
 
 
-@platsecondbp.route("buy",methods=["POST"])
+@platpfbp.route("buy",methods=["POST"])
 def transfer_buy_order():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)

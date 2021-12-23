@@ -20,11 +20,11 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 from functools import reduce
 
-personsecondbp = Blueprint('personsecondbp', __name__, url_prefix='/le/person')
+personpfbp = Blueprint('personpfbp', __name__, url_prefix='/le/pifa/person')
 
 
 # 个人转卖市场订单数据统计分析
-@personsecondbp.route("total",methods=["POST"])
+@personpfbp.route("total",methods=["POST"])
 def personal_total():
     try:
 
