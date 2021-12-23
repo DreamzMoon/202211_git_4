@@ -10,6 +10,27 @@ from flask import Flask
 from flask_cors import *
 import sys
 
+from analyzeserver.other.user import userbp
+from analyzeserver.lianghao.tranferorder import tobp
+from analyzeserver.lianghao.operationcenter import opbp
+from analyzeserver.lianghao.personal_market import pmbp
+from analyzeserver.perfect_choose.center import ocbp
+from analyzeserver.perfect_choose.lh_type import typebp
+from analyzeserver.user.sysuser import sysuserbp
+from analyzeserver.home.lh7_home_page import homebp
+from analyzeserver.user.crmuserrelate import userrelatebp
+from analyzeserver.lianghao.personal_property import ppbp
+from analyzeserver.lianghao.daily_summary import dailybp
+from analyzeserver.home.lh8_second_home_page import lhhomebp
+from analyzeserver.lianghao.eight.second.platorder import platsecondbp
+from analyzeserver.lianghao.eight.second.person_market import personsecondbp
+from analyzeserver.lianghao.eight.pifa.platorder import platpfbp
+from analyzeserver.lianghao.eight.pifa.person_market import personpfbp
+from analyzeserver.home.lh7_home_page import homebp
+from analyzeserver.home.lh8_second_home_page import lhhomebp
+from analyzeserver.home.lh8_wholesale_home import lhpfhome8
+
+
 sys.path.append("../")
 sys.path.append(".")
 
@@ -21,69 +42,31 @@ CORS(app, supports_credentials=True)
 def hello():
     return 'Hello, World!'
 
-@app.route('/hellook')
-def hellohello():
-    return 'hellohello'
 
 # 7位
-from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
-
-from analyzeserver.lianghao.tranferorder import tobp
 app.register_blueprint(tobp)
-
-from analyzeserver.lianghao.operationcenter import opbp
 app.register_blueprint(opbp)
-
-from analyzeserver.lianghao.personal_market import pmbp
 app.register_blueprint(pmbp)
-
-from analyzeserver.perfect_choose.center import ocbp
 app.register_blueprint(ocbp)
-
-from analyzeserver.perfect_choose.lh_type import typebp
 app.register_blueprint(typebp)
-
-from analyzeserver.user.sysuser import sysuserbp
 app.register_blueprint(sysuserbp)
-
-from analyzeserver.home.lh7_home_page import homebp
 app.register_blueprint(homebp)
-
-from analyzeserver.home.lh8_second_home_page import lhhomebp
-app.register_blueprint(lhhomebp)
-
-from analyzeserver.user.crmuserrelate import userrelatebp
 app.register_blueprint(userrelatebp)
-
-from analyzeserver.lianghao.personal_property import ppbp
 app.register_blueprint(ppbp)
-
-from analyzeserver.lianghao.daily_summary import dailybp
 app.register_blueprint(dailybp)
 
-# 8位 二手
-from analyzeserver.lianghao.eight.second.platorder import platsecondbp
+# 8位
 app.register_blueprint(platsecondbp)
-
-from analyzeserver.lianghao.eight.second.person_market import personsecondbp
 app.register_blueprint(personsecondbp)
 
-# 8位 批发
-from analyzeserver.lianghao.eight.pifa.platorder import platpfbp
+# 8位
 app.register_blueprint(platpfbp)
-
-from analyzeserver.lianghao.eight.pifa.person_market import personpfbp
 app.register_blueprint(personpfbp)
 
 #首页
-from analyzeserver.home.lh7_home_page import homebp
 app.register_blueprint(homebp)
-
-from analyzeserver.home.lh8_second_home_page import lhhomebp
 app.register_blueprint(lhhomebp)
-
-from analyzeserver.home.lh8_wholesale_home import lhpfhome8
 app.register_blueprint(lhpfhome8)
 
 if __name__ == "__main__":
