@@ -70,15 +70,6 @@ def deal_person():
         logger.info(datas)
         datas["username"].fillna("",inplace=True)
         datas = datas.to_dict("records")
-        # for data in datas:
-        #     logger.info(data)
-        #     sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone = %s'''.format(current_time)
-        #     cursor.execute(sql, (data['phone']))
-        #     user_data = cursor.fetchone()
-        #     logger.info(user_data)
-        #     logger.info("---------------")
-        #
-        #     data["username"] = "" if user_data is None else user_data[0]
 
         return {"code":"0000","status":"success","msg":datas}
 
@@ -110,12 +101,9 @@ def deal_business():
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
 
-
         #先查运营中心的人数
-
         cursor_lh = conn_lh.cursor()
         cursor_ana = conn_analyze.cursor()
-
         bus_sql = '''select operatename,contains from operate_relationship_crm where crm = 1'''
 
         logger.info(bus_sql)
@@ -123,7 +111,6 @@ def deal_business():
         operate_datas = cursor_ana.fetchall()
 
         return_lists = []
-
         #取出今天的订单表
         sql = '''
         select phone,sum(total_price) total_money from lh_pretty_client.le_order where del_flag = 0 and type=4 and `status`=1 and date_format(create_time,"%Y%m%d") = CURRENT_DATE() group by phone 
@@ -312,12 +299,6 @@ def today_dynamic_transaction():
             sell_list = sell_fina_df.to_dict("records")
         else:
             sell_list = []
-
-        # for sl in sell_list:
-        #     if sl["phone"]:
-        #         sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
-        #     if sl["username"]:
-        #         sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
 
         return_data = {
             "sell_dynamic": sell_list,
