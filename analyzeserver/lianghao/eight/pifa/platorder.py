@@ -96,25 +96,25 @@ def transfer_all():
 
                 if args_list:
                     # 今天的
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone not in (%s)''' %args_list
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone not in (%s)''' %args_list
                     cursor.execute(sql)
                     order_data = cursor.fetchone()
 
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count
-                    from le_second_hand_sell where del_flag=0  and status != 1 and DATE_FORMAT(create_time,"%%Y-%%m-%%d") = CURRENT_DATE()
+                    from le_sell where del_flag=0  and status != 1 and DATE_FORMAT(create_time,"%%Y-%%m-%%d") = CURRENT_DATE()
                      and sell_phone not in (%s)''' %args_list
                     cursor.execute(sql)
                     sell_data = cursor.fetchone()
 
                     #总的
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 4 and phone not in (%s)''' % args_list
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and phone not in (%s)''' % args_list
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
                         sql = sql + time_condition
                     cursor.execute(sql)
                     all_order_data = cursor.fetchone()
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1 and sell_phone not in (%s)''' % args_list
+                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag=0 and status != 1 and sell_phone not in (%s)''' % args_list
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
@@ -123,19 +123,19 @@ def transfer_all():
                     all_sell_data = cursor.fetchone()
 
                 else:
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 4 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                     cursor.execute(sql)
                     order_data = cursor.fetchone()
                     logger.info(order_data)
 
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count
-                    from le_second_hand_sell where del_flag=0 and status != 1
+                    from le_sell where del_flag=0 and status != 1
                     and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                     cursor.execute(sql)
                     sell_data = cursor.fetchone()
                     logger.info(sell_data)
 
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 4'''
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1'''
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
@@ -143,7 +143,7 @@ def transfer_all():
                     cursor.execute(sql)
                     all_order_data = cursor.fetchone()
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1  '''
+                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_sell where del_flag=0 and status != 1  '''
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
@@ -224,7 +224,7 @@ def operations_order_count():
             select phone, count(*) buy_order, sum(`count`) buy_count, sum(total_price) buy_price
             from lh_pretty_client.le_order
             where del_flag = 0
-            and type=4
+            and type=1
             and `status` = 1{}
             group by phone
             '''
@@ -232,13 +232,13 @@ def operations_order_count():
             select sell_phone phone, count(*) sell_order, sum(`count`) sell_count, sum(total_price) sell_price, sum(total_price- sell_fee) true_price, sum(sell_fee) sell_fee
             from lh_pretty_client.le_order
             where del_flag = 0
-            and type=4
+            and type=1
             and `status` = 1{}
             group by sell_phone
         '''
         lh_count_sql_publish = '''
             select sell_phone phone, sum(`count`) publish_total_count, sum(total_price) publish_total_price, count(*) publish_sell_count
-            from lh_pretty_client.le_second_hand_sell
+            from lh_pretty_client.le_sell
             where del_flag=0
             and `status` != 1{}
             group by sell_phone
@@ -604,7 +604,7 @@ def transfer_buy_order():
 
 
 
-@platsecondbp.route("sell",methods=["POST"])
+@platpfbp.route("sell",methods=["POST"])
 def transfer_sell_order():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -856,7 +856,7 @@ def transfer_sell_order():
 
 
 
-@platsecondbp.route("public",methods=["POST"])
+@platpfbp.route("public",methods=["POST"])
 def transfer_public_order():
     try:
         logger.info("进入")
