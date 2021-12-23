@@ -31,6 +31,9 @@ r = get_redis()
 @lhpfhome8.route("deal/person",methods=["GET"])
 def deal_person():
     try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
 
         try:
             token = request.headers["Token"]
@@ -38,17 +41,17 @@ def deal_person():
 
             if not user_id and not token:
                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
+            logger.info("token:%s" %token)
+            logger.info("user_id:%s" %user_id)
             check_token_result = check_token(token, user_id)
+            logger.info(check_token_result)
             if check_token_result["code"] != "0000":
                 return check_token_result
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
-        cursor = conn_analyze.cursor()
+
 
         logger.info(conn_lh)
         #8位个人

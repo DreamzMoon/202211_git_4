@@ -215,3 +215,7 @@ def check():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
+
+if __name__ == "__main__":
+    result = check_token(111111,10)
+    logger.info(result)
