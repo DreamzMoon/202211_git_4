@@ -60,6 +60,8 @@ def deal_person():
         phone_lists = datas["phone"].tolist()
 
         logger.info(phone_lists)
+        if not phone_lists:
+            return {"code":"0000","status":"success","msg":[]}
         sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone in ({})'''.format(current_time,",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql,conn_analyze)
