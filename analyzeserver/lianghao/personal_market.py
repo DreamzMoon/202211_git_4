@@ -690,7 +690,7 @@ def personal_total():
         if query_phone:
             public_condition.append(''' sell_phone in (%s) ''' % (",".join(query_phone)))
         if start_time and end_time:
-            public_condition.append(''' date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time))
+            public_condition.append(''' date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time))
         for i in range(0, len(public_condition)):
             public_sql = public_sql + " and " + public_condition[i]
         public_sql = public_sql + group_sql
@@ -751,16 +751,17 @@ def personal_total():
 
         all_data["buy_count"] = int(df_merged["buy_count"].sum())
         all_data["buy_total_count"] = int(df_merged["buy_total_count"].sum())
-        all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(), 2)
+        all_data["buy_total_price"] = round(float(df_merged["buy_total_price"].sum()), 2)
         all_data["sell_count"] = int(df_merged["sell_count"].sum())
-        all_data["sell_fee"] = round(df_merged["sell_fee"].sum(), 2)
-        all_data["sell_real_money"] = round(df_merged["sell_real_money"].sum(), 2)
+        all_data["sell_fee"] = round(float(df_merged["sell_fee"].sum()), 2)
+        all_data["sell_real_money"] = round(float(df_merged["sell_real_money"].sum()), 2)
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
-        all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(), 2)
+        all_data["sell_total_price"] = round(float(df_merged["sell_total_price"].sum()), 2)
 
         # need_data = need_data.fillna("",inplace=True)
         need_data.fillna("",inplace=True)
         msg_data = {"data": need_data.to_dict("records"), "all_data": all_data}
+        logger.info(msg_data)
         return {"code": "0000", "status": "success", "msg": msg_data, "count": len(df_merged)}
 
 

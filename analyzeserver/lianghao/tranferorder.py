@@ -106,7 +106,7 @@ def transfer_all():
 
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone not in (%s)''' % args_list
                     if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
+                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
                     cursor.execute(sql)
 
@@ -135,7 +135,7 @@ def transfer_all():
 
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
                     if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
+                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                         sql = sql + time_condition
                     cursor.execute(sql)
                     all_sell_data = cursor.fetchone()

@@ -25,7 +25,7 @@ def hello():
 def hellohello():
     return 'hellohello'
 
-
+# 7位
 from analyzeserver.other.user import userbp
 app.register_blueprint(userbp)
 
@@ -61,6 +61,10 @@ app.register_blueprint(ppbp)
 
 from analyzeserver.lianghao.daily_summary import dailybp
 app.register_blueprint(dailybp)
+
+# 8位 二手
+from analyzeserver.lianghao.eight.second.platorder import platsecondbp
+app.register_blueprint(platsecondbp)
 
 
 #首页
