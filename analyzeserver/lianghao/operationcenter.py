@@ -161,6 +161,7 @@ def operations_order_count():
         data['sell_price'] = round(data['sell_price'].astype(float), 2)
         data['true_price'] = round(data['true_price'].astype(float), 2)
         data['sell_fee'] = round(data['sell_fee'].astype(float), 2)
+        data.fillna(0, inplace=True)
 
 
         return_data = {

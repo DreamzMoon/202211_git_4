@@ -49,3 +49,62 @@ def platform_data():
     finally:
         conn_analyze.close()
 
+
+    pass
+
+@ppbp.route('/belong', methods=['POST'])
+def bus_card_belong():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 12:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            # 持有人信息
+            hold_user_info = request.json['hold_user_info'].strip()
+            # 持有时间
+            hold_start_time = request.json['hold_start_time'].strip()
+            hold_end_time = request.json['hold_end_time'].strip()
+            # 转让类型
+            transfer_type = request.json['transfer_type']
+            # 使用状态
+            use_type = request.json['use_type']
+            # 使用人信息
+            use_user_info = request.json['use_user_info'].strip()
+            # 购买来源
+            source_type = request.json['source_type']
+            # 靓号位数
+            pretty_length = request.json['pretty_length']
+            # 靓号类型
+            pretty_type = request.json['prettY_type']
+
+            # 每页显示条数
+            size = request.json['size']
+            # 页码
+            page = request.json['page']
+
+            if hold_start_time or hold_end_time:
+                order_time_result = judge_start_and_end_time(hold_start_time, hold_end_time)
+                if not order_time_result[0]:
+                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+                request.json['hold_start_time'] = order_time_result[0]
+                request.json['hold_end_time'] = order_time_result[1]
+        except:
+            # 参数名错误
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        return '11111111111111'
+    except Exception as e:
+        logger.error(e)
+        logger.error(traceback.format_exc())

@@ -332,6 +332,7 @@ def operations_order_count():
         data['sell_price'] = round(data['sell_price'].astype(float), 2)
         data['true_price'] = round(data['true_price'].astype(float), 2)
         data['sell_fee'] = round(data['sell_fee'].astype(float), 2)
+        data.fillna(0, inplace=True)
 
         # data.to_csv(r'D:/operate_df.csv', index=False, encoding='gbk')
         return_data = {
@@ -601,6 +602,7 @@ def transfer_buy_order():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_read.close()
+
 
 
 
