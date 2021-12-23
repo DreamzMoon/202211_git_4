@@ -231,7 +231,7 @@ select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, 
 def no_tran_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        end_time = datetime.datetime.now() + timedelta(days=-1)
+        end_time = datetime.datetime.now() + timedelta(days=0)
         # end_time = datetime.datetime.now()
         ergodic_time = end_time.strftime("%Y-%m-%d")
 

@@ -16,6 +16,7 @@ from env import *
 import warnings
 warnings.filterwarnings('ignore')
 
+logger.info("envenv:%s" %ENV)
 if ENV == "test":
     # 资讯测试
     zx_api_url = 'http://xsnews.com/open/content/python'

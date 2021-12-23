@@ -31,8 +31,11 @@ r = get_redis()
 @lhhomebp.route("deal/person",methods=["GET"])
 def deal_person():
     try:
-
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
         try:
+            logger.info("env:%s" %ENV)
             token = request.headers["Token"]
             user_id = request.args.get("user_id")
 
@@ -46,9 +49,7 @@ def deal_person():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
-        cursor = conn_analyze.cursor()
+
 
         logger.info(conn_lh)
         #8位个人
@@ -60,6 +61,8 @@ def deal_person():
         phone_lists = datas["phone"].tolist()
 
         logger.info(phone_lists)
+        if not phone_lists:
+            return {"code":"0000","status":"success","msg":[]}
         sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone in ({})'''.format(current_time,",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql,conn_analyze)
