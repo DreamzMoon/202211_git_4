@@ -197,7 +197,7 @@ def personal_total():
         df_merged["buy_total_count"] = df_merged["buy_total_count"].astype(int)
         df_merged["publish_total_count"] = df_merged["publish_total_count"].astype("int")
         df_merged["sell_total_count"] = df_merged["sell_total_count"].astype("int")
-
+        df_merged.sort_values(by=["buy_total_price"], ascending=False, inplace=True)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
