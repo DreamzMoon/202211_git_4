@@ -30,9 +30,13 @@ def transferred_count_and_value():
         hold_df_list = []
         for hold_table_type in hold_table_type_list:
             logger.info(hold_table_type)
+            # pretty_hold_sql = '''
+            #     select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') day_time from lh_pretty_hold_%s
+            #     where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') = date_sub(current_date, interval 0 day)
+            # ''' % hold_table_type
             pretty_hold_sql = '''
-                select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s
-                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = date_sub(current_date, interval 0 day)
+            select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s
+where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = current_date and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%d') <= now()
             ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
@@ -145,41 +149,23 @@ def tran_hold():
 
 
         #可转让 持有
-#         sql = '''
-#         select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)  union all
-# select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (date_format(thaw_time,"%Y-%m-%d") <= CURRENT_DATE or date_format(create_time,"%Y-%m-%d") <= CURRENT_DATE)
-#         '''
         sql = '''
-                select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0   union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0   union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0   union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0  union all
-        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_0 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_1 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_2 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_3 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_4 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_5 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_6 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_7 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_8 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_9 where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_a where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_b where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_c where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_d where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_e where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())  union all
+        select hold_phone, pretty_type_id, date_format(thaw_time,"%Y-%m-%d") thaw_time, is_sell, pay_type, date_format(create_time,"%Y-%m-%d") create_time, status from lh_pretty_hold_f where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and (thaw_time<=now() or create_time<=now())
                 '''
         data = pd.read_sql(sql,conn_lh)
 
@@ -282,6 +268,9 @@ def no_tran_lh():
         return False, e
     finally:
         conn_lh.close()
+
+
+
 
 #用户信息
 def user_mes():

@@ -27,10 +27,10 @@ ppbp = Blueprint('property', __name__, url_prefix='/lh/property')
 def platform_data():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
         try:
             token = request.headers["Token"]
-            user_id = request.args.get("user_id")
+            user_id = request.json.get("user_id")
 
             if not user_id and not token:
                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
@@ -41,8 +41,73 @@ def platform_data():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
+        unioinid_lists = request.json.get("unioinid_lists")
+        phone_lists = request.json.get("phone_lists")
+        bus_lists = request.json.get("bus_lists")
 
-        sql = '''select * from '''
+        args_phone_lists = []
+        if phone_lists:
+            args_phone_lists = ",".join(phone_lists)
+        elif unioinid_lists:
+            try:
+                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                ags_list = ",".join(unioinid_lists)
+                logger.info(ags_list)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
+                for p in phone_lists:
+                    args_phone_lists.append(p[0])
+                args_phone_lists = ",".join(args_phone_lists)
+            except Exception as e:
+                logger.exception(e)
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+        elif bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for p in phone_lists:
+                ok_p = json.loads(p[0])
+                for op in ok_p:
+                    args_phone_lists.append(op)
+            args_phone_lists = ",".join(args_phone_lists)
+
+        logger.info("args_phone_lists:%s" % args_phone_lists)
+
+        all_data = {}
+        today_data = {}
+
+
+        # 按照统计表倒序排序按照时间分组取出最新的
+        below_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today group by addtime order by addtime desc limit 1'''
+        below_data = (pd.read_sql(below_sql,conn_analyze)).to_dict("records")[0]
+        today_data = {
+            "public_count": below_data["public_total_count"], "public_price": below_data["publish_total_price"], "traned_count": below_data["traned_total_count"], "traned_price": below_data["traned_total_price"],
+            "used_count": below_data["used_total_count"],"used_price": below_data["used_total_price"],
+            "tran_count": below_data["tran_total_count"], "tran_price": below_data["tran_total_price"], "no_tran_count": below_data["no_tran_total_count"],
+            "no_tran_price": below_data["no_tran_total_price"], "hold_count": below_data["hold_total_count"], "hold_price": below_data["hold_total_price"]
+        }
+
+        # 里面包含发布和使用
+        use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
+        select sum(use_count) use_count,sum(public_count) public_count from user_storage_value union all
+        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today group by addtime order by addtime desc 
+        limit 1)
+        ) user_storage'''
+        cursor_analyze.execute(use_public_sql)
+        use_public = cursor_analyze.fetchone()
+
+        all_data["plat_count"] = plat_lh_total_count_seven
+        all_data["plat_hold_count"] = today_data["hold_count"]
+        all_data["plat_surplus_count"] = all_data["plat_count"] - all_data["plat_hold_count"]
+        all_data["plat_tran_count"] = today_data["tran_count"]
+        all_data["plat_no_tran_count"] = today_data["no_tran_count"]
+        all_data["plat_used_count"] = use_public[0]
+        all_data["plat_public_count"] = use_public[1]
+        msg_data = {"all_data":all_data,"today_data":today_data}
+
+        return {"code":"0000","status":"success","msg":msg_data}
+
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
