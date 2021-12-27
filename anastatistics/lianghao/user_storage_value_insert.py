@@ -291,7 +291,20 @@ def user_mes():
     finally:
         conn_analyze.close()
 
-
+def delete_yes_data():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
+        delete_sql = '''delete from user_storage_value_today where day_time != CURRENT_DATE'''
+        cursor_analyze.execute(delete_sql)
+        conn_analyze.commit()
+        logger.info("删除成功了")
+        return True
+    except Exception as e:
+        logger.info(traceback.format_exc())
+        return False, e
+    finally:
+        conn_analyze.close()
 
 if __name__ == "__main__":
     run_start = time.time()
@@ -371,3 +384,4 @@ if __name__ == "__main__":
         run_end = time.time()
         logger.info(run_start - run_end)
         break
+    delete_yes_data()
