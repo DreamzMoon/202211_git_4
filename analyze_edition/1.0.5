@@ -26,3 +26,10 @@ CREATE TABLE `user_storage_value_today` (
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户每日名片网数据统计表';
+
+
+#平台靓号总数
+CREATE TABLE `plat_lh_total_today` (
+  `plat_total_count` bigint(20) DEFAULT NULL,
+  `statistic_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

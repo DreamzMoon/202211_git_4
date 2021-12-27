@@ -123,7 +123,8 @@ crm_mysql_conf = {
     "cursorclass": pymysql.cursors.DictCursor
 }
 
-
+#靓号的配置数据
+plat_lh_total_count_seven = 11331322
 
 
 #默认配置
