@@ -103,8 +103,10 @@ def belong_type():
         ]
         # 转让类型
         belong_transfer = [
-            {"status_id": "0", "status_name": "不可转让"},
-            {"status_id": "1", "status_name": "可转让"},
+            {"status_id": "0", "status_name": "可转让"},
+            {"status_id": "1", "status_name": "不可转让"},
+            {"status_id": "2", "status_name": "转让中"},
+            {"status_id": "3", "status_name": "已转让"}
         ]
         # 使用状态
         belong_use = [
@@ -136,72 +138,6 @@ def belong_type():
         return {"code": "0000", "status": "success", "msg": belong_type}
     except:
         return {"code": "10000", "status": "success", "msg": message["10000"]}
-
-# 名片网归属时间类型
-@typebp.route("/belong_time/type/list",methods=["GET"])
-def belong_time_type():
-    try:
-        belong_time = [
-            {"status_id": "0", "status_name": "持有时间"},
-            {"status_id": "1", "status_name": "可转让时间"},
-            {"status_id": "2", "status_name": "使用时间"},
-        ]
-        return {"code": "0000", "status": "success", "msg": belong_time}
-    except:
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-# 名片网归属转让类型
-@typebp.route("/belong_transfer/type/list",methods=["GET"])
-def belong_transfer_type():
-    try:
-        belong_transfer = [
-            {"status_id": "0", "status_name": "不可转让"},
-            {"status_id": "1", "status_name": "可转让"},
-        ]
-        return {"code": "0000", "status": "success", "msg": belong_transfer}
-    except:
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-# 名片网归属使用状态
-@typebp.route("/belong_use/type/list",methods=["GET"])
-def belong_use_type():
-    try:
-        belong_use = [
-            {"status_id": "0", "status_name": "已使用"},
-            {"status_id": "1", "status_name": "未使用"},
-        ]
-        return {"code": "0000", "status": "success", "msg": belong_use}
-    except:
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-# 名片网归属购买来源
-@typebp.route("/belong_source/type/list",methods=["GET"])
-def belong_order_source_type():
-    try:
-        belong_source = [
-            {"status_id": "0", "status_name": "官方订单"},
-            {"status_id": "1", "status_name": "交易市场订单"},
-            {"status_id": "2", "status_name": "预订单"},
-            {"status_id": "3", "status_name": "零售订单"},
-            {"status_id": "4", "status_name": "二手市场订单"},
-        ]
-        return {"code": "0000", "status": "success", "msg": belong_source}
-    except:
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-# 名片网归属靓号位数
-@typebp.route("/belong_length/type/list",methods=["GET"])
-def belong_length_type():
-    try:
-        belong_length = [
-            {"status_id": "4", "status_name": "4位"},
-            {"status_id": "5", "status_name": "5位"},
-            {"status_id": "6", "status_name": "6位"},
-            {"status_id": "7", "status_name": "7位"},
-        ]
-        return {"code": "0000", "status": "success", "msg": belong_length}
-    except:
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 # 名片网归属靓号类型
 @typebp.route("/belong_pretty/type/list",methods=["GET"])

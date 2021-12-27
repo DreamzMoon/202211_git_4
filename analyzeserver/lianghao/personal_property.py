@@ -466,7 +466,7 @@ def bus_card_belong():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 12:
+            if len(request.json) != 13:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -482,6 +482,7 @@ def bus_card_belong():
             # 持有人信息
             hold_user_info = request.json['hold_user_info'].strip()
             # 持有时间
+            time_type = request.json['time_type']
             hold_start_time = request.json['hold_start_time'].strip()
             hold_end_time = request.json['hold_end_time'].strip()
             # 转让类型
@@ -495,24 +496,229 @@ def bus_card_belong():
             # 靓号位数
             pretty_length = request.json['pretty_length']
             # 靓号类型
-            pretty_type = request.json['prettY_type']
+            pretty_type = request.json['pretty_type']
 
             # 每页显示条数
             size = request.json['size']
             # 页码
             page = request.json['page']
 
-            if hold_start_time or hold_end_time:
-                order_time_result = judge_start_and_end_time(hold_start_time, hold_end_time)
-                if not order_time_result[0]:
-                    return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
-                request.json['hold_start_time'] = order_time_result[0]
-                request.json['hold_end_time'] = order_time_result[1]
+            # if hold_start_time or hold_end_time:
+            #     order_time_result = judge_start_and_end_time(hold_start_time, hold_end_time)
+            #     if not order_time_result[0]:
+            #         return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
+            #     request.json['hold_start_time'] = order_time_result[0]
+            #     request.json['hold_end_time'] = order_time_result[1]
         except:
             # 参数名错误
+            logger.info(traceback.format_exc())
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_an:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
-        return '11111111111111'
+        pretty_hold_sql = '''
+            select pretty_id, pretty_type_name, pretty_type_length, hold_phone, order_type, `status`, is_sell, pay_type, is_open_vip, create_time, thaw_time
+            from lh_pretty_client.lh_pretty_hold_{table_name}
+            where del_flag=0
+        '''
+        # 拼接sql
+        # 持有时间 0持有时间，1可转让时间，2使用时间-> 为2的在后面进行筛选
+        if time_type == 0:
+            hold_time_sql = ''' and create_time >= "%s" and create_time <= "%s"''' % (hold_start_time, hold_end_time)
+        elif time_type == 1:
+            hold_time_sql = ''' and thaw_time >= "%s" and thaw_time <= "%s"''' % (hold_start_time, hold_end_time)
+        else:
+            hold_time_sql = ''
+        pretty_hold_sql_1 = pretty_hold_sql + hold_time_sql
+        # 转让类型 # 0可转让 1不可转让 2转让中 3已转让
+        if transfer_type == 0:
+            transfer_sql = ''' and thaw_time <= now() and `status`=0 and is_open_vip=0 and is_sell=1'''
+        elif transfer_type == 1:
+            transfer_sql = ''' and is_open_vip=0 AND STATUS=0 and pretty_id not in (select pretty_id from lh_pretty_hold_{table_name} where `status`=0 and is_open_vip=0 and thaw_time<=now() and del_flag=0 and is_sell=1 and pay_type !=0)'''
+        elif transfer_type == 2:
+            transfer_sql = ''' and `status`=2'''
+        elif transfer_type == 3:
+            transfer_sql = ''' and `status`=3'''
+        else:
+            transfer_sql = ''
+        pretty_hold_sql_1 += transfer_sql
+        # 使用状态，0已使用，1未使用
+        if use_type == 0:
+            use_sql = ''' and (`status`=1 or is_open_vip=1)'''
+        else:
+            use_sql = ''
+        pretty_hold_sql_1 += use_sql
+        # 购买来源 0官方，1交易市场，2预订单，3零售订单，4二手市场订单
+        if source_type != '':
+            source_sql = ''' and order_type=%s''' % source_type
+        else:
+            source_sql = ''
+        pretty_hold_sql_1 += source_sql
+        # 靓号位数
+        if pretty_length:
+            pretty_length_sql = ''' and pretty_type_length=%s''' % pretty_length
+        else:
+            pretty_length_sql = ''
+        pretty_hold_sql_1 += pretty_length_sql
+        # 靓号类型
+        if pretty_type:
+            pretty_type_sql = ''' and pretty_type_id=%s''' % pretty_type
+        else:
+            pretty_type_sql = ''
+        pretty_hold_sql_1 += pretty_type_sql
+        # 读取用户信息
+        user_info_sql = '''select unionid, phone, if(`name` != "",`name`,if(nickname is not null,nickname,"")) nickname from crm_user_%s where phone is not null and phone != ""''' % current_time
+        user_info_df = pd.read_sql(user_info_sql, conn_an)
+        user_info_df['unionid'] = user_info_df['unionid'].astype(str)
+        logger.info('读取用户信息表')
+        user_id_sql = '''select phone, left(id, 1) id from lh_pretty_client.lh_user where del_flag=0'''
+        user_id_df = pd.read_sql(user_id_sql, conn_lh)
+        logger.info('读取靓号用户表')
+        hold_user_info_df = user_info_df.merge(user_id_df, how='left', on='phone')
+        # # 如果存在用户信息查找，则先查找用信息，再根据用户信息查找持有表
+        hold_table_type_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
+        hold_user_phone_list = []
+        flag = False
+        if hold_user_info:
+            flag = True
+            hold_user_phone_list = (hold_user_info_df.loc[(hold_user_info_df['unionid'].str.contains(hold_user_info)) |
+                                            (hold_user_info_df['phone'].str.contains(hold_user_info)) |
+                                            (hold_user_info_df['nickname'].str.contains(hold_user_info)), :]['phone'].unique().tolist())
+        if use_user_info:
+            flag = True
+            bind_log_sql = '''select hold_phone, phone from lh_pretty_client.lh_bind_pretty_log'''
+            bind_log_df = pd.read_sql(bind_log_sql, conn_lh)
+            bind_user_info_df = user_info_df.merge(bind_log_df, how='left', on='phone')
+            hold_user_phone_list = set(hold_user_phone_list) & set(bind_user_info_df.loc[(bind_user_info_df['unionid'].str.contains(use_user_info)) |
+                                                     (bind_user_info_df['phone'].str.contains(use_user_info)) |
+                                                     (bind_user_info_df['nickname'].str.contains(use_user_info)), :]['hold_phone'].unique().tolist())
+        if flag and len(hold_user_phone_list) == 0:
+            return {"code": "0000", "status": "success", "msg": []}
+        if hold_user_phone_list:
+            logger.info(hold_user_phone_list)
+            hold_table_type_list = hold_user_info_df.loc[hold_user_info_df['phone'].isin(hold_user_phone_list), :]['id'].unique().tolist()
+
+        # use_user_table_list = []
+        # if use_user_info:
+        #     use_user_table_list.extend(user_info_df.loc[(user_info_df['unionid'].str.contains(use_user_info)) |
+        #                                     (user_info_df['phone'].str.contains(use_user_info)) |
+        #                                     (user_info_df['nickname'].str.contains(hold_user_info)), :])
+        # logger.info(user_table_list)
+        # 读取表格
+
+        hold_df_list = []
+        cursor = conn_lh.cursor()
+        # 没有任何筛选条件时：sql查询加上limit 10
+        if page and size:
+            start_index = (page - 1) * size
+            end_index = page * size
+        else:
+            start_index = 0
+            end_index = 0
+        count = 0
+        if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
+            if start_index == 0 and end_index ==0:
+                return {'code': "0000", "status": "success", "msg": "数据量过大,暂不支持导出"}
+
+           # 获取统计次数
+            count_list = []
+            # sql列表
+            sql_list = []
+            for hold_table_type in hold_table_type_list:
+                sql_list.append(pretty_hold_sql_1.format(table_name=hold_table_type))
+                count_sql = '''
+                select count(*) count
+                from lh_pretty_client.lh_pretty_hold_%s
+                where del_flag=0
+                ''' % hold_table_type
+                cursor.execute(count_sql)
+                count_list.append(int(cursor.fetchone()[0]))
+            count = sum(count_list)
+            logger.info(count)
+            pretty_hold_sql_1 = ''' union all '''.join(sql_list)
+            pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+            hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
+        else:
+            for hold_table_type in hold_table_type_list:
+                hold_df = pd.read_sql(pretty_hold_sql_1.format(table_name=hold_table_type), conn_lh)
+                hold_df_list.append(hold_df)
+            hold_all_df = pd.concat(hold_df_list, axis=0)
+
+        # 转让类型
+        # 正常
+        normal_df = hold_all_df[(hold_all_df['status'] == 0) & (hold_all_df['is_open_vip'] == 0) & (
+                    hold_all_df['thaw_time'] <= datetime.datetime.now()) & (hold_all_df['is_sell'] == 1) & (
+                                          hold_all_df['pay_type'] != 0)]
+        # 0可转让 1不可转让 2转让中 3已转让
+        hold_all_df['transfer_type'] = 0
+        # 不可转让
+        hold_all_df.loc[
+            (~hold_all_df['pretty_id'].isin(normal_df['pretty_id'].tolist())) & (hold_all_df['is_open_vip'] == 0) & (
+                        hold_all_df['status'] == 0), 'transfer_type'] = 1
+        # 已转让
+        hold_all_df.loc[hold_all_df['status'] == 3, 'transfer_type'] = 3
+        # 转让中
+        hold_all_df.loc[hold_all_df['status'] == 2, 'transfer_type'] = 2
+        # 使用状态 0 已使用 1未使用
+        hold_all_df['use_type'] = 1
+        hold_all_df.loc[(hold_all_df['is_open_vip'] == 1) | (hold_all_df['status'] == 1), 'use_type'] = 0
+        # 匹配使用时间
+        use_pretty_id_list = list(set(hold_all_df.loc[hold_all_df['use_type'] == 0, 'pretty_id'].tolist()))
+        if len(use_pretty_id_list) != 0:
+            use_pretty_id_list = list(set(hold_all_df.loc[hold_all_df['use_type'] == 0, 'pretty_id'].tolist()))
+            use_time_sql = '''
+                select hold_phone, phone use_user_phone, pretty_id, min(use_time) use_time from lh_pretty_client.lh_bind_pretty_log where del_flag=0 and pretty_id in (%s) group by hold_phone, pretty_id
+            ''' % ','.join(use_pretty_id_list)
+            use_time_df = pd.read_sql(use_time_sql, conn_lh)
+            use_time_df['use_time'] = use_time_df['use_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+            hold_all_df = hold_all_df.merge(use_time_df, how='left', on=['hold_phone', 'pretty_id'])
+        else:
+            hold_all_df['use_time'] = ''
+            hold_all_df['use_user_phone'] = ''
+        # 匹配使用时间条件
+        if time_type == 2:
+            hold_all_df = hold_all_df[
+                (hold_all_df['use_time'] >= hold_start_time) & (hold_all_df['use_time'] <= hold_end_time)]
+
+
+        # 合并得到持有人信息
+        hold_all_df = hold_all_df.merge(user_info_df.rename(
+            columns={"unionid": "hold_unionid", "phone": "hold_phone", "nickname": "hold_name"}),
+                                            how='left', on='hold_phone')
+        # 使用人信息
+        hold_all_df = hold_all_df.merge(user_info_df.rename(
+            columns={"unionid": "use_user_unionid", "phone": "use_user_phone", "nickname": "use_user_name"}),
+                                            how='left', on='use_user_phone')
+        # 匹配持有人
+        if hold_user_info:
+            hold_all_df = hold_all_df.loc[(hold_all_df['hold_name'].str.contains(hold_user_info))
+                                          | (hold_all_df['hold_unionid'].str.contains(hold_user_info))
+                                          | (hold_all_df['hold_phone'].str.contains(hold_user_info)), :]
+        # 匹配使用人
+        if use_user_info:
+            hold_all_df = hold_all_df.loc[(hold_all_df['use_user_name'].str.contains(hold_user_info))
+                                          | (hold_all_df['use_user_unionid'].str.contains(hold_user_info))
+                                          | (hold_all_df['use_user_phone'].str.contains(hold_user_info)), :]
+        # 删除昵称
+        hold_all_df.drop(['hold_name', 'use_user_name', 'is_sell', 'pay_type', 'is_open_vip', 'status'], axis=1, inplace=True)
+        if count == 0:
+            count = hold_all_df.shape[0]
+            hold_all_df = hold_all_df[start_index:end_index]
+        hold_all_df['create_time'] = hold_all_df['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
+        hold_all_df['thaw_time'] = hold_all_df['thaw_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
+        hold_all_df.fillna('', inplace=True)
+
+        return {"code": "0000", "status": "success", "msg": hold_all_df.to_dict("records"), "count": count}
+
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
+    finally:
+        try:
+            conn_lh.close()
+            conn_an.close()
+        except:
+            pass
