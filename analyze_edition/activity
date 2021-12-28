@@ -1,0 +1,5 @@
+ALTER TABLE `lh_analyze`.`sys_activity`
+DROP COLUMN `filter_pay_type_7`,
+DROP COLUMN `filter_pay_type_8`,
+ADD COLUMN `filter_pay_type_7` text NULL COMMENT '7位支付方式过滤' AFTER `filter_phone`,
+ADD COLUMN `filter_pay_type_8` text NULL COMMENT '8位支付方式过滤' AFTER `filter_pay_type_7`;

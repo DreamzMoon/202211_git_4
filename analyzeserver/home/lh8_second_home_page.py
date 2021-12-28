@@ -153,7 +153,7 @@ def data_center():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         cursor_analyze = conn_analyze.cursor()
-        sql = '''select start_time, end_time, filter_phone,remarks from sys_activity where id = 1'''
+        sql = '''select start_time, end_time, filter_phone,remarks,filter_pay_type_7,filter_pay_type_8 from sys_activity where id = 1'''
         cursor_analyze.execute(sql)
         data = cursor_analyze.fetchone()
         logger.info(data)
@@ -162,24 +162,57 @@ def data_center():
         end_time = data[1]
         filter_phone = data[2]
         remarks = data[3]
+        filter_pay_type_7 = data[4]
+        filter_pay_type_8 = data[5]
 
+
+        # if filter_phone:
+        #     filter_phone = filter_phone[1: -1]
+        #     sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
+        #     union all
+        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
+        #     ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
+        # else:
+        #     sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
+        #     union all
+        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' % (
+        #     start_time, end_time, start_time, end_time)
+
+        condition_sql = ""
+        if start_time and end_time:
+            condition_sql = condition_sql + ''' and create_time >= "%s" and create_time <= "%s" ''' %(start_time,end_time)
         if filter_phone:
-            filter_phone = filter_phone[1: -1]
-            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
+            condition_sql = condition_sql + ''' and phone not in (%s)''' %(filter_phone[1:-1])
+
+
+        sql_7 =  '''
+        select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
             select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
-            union all 
-            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
-            ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
-        else:
-            sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
-            union all 
-            select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' % (
-            start_time, end_time, start_time, end_time)
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 
+        '''
+        sql_7_group = ''' group by phone) t1'''
+
+
+        sql_8 = '''
+           select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
+            select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1     
+        '''
+        sql_8_group = ''' group by phone) t2)t '''
+        logger.info(condition_sql)
+
+        if filter_pay_type_7:
+            sql_7 = sql_7 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_7[1:-1])  + sql_7_group
+
+        if filter_pay_type_8:
+            sql_8 = sql_8 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_8[1:-1]) + sql_8_group
+
+        sql = sql_7 + " union all " + sql_8
 
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
@@ -413,12 +446,14 @@ def search_activity_data():
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         search_sql = '''
-            select id, start_time, end_time, remarks, filter_phone from sys_activity
+            select id, start_time, end_time, remarks, filter_phone,filter_pay_type_7,filter_pay_type_8 from sys_activity
         '''
         data = pd.read_sql(search_sql, conn_lh)
         data['start_time'] = data['start_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         data['end_time'] = data['end_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         data['filter_phone'] = data['filter_phone'].apply(lambda x: json.loads(x) if x else [])
+        data['filter_pay_type_7'] = data['filter_pay_type_7'].apply(lambda x: json.loads(x) if x else [])
+        data['filter_pay_type_8'] = data['filter_pay_type_8'].apply(lambda x: json.loads(x) if x else [])
         data = data.to_dict("records")
         return {"code": "0000", "status": "success", "msg": data}
     except Exception as e:
@@ -436,7 +471,7 @@ def change_activity_data():
     try:
         try:
             logger.info(request.json)
-            if len(request.json) != 6:
+            if len(request.json) != 8:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -454,6 +489,8 @@ def change_activity_data():
             start_time = request.json['start_time']
             end_time = request.json['end_time']
             filter_phone = request.json['filter_phone']
+            filter_pay_type_7 = request.json["filter_pay_type_7"]
+            filter_pay_type_8 = request.json["filter_pay_type_8"]
             if not start_time or not end_time:
                 return {"code": "10016", "status": "failed", "msg": message["10016"]}
 
@@ -467,15 +504,18 @@ def change_activity_data():
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         update_sql = '''
-            update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s where id = %s
+            update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s,filter_pay_type_7=%s,filter_pay_type_8=%s where id = %s
         '''
-        if len(filter_phone)==0:
+        if len(filter_phone) == 0:
             filter_phone = None
         else:
             filter_phone = json.dumps(filter_phone)
 
+        filter_pay_type_7 = None if len(filter_pay_type_7) == 0 else json.dumps(filter_pay_type_7)
+        filter_pay_type_8 = None if len(filter_pay_type_8) == 0 else json.dumps(filter_pay_type_8)
+
         with conn_lh.cursor() as cursor:
-            cursor.execute(update_sql, (start_time, end_time, remarks, filter_phone, activity_id))
+            cursor.execute(update_sql, (start_time, end_time, remarks, filter_phone,filter_pay_type_7,filter_pay_type_8, activity_id))
         conn_lh.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
     except Exception as e:
