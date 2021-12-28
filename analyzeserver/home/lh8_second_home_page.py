@@ -206,13 +206,17 @@ def data_center():
         sql_8_group = ''' group by phone) t2)t '''
         logger.info(condition_sql)
 
+        if condition_sql:
+            sql_7 = sql_7 + condition_sql
+            sql_8 = sql_8 + condition_sql
+
         if filter_pay_type_7:
-            sql_7 = sql_7 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_7[1:-1])  + sql_7_group
+            sql_7 = sql_7 + ''' and pay_type not in (%s) ''' % (filter_pay_type_7[1:-1])
 
         if filter_pay_type_8:
-            sql_8 = sql_8 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_8[1:-1]) + sql_8_group
+            sql_8 = sql_8 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_8[1:-1])
 
-        sql = sql_7 + " union all " + sql_8
+        sql = sql_7 + sql_7_group + " union all " + sql_8 + sql_8_group
 
         logger.info(sql)
         data = pd.read_sql(sql,conn_lh)
