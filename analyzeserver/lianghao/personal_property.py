@@ -272,7 +272,7 @@ def plat_statis():
             return {"code": "0000", "status": "sucesss", "msg": msg_data}
 
         elif time_type == 2 or time_type == 3:
-            limit_list = [0,7,7,7] if time_type == 2 else [0,29,30,30]
+            limit_list = [0,6,7,7] if time_type == 2 else [0,29,30,30]
             if args_phone_lists:
                 form_sql = '''
                                 (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
