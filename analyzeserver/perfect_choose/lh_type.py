@@ -16,7 +16,7 @@ from analyzeserver.user.sysuser import check_token
 
 typebp = Blueprint('type', __name__, url_prefix='/lh/personal')
 
-# 支付类型
+# 7位支付类型
 @typebp.route("/pay_type/list", methods=["GET"])
 def pay_type_list():
     try:
@@ -31,6 +31,25 @@ def pay_type_list():
             {"pay_id": "6", "pay_name": "银行卡支付"},
             {"pay_id": "7", "pay_name": "诚聊通佣金支付"},
             {"pay_id": "8", "pay_name": "诚聊通红包支付"}
+        ]
+        return {"code":"0000","status":"success","msg": map_pay_type}
+    except:
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+# 8位支付类型
+@typebp.route("/eight/pay_type/list", methods=["GET"])
+def eight_pay_type_list():
+    try:
+        map_pay_type = [
+            {"pay_id": "-1", "pay_name": "信用点"},
+            {"pay_id": "0", "pay_name": "采购金"},
+            {"pay_id": "1", "pay_name": "收银台"},
+            {"pay_id": "2", "pay_name": "诚聊通余额支付"},
+            {"pay_id": "3", "pay_name": "微信支付"},
+            {"pay_id": "4", "pay_name": "支付宝支付"},
+            {"pay_id": "5", "pay_name": "后台系统支付"},
+            {"pay_id": "6", "pay_name": "银行卡支付"},
+            {"pay_id": "8", "pay_name": "禄可商务转入"}
         ]
         return {"code":"0000","status":"success","msg": map_pay_type}
     except:
