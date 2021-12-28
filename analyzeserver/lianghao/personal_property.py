@@ -722,3 +722,59 @@ def bus_card_belong():
             conn_an.close()
         except:
             pass
+
+@ppbp.route('/personal/hold/total')
+def personal_hold_total():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 8:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            # 持有人信息
+            keyword = request.json['keyword'].strip()
+            # 归属运营中心
+            operateid = request.json['operateid']
+            # 归属上级
+            parent = request.json['parent']
+            # 过滤条件
+            unionid_lists = request.json['unionid_lists'] # unionid
+            phone_lists = request.json['phone_lists'] # 手机号
+            bus_lists = request.json['bus_lists'] # 运营中心
+            '''TODO'''
+            # 用户标签
+            # user_tag = request.json['user_tag']
+
+            # 每页显示条数
+            size = request.json['size']
+            # 页码
+            page = request.json['page']
+        except:
+            # 参数名错误
+            logger.info(traceback.format_exc())
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_an:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+    except Exception as e:
+        logger.error(e)
+        logger.error(traceback.format_exc())
+    finally:
+        try:
+            conn_lh.close()
+            conn_an.close()
+        except:
+            pass
