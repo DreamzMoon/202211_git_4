@@ -232,7 +232,7 @@ def plat_statis():
                             select date_format(addtime,"%%Y-%%m-%%d %%H") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                             sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
                             sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today where hold_phone not in (%s) group by date_format(addtime,"%%Y-%%m-%%d %%H:%%i:%%S") 
-                            order by date_format(addtime,"%%Y-%%m-%%d %%H:%%i:%%S")  desc
+                            order by date_format(addtime,"%%Y-%%m-%%d %%H:%%i:%%S")  asc
                             ) user_store group by day_time 
                             ''' %(args_phone_lists)
                 circle_sql = '''
@@ -250,7 +250,7 @@ def plat_statis():
                 select date_format(addtime,"%Y-%m-%d %H") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                 sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
                 sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today group by date_format(addtime,"%Y-%m-%d %H:%i:%S") 
-                order by date_format(addtime,"%Y-%m-%d %H:%i:%S")  desc
+                order by date_format(addtime,"%Y-%m-%d %H:%i:%S")  asc
                 ) user_store group by day_time 
                 '''
                 circle_sql = '''
@@ -286,7 +286,7 @@ def plat_statis():
                                 sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
                                  from user_storage_value_today where hold_phone not in (%s) group by addtime order by addtime desc 
                                 limit 1)
-                                order by day_time desc
+                                order by day_time asc
                                 ''' % (args_phone_lists,limit_list[1],args_phone_lists)
 
                 circle_sql = '''
@@ -325,7 +325,7 @@ def plat_statis():
                 sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
                  from user_storage_value_today group by addtime order by addtime desc 
                 limit 1)
-                order by day_time desc
+                order by day_time asc
                 ''' %(limit_list[1])
 
                 circle_sql = '''
