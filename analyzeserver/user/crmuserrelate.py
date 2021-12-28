@@ -299,3 +299,44 @@ def user_relate_detail():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 
+
+@userrelatebp.route("update/user/ascription",methods=["POST"])
+def update_user_ascriptions():
+    try:
+        conn = direct_get_conn(analyze_mysql_conf)
+        try:
+            token = request.headers["Token"]
+            user_id = request.json.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        #直属运营中心修改 传直属运营中心id
+        operate_direct_id = request.json.get("operate_direct_id")
+
+        #支持crm的运营中心修改 传crm运营中心的id
+        operate_id = request.json.get("operate_id")
+
+        #上级修改传手机号码
+        parent_phone = request.json.get("parent_phone")
+
+        #运营中心的上级修改 传手机号码
+        bus_parent_phone = request.json.get("bus_parent_phone")
+
+        # condition = []
+        # if operate_direct_id:
+
+
+        # return {"code": "0000", "msg": data, "status": "success"}
+    except Exception as e:
+        logger.error(e)
+        # 参数名错误
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn.close()
