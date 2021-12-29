@@ -503,31 +503,77 @@ def change_activity_data():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        conn_lh = direct_get_conn(analyze_mysql_conf)
-        if not conn_lh:
+        conn_an = direct_get_conn(analyze_mysql_conf)
+
+
+        if not conn_an:
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
         update_sql = '''
             update lh_analyze.sys_activity set start_time=%s, end_time=%s, remarks=%s, filter_phone=%s,filter_pay_type_7=%s,filter_pay_type_8=%s where id = %s
         '''
         if len(filter_phone) == 0:
-            filter_phone = None
+            filter_phone = []
         else:
-            filter_phone = json.dumps(filter_phone)
+            filter_phone = filter_phone
 
-        filter_pay_type_7 = None if len(filter_pay_type_7) == 0 else json.dumps(filter_pay_type_7)
-        filter_pay_type_8 = None if len(filter_pay_type_8) == 0 else json.dumps(filter_pay_type_8)
+        filter_pay_type_7 = [] if len(filter_pay_type_7) == 0 else filter_pay_type_7
+        filter_pay_type_8 = [] if len(filter_pay_type_8) == 0 else filter_pay_type_8
 
-        with conn_lh.cursor() as cursor:
-            cursor.execute(update_sql, (start_time, end_time, remarks, filter_phone,filter_pay_type_7,filter_pay_type_8, activity_id))
-        conn_lh.commit()
+        # 原活动数据
+        select_sql = '''select * from sys_activity where id = %s''' % activity_id
+        old_activity = pd.read_sql(select_sql, conn_an)
+        old_activity = old_activity.to_dict("records")[0]
+        logger.info(old_activity)
+        old_start_time = old_activity["start_time"].strftime('%Y-%m-%d %H:%M:%S')
+        old_end_time = old_activity["end_time"].strftime('%Y-%m-%d %H:%M:%S')
+        old_remarks = old_activity["remarks"]
+        old_filter_phone = json.loads(old_activity["filter_phone"])
+        old_filter_pay_type_7 = json.loads(old_activity["filter_pay_type_7"])
+        old_filter_pay_type_8 = json.loads(old_activity["filter_pay_type_8"])
+
+        compare = []
+        if old_start_time != start_time:
+            compare.append("开始时间 %s 变更为 %s" % (old_start_time, start_time))
+        if old_end_time != end_time:
+            compare.append("结束时间 %s 变更为 %s" % (old_end_time, end_time))
+        if old_remarks != remarks:
+            compare.append("备注 %s 变更为 %s" % (old_remarks, remarks))
+        if old_filter_phone != filter_phone:
+            compare.append("过滤手机号 %s 变更为 %s" % (old_filter_phone, filter_phone))
+        if old_filter_pay_type_7 != filter_pay_type_7:
+            compare.append("7为支付类型过滤 %s 变更为 %s" % (old_filter_pay_type_7, filter_pay_type_7))
+            compare.append("七位支付类型:%s" %{"-1":"未知","0":"信用点","1":"诚聊余额","2":"诚聊通余额","3":"微信","4":"支付宝","5":"后台","6":"银行卡","7":"诚聊通佣金","8":"诚聊通红包"})
+        if old_filter_pay_type_8 != filter_pay_type_8:
+            compare.append("7为支付类型过滤 %s 变更为 %s" % (old_filter_pay_type_8, filter_pay_type_8))
+            compare.append("八位支付类型:%s" % {"-1": "信用点","0":"采购金", "1": "收银台", "2": "诚聊通余额", "3": "微信", "4": "支付宝", "5": "后台","6": "银行卡","8": "禄可商务转入"})
+        logger.info("compare:%s" % compare)
+
+
+        with conn_an.cursor() as cursor:
+            cursor.execute(update_sql, (start_time, end_time, remarks, json.dumps(filter_phone),json.dumps(filter_pay_type_7),json.dumps(filter_pay_type_8), activity_id))
+
+
+
+            if compare:
+                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+                params = []
+                params.append(user_id)
+                params.append("/user/relate/update/user/ascription")
+                params.append(json.dumps(request.json))
+                params.append("修改用户数据")
+                params.append("<br>".join(compare))
+                logger.info(params)
+                cursor.execute(insert_sql, params)
+
+        conn_an.commit()
         return {"code": "0000", "status": "success", "msg": '更新成功'}
     except Exception as e:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "success", "msg": message["10000"]}
     finally:
         try:
-            conn_lh.close()
+            conn_an.close()
         except:
             pass
 
