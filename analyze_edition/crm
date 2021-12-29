@@ -15,7 +15,8 @@ CREATE TABLE `operationcenter` (
   `address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '详细地址',
   `status` tinyint(1) DEFAULT '1' COMMENT '状态：1正常  2关闭',
   `crm` tinyint(1) DEFAULT '0' COMMENT 'crm支持：1支持 0不支持',
-  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间'
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='运营中心';
 
 

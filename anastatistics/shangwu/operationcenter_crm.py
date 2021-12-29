@@ -15,6 +15,7 @@ father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
 from config import *
 from util.help_fun import *
+from datetime import timedelta
 
 
 def operate_relationship_crm(mode='first'):
@@ -37,15 +38,16 @@ def operate_relationship_crm(mode='first'):
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         analyze_cusor = conn_analyze.cursor()
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        if not conn_crm:
+        # conn_crm = direct_get_conn(crm_mysql_conf)
+        if not conn_analyze:
             return False, '10002'  # 数据库连接失败
-        crm_cursor = conn_crm.cursor()
+        # crm_cursor = conn_crm.cursor()
 
-        operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from luke_lukebus.operationcenter where capacity=1 and crm=1'
-        crm_cursor.execute(operate_sql)
-        operate_data = crm_cursor.fetchall()
-        operate_df = pd.DataFrame(operate_data)
+        # operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from luke_lukebus.operationcenter where capacity=1 and crm=1'
+        operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from lh_analyze.operationcenter where capacity=1 and crm=1'
+        # analyze_cusor.execute(operate_sql)
+        # operate_data = analyze_cusor.fetchall()
+        operate_df = pd.read_sql(operate_sql, conn_analyze)
 
         # 运营中心手机号列表
         operate_telephone_list = operate_df['phone'].to_list()
@@ -53,7 +55,6 @@ def operate_relationship_crm(mode='first'):
         fina_center_data_list = []
         for phone in operate_telephone_list:
             logger.info(phone)
-            logger.info(supervisor_sql)
             analyze_cusor.execute(supervisor_sql, phone)
             all_data = analyze_cusor.fetchall()
             # 总数据
@@ -111,12 +112,13 @@ def operate_relationship_crm(mode='first'):
             result_df.to_sql("operate_relationship_crm", con=conn_rw, if_exists="append", index=False)
             return True, '添加数据成功'
         else:
+            logger.info(result_df)
             return True, result_df
     except:
         logger.error(traceback.format_exc())
         return False, '失败'
     finally:
-        conn_crm.close()
+        # conn_crm.close()
         conn_analyze.close()
 # result = operate_relationship_crm()
 # logger.info(result[1])
@@ -132,12 +134,19 @@ def refresh_operate_relationship_crm():
         new_operate_df = new_result[1]
 
         old_operate_sql = '''
-            select * from lh_analyze.operate_relationship_crm
+            select * from lh_analyze.operate_relationship_crm_test
         '''
         conn_rw = pd_conn(analyze_mysql_conf)
         conn_rw_refresh = direct_get_conn(analyze_mysql_conf)
         cursor = conn_rw_refresh.cursor()
         old_operate_df = pd.read_sql(old_operate_sql, conn_rw)
+        # 判断是否为新的一天
+        old_operate_time = old_operate_df['sync_time'].dt.strftime("%Y-%m-%d").values[0]
+        flag = False
+        # if old_operate_time != (date.today()).strftime("%Y-%m-%d"):
+        if old_operate_time != '2021-12-30':
+            logger.info('flag改为True')
+            flag = True
         logger.info('进行数据更新')
         for index, row in new_operate_df.iterrows():
             logger.info(index)
@@ -150,14 +159,16 @@ def refresh_operate_relationship_crm():
                 new_data['child_center_id'] = new_data['child_center_id'].apply(lambda x: json.dumps(x))
                 new_data['update_record'] = new_data['update_record'].apply(lambda x: json.dumps(x))
                 # 插入数据
-                new_data.to_sql("operate_relationship_crm", con=conn_rw, if_exists="append", index=False)
+                new_data.to_sql("operate_relationship_crm_test", con=conn_rw, if_exists="append", index=False)
                 continue
             # 已存在数据进行更新
             update_record = {'addtime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'contains': len(row['contains']), 'not_contains': len(row['not_contains']), "child_center_id": len(row['child_center_id'])}
             history_record = eval(old_row_data['update_record'].values[0])
+            if flag:
+                logger.info('11111111')
+                history_record = [history_record[-1]]
             history_record.append(update_record)
-
-            update_sql = '''update operate_relationship_crm set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
+            update_sql = '''update operate_relationship_crm_test set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
             update_data = (
             row['unionid'], row['parentid'], row['name'], row['phone'], row['operatename'], row['crm'], row['status'],
             json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), json.dumps(history_record), row['id'])
