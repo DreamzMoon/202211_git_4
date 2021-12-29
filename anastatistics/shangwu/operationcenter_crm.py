@@ -19,17 +19,21 @@ from util.help_fun import *
 
 def operate_relationship_crm(mode='first'):
     try:
+        # supervisor_sql = '''
+        #     select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+        #     (WITH RECURSIVE temp as (
+        #         SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
+        #         UNION ALL
+        #         SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
+        #     )
+        #     SELECT * FROM temp
+        #     )a left join luke_lukebus.operationcenter b
+        #     on a.id = b.unionid
+        #     '''
+
         supervisor_sql = '''
-            select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
-            (WITH RECURSIVE temp as (
-                SELECT t.id,t.pid,t.phone,t.nickname,t.name FROM luke_sincerechat.user t WHERE phone = %s
-                UNION ALL
-                SELECT t1.id,t1.pid,t1.phone, t1.nickname,t1.name FROM luke_sincerechat.user t1 INNER JOIN temp ON t1.pid = temp.id
-            )
-            SELECT * FROM temp
-            )a left join luke_lukebus.operationcenter b
-            on a.id = b.unionid
-            '''
+            select unionid id,parent_id pid,phone,nickname,name,operatename,operate_id operateid where bus_phone = %s
+                    '''
 
         conn_crm = direct_get_conn(crm_mysql_conf)
         if not conn_crm:
