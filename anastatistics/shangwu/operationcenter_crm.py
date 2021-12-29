@@ -134,7 +134,7 @@ def refresh_operate_relationship_crm():
         new_operate_df = new_result[1]
 
         old_operate_sql = '''
-            select * from lh_analyze.operate_relationship_crm_test
+            select * from lh_analyze.operate_relationship_crm
         '''
         conn_rw = pd_conn(analyze_mysql_conf)
         conn_rw_refresh = direct_get_conn(analyze_mysql_conf)
@@ -143,9 +143,7 @@ def refresh_operate_relationship_crm():
         # 判断是否为新的一天
         old_operate_time = old_operate_df['sync_time'].dt.strftime("%Y-%m-%d").values[0]
         flag = False
-        # if old_operate_time != (date.today()).strftime("%Y-%m-%d"):
-        if old_operate_time != '2021-12-30':
-            logger.info('flag改为True')
+        if old_operate_time != (date.today()).strftime("%Y-%m-%d"):
             flag = True
         logger.info('进行数据更新')
         for index, row in new_operate_df.iterrows():
@@ -159,16 +157,15 @@ def refresh_operate_relationship_crm():
                 new_data['child_center_id'] = new_data['child_center_id'].apply(lambda x: json.dumps(x))
                 new_data['update_record'] = new_data['update_record'].apply(lambda x: json.dumps(x))
                 # 插入数据
-                new_data.to_sql("operate_relationship_crm_test", con=conn_rw, if_exists="append", index=False)
+                new_data.to_sql("operate_relationship_crm", con=conn_rw, if_exists="append", index=False)
                 continue
             # 已存在数据进行更新
             update_record = {'addtime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'contains': len(row['contains']), 'not_contains': len(row['not_contains']), "child_center_id": len(row['child_center_id'])}
             history_record = eval(old_row_data['update_record'].values[0])
             if flag:
-                logger.info('11111111')
                 history_record = [history_record[-1]]
             history_record.append(update_record)
-            update_sql = '''update operate_relationship_crm_test set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
+            update_sql = '''update operate_relationship_crm set unionid=%s, parentid=%s, name=%s, phone=%s, operatename=%s, crm=%s, status=%s, not_contains=%s, contains=%s, child_center_id=%s, update_record=%s where id="%s"'''
             update_data = (
             row['unionid'], row['parentid'], row['name'], row['phone'], row['operatename'], row['crm'], row['status'],
             json.dumps(row['not_contains']), json.dumps(row['contains']), json.dumps(row['child_center_id']), json.dumps(history_record), row['id'])
