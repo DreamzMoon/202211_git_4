@@ -119,7 +119,7 @@ def check_operate_detail_data():
             check_token_result = check_token(token, user_id)
             if check_token_result["code"] != "0000":
                 return check_token_result
-            operate_id = request.json['operate_id']
+            operate_id = request.json['id']
         except:
             # 参数名错误
             logger.info(traceback.format_exc())
