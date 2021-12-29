@@ -561,7 +561,7 @@ def change_activity_data():
                 params.append(user_id)
                 params.append("/user/relate/update/user/ascription")
                 params.append(json.dumps(request.json))
-                params.append("修改用户数据")
+                params.append("修改活动数据")
                 params.append("<br>".join(compare))
                 logger.info(params)
                 cursor.execute(insert_sql, params)
