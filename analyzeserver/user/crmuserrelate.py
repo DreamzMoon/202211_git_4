@@ -304,6 +304,9 @@ def user_relate_detail():
 def update_user_ascriptions():
     try:
         conn = direct_get_conn(analyze_mysql_conf)
+        cursor = conn.cursor()
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        cursor_crm = conn_crm.cursor()
         try:
             token = request.headers["Token"]
             user_id = request.json.get("user_id")
@@ -329,14 +332,136 @@ def update_user_ascriptions():
         #运营中心的上级修改 传手机号码
         bus_parent_phone = request.json.get("bus_parent_phone")
 
-        # condition = []
-        # if operate_direct_id:
+        unionid = request.json.get("unionid")
+
+        # 更新crm
+        update_crm = '''update crm_user_{} set'''.format(current_time)
+        crm_where = ''' where unionid = %s''' %unionid
+        crm_condition = []
+
+        #更新统计表
+        update_daily_order_sql = '''update user_daily_order_data set'''
+        update_store_vas_sql = '''update user_storage_value set'''
+        update_store_vasto_sql = '''update user_storage_value_today set'''
+        update_where = ''' where unionid = %s''' %unionid
+
+        statistic_condition = []
+        logger.info("unionid:%s" %unionid)
+        # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
+        if parent_phone:
+            sql = '''
+            select a.id,a.phone,a.pid from 
+            (WITH RECURSIVE temp as (
+            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE id = %s
+            UNION ALL
+            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id
+            )
+            SELECT * FROM temp
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid 
+            where a.phone != "" and a.phone is not null
+            ''' %unionid
+            logger.info(sql)
+            cursor_crm.execute(sql)
+            datas = cursor_crm.fetchall()
+            logger.info(datas)
+            pid = datas[0]["id"]
+            below_phone = []
+            for data in datas:
+                if data["pid"] == pid:
+                    continue
+                else:
+                    below_phone.append(data["phone"])
+
+            if parent_phone in below_phone:
+                return {"code":"11028","msg":message["11028"],"status":"failed"}
 
 
-        # return {"code": "0000", "msg": data, "status": "success"}
+        if bus_parent_phone:
+            sql = '''
+            select a.id,a.phone,a.pid from 
+            (WITH RECURSIVE temp as (
+            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE id = %s
+            UNION ALL
+            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id
+            )
+            SELECT * FROM temp
+            )a left join luke_lukebus.operationcenter b
+            on a.id = b.unionid 
+            where a.phone != "" and a.phone is not null
+            ''' %unionid
+            cursor_crm.execute(sql)
+            datas = cursor_crm.fetchall()
+            pid = datas[0]["id"]
+            below_phone = []
+            for data in datas:
+                if data["pid"] == pid:
+                    continue
+                else:
+                    below_phone.append(data["phone"])
+
+            if bus_parent_phone in below_phone:
+                return {"code":"11028","msg":message["11028"],"status":"failed"}
+
+
+
+        if operate_direct_id:
+            #先去禄可商务拿运营中心的信息
+            operate_sql = '''select * from luke_lukebus.operationcenter where id = %s''' %operate_direct_id
+            bus_data = pd.read_sql(operate_sql,conn_crm).to_dict("records")[0]
+            crm_condition.append(''' operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s ''' %(bus_data["operatename"],bus_data["telephone"],bus_data["name"],bus_data["unionid"],operate_direct_id))
+
+        if operate_id:
+            # 先去禄可商务拿运营中心的信息
+            operate_sql = '''select * from luke_lukebus.operationcenter where id = %s''' %operate_id
+            bus_data = pd.read_sql(operate_sql, conn_crm).to_dict("records")[0]
+            crm_condition.append(''' operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s ''' % (bus_data["operatename"], bus_data["telephone"], bus_data["name"], bus_data["unionid"], operate_id))
+
+            statistic_condition.append(''' operate_id="%s",operatename="%s",leader_unionid="%s",leader="%s",leader_phone="%s" ''' %(operate_id,bus_data["operatename"],bus_data["unionid"], bus_data["name"],bus_data["telephone"]))
+
+        if parent_phone:
+            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(parent_phone)
+            user_data = pd.read_sql(user_sql,conn_crm).to_dict("records")[0]
+            crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
+            statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["id"],parent_phone))
+
+        if bus_parent_phone:
+            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(parent_phone)
+            user_data = pd.read_sql(user_sql,conn_crm).to_dict("records")[0]
+            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
+
+        crm_sql_condition = ",".join(crm_condition)
+        statistic_condition_sql = ",".join(statistic_condition)
+
+        logger.info("crm_sql_condition:%s" %crm_sql_condition)
+        logger.info("statistic_condition_sql:%s" %statistic_condition_sql)
+
+        update_daily_order_sql = update_daily_order_sql + statistic_condition_sql + update_where
+        update_store_vas_sql = update_store_vas_sql + statistic_condition_sql + update_where
+        update_store_vasto_sql = update_store_vasto_sql + statistic_condition_sql + update_where
+
+        update_crm = update_crm + crm_sql_condition + crm_where
+        logger.info("update_crm_sql:%s" %update_crm)
+        logger.info("update_daily_order_sql:%s" %update_daily_order_sql)
+        logger.info("update_store_vas_sql:%s" %update_store_vas_sql)
+        logger.info("update_store_vasto_sql:%s" %update_store_vasto_sql)
+
+        cursor.execute(update_crm)
+        logger.info("执行成功")
+        cursor.execute(update_daily_order_sql)
+        logger.info("执行成功")
+        cursor.execute(update_store_vas_sql)
+        logger.info("执行成功")
+        cursor.execute(update_store_vasto_sql)
+        logger.info("执行成功")
+        conn.commit()
+
+        return {"code": "0000", "msg": "更新成功", "status": "success"}
     except Exception as e:
-        logger.error(e)
+        conn.rollback()
+        logger.exception(traceback.format_exc())
         # 参数名错误
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn.close()
+        conn_crm.close()
