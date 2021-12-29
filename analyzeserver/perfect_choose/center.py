@@ -60,6 +60,42 @@ def center_list():
     finally:
         conn_crm.close()
 
+# 运营中心管理--运营中心状态
+@ocbp.route("/center/status/list",methods=["GET"])
+def center_status_list():
+    try:
+        center_status_list = [
+            {
+                "status_id": 1,
+                "status": "正常"
+            },
+            {
+                "status_id": 2,
+                "status": "关闭"
+            }
+        ]
+        crm_status_list = [
+            {
+                "status_id": 1,
+                "status": "支持"
+            },
+            {
+                "status_id": 0,
+                "status": "不支持"
+            }
+        ]
+        return_data = {
+            "center_status_list": center_status_list,
+            "crm_status_list": crm_status_list
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+
+
 
 # 不支持crm的
 @ocbp.route("bus/center/list",methods=["GET"])

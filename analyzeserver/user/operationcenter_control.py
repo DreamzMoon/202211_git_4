@@ -17,4 +17,86 @@ import pandas as pd
 from analyzeserver.user.sysuser import check_token
 
 
-userrelatebp = Blueprint('userrelate', __name__, url_prefix='/user/relate')
+operateconbp = Blueprint('operatecon', __name__, url_prefix='/operatecon')
+
+@operateconbp.route("/check", methods=["POST"])
+def check_operate_data():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 8:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+            # 关键词搜索
+            keyword = request.json['keyword'].strip()
+            # 状态 1正常 2关闭
+            status = request.json['status']
+            # crm状态 0不支持 1支持
+            crm_status = request.json['crm_status']
+            # 创建起始时间
+            create_start_time = request.json['create_start_time']
+            # 创建结束时间
+            create_end_time = request.json['create_end_time']
+            page = request.json['page']
+            size = request.json['size']
+        except:
+            # 参数名错误
+            logger.info(traceback.format_exc())
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_an:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+        base_sql = '''select id, telephone phone, unionid, name, nickname, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where capacity=1'''
+        # sql 拼接
+        if keyword:
+            keyword_sql = ''' and (nickname like "%{keyword}%" or name like "%{keyword}%" or telephone like "%{keyword}%" or unionid like "%{keyword}%")'''.format(keyword=keyword)
+        else:
+            keyword_sql = ''
+        base_sql += keyword_sql
+        if status:
+            status_sql = ''' and status=%s''' % status
+        else:
+            status_sql = ''
+        base_sql += status_sql
+        if crm_status == 0 or crm_status == 1:
+            crm_status_sql = ''' and crm=%s''' % crm_status
+        else:
+            crm_status_sql = ''
+        base_sql += crm_status_sql
+        if create_start_time and create_end_time:
+            create_time_sql = ''' and create_time>=%s and create_time<=%s''' % (create_start_time, create_end_time)
+        else:
+            create_time_sql = ''
+        base_sql += create_time_sql
+        logger.info(base_sql)
+        center_data = pd.read_sql(base_sql, conn_an)
+        logger.info(center_data.shape)
+        logger.info(center_data.head())
+        if page and size:
+            start_index = (page - 1) * size
+            end_index = page * size
+            return_data = center_data[start_index:end_index]
+        else:
+            return_data = center_data
+        return_data['create_time'] = return_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
+        return_data.fillna('', inplace=True)
+        return {"code": "0000", "status": "success", "msg": return_data.to_dict("records"), "count": center_data.shape[0]}
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+    finally:
+        try:
+            conn_an.close()
+        except:
+            pass

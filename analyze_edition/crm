@@ -1,0 +1,19 @@
+CREATE TABLE `operationcenter` (
+  `id` int(11) DEFAULT NULL COMMENT '运营中心id',
+  `achievement_id` int(11) DEFAULT '0' COMMENT '业绩部门id',
+  `unionid` bigint(20) DEFAULT NULL COMMENT '负责人unionid',
+  `punionid` int(11) DEFAULT '0' COMMENT '邀请人',
+  `capacity` tinyint(1) DEFAULT '1' COMMENT '身份：1运营中心 2公司',
+  `name` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '负责人姓名',
+  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '负责人昵称',
+  `telephone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '负责人手机',
+  `operatename` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '运营中心名称（业绩以这个为准）',
+  `unifiedsocial` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '统一社会信用代码',
+  `authnumber` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '授权编号',
+  `is_factory` tinyint(1) DEFAULT '0' COMMENT '是否工厂：1是  0否',
+  `area` int(11) DEFAULT '0' COMMENT '地区id',
+  `address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '详细地址',
+  `status` tinyint(1) DEFAULT '1' COMMENT '状态：1正常  2关闭',
+  `crm` tinyint(1) DEFAULT '0' COMMENT 'crm支持：1支持 0不支持',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='运营中心';
