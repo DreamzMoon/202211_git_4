@@ -17,3 +17,16 @@ CREATE TABLE `operationcenter` (
   `crm` tinyint(1) DEFAULT '0' COMMENT 'crm支持：1支持 0不支持',
   `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='运营中心';
+
+
+
+CREATE TABLE `sys_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) DEFAULT NULL COMMENT '系统用户id',
+  `log_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '日志时间',
+  `log_url` varchar(255) DEFAULT NULL COMMENT '请求地址',
+  `log_req` text COMMENT '请求参数',
+  `log_action` text COMMENT '用户行为',
+  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户操作日志';
