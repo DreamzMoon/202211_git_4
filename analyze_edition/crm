@@ -27,6 +27,6 @@ CREATE TABLE `sys_log` (
   `log_url` varchar(255) DEFAULT NULL COMMENT '请求地址',
   `log_req` text COMMENT '请求参数',
   `log_action` text COMMENT '用户行为',
-  `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+  `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '备注',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户操作日志';

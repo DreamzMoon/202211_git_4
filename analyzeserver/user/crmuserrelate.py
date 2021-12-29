@@ -403,6 +403,15 @@ def update_user_ascriptions():
             if bus_parent_phone in below_phone:
                 return {"code":"11028","msg":message["11028"],"status":"failed"}
 
+        #原用户数据 用户对比旧数据
+        select_sql = '''select * from crm_user_%s where unionid=%s and del_flag = 0''' %(current_time,unionid)
+        old_data = pd.read_sql(select_sql,conn)
+        old_data = old_data.to_dict("records")[0]
+        old_operate_id = old_data["operate_id"]
+        old_operate_direct_id = old_data["operate_direct_id"]
+        old_parent_phone = old_data["parent_phone"]
+        old_bus_parent_phone = old_data["bus_parent_phone"]
+
 
 
         if operate_direct_id:
@@ -428,11 +437,11 @@ def update_user_ascriptions():
             statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["id"],parent_phone))
 
         if bus_parent_phone:
-            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(parent_phone)
+            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(bus_parent_phone)
             user_data = pd.read_sql(user_sql,conn_crm).to_dict("records")[0]
             if not user_data:
                 return {"code":"11029","msg":message["11029"],"status":"failed"}
-            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
+            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
 
         crm_sql_condition = ",".join(crm_condition)
         statistic_condition_sql = ",".join(statistic_condition)
@@ -458,6 +467,46 @@ def update_user_ascriptions():
         logger.info("执行成功")
         cursor.execute(update_store_vasto_sql)
         logger.info("执行成功")
+
+        # 日志接入
+        compare = []
+        if operate_direct_id:
+            if int(operate_direct_id) != int(old_operate_direct_id):
+                sql = '''select operatename from operationcenter where id in (%s,%s)''' %(old_operate_direct_id,operate_direct_id)
+                cursor.execute(sql)
+                operatena = cursor.fetchall()
+                logger.info(operatena)
+                old_operate_direct_operatena = operatena[0][0]
+                operate_direct_operatena = operatena[1][0]
+                compare.append("运营中心由 %s 变更为 %s" %(old_operate_direct_operatena,operate_direct_operatena))
+        if operate_id:
+            if int(operate_id) != int(old_operate_id):
+                sql = '''select operatename from operationcenter where id in (%s,%s)''' % (old_operate_id, operate_id)
+                cursor.execute(sql)
+                operatena = cursor.fetchall()
+                old_operate_operatena = operatena[0][0]
+                operate_operatena = operatena[1][0]
+                compare.append("支持crm运营中心由 %s 变更为 %s" % (old_operate_operatena, operate_operatena))
+        if parent_phone:
+            if int(parent_phone) != int(old_parent_phone):
+                compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
+        if bus_parent_phone:
+            if int(bus_parent_phone) != int(old_bus_parent_phone):
+                compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
+
+        #日志插入
+        if compare:
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/update/user/ascription")
+            params.append(json.dumps(request.json))
+            params.append("修改用户数据")
+            # params.append(json.dumps(compare,ensure_ascii=False))
+            params.append("<br>".join(compare))
+            logger.info(params)
+            cursor.execute(insert_sql,params)
+
         conn.commit()
 
         return {"code": "0000", "msg": "更新成功", "status": "success"}

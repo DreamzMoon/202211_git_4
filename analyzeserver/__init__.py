@@ -33,7 +33,7 @@ from analyzeserver.home.lh7_home_page import homebp
 from analyzeserver.home.lh8_second_home_page import lhhomebp
 from analyzeserver.home.lh8_wholesale_home import lhpfhome8
 from analyzeserver.user.operationcenter_control import operateconbp
-
+from analyzeserver.log.system_log import syslogbp
 
 
 
@@ -74,6 +74,10 @@ app.register_blueprint(operateconbp)
 app.register_blueprint(homebp)
 app.register_blueprint(lhhomebp)
 app.register_blueprint(lhpfhome8)
+
+
+# 日志
+app.register_blueprint(syslogbp)
 
 if __name__ == "__main__":
     # app.run()
