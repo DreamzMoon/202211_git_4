@@ -542,11 +542,14 @@ def change_activity_data():
         if old_filter_phone != filter_phone:
             compare.append("过滤手机号 %s 变更为 %s" % (old_filter_phone, filter_phone))
         if old_filter_pay_type_7 != filter_pay_type_7:
-            compare.append("7位支付类型过滤 %s 变更为 %s" % (old_filter_pay_type_7, filter_pay_type_7))
-            compare.append("七位支付类型:%s" %{"-1":"未知","0":"信用点","1":"诚聊余额","2":"诚聊通余额","3":"微信","4":"支付宝","5":"后台","6":"银行卡","7":"诚聊通佣金","8":"诚聊通红包"})
+            pay_type_7 = {-1: "未知", 0: "信用点", 1: "诚聊余额", 2: "诚聊通余额", 3: "微信", 4: "支付宝", 5: "后台", 6: "银行卡",
+             7: "诚聊通佣金", 8: "诚聊通红包"}
+            compare.append("7位支付类型过滤 %s 变更为 %s" % (pay_type_7.get(old_filter_pay_type_7), pay_type_7.get(filter_pay_type_7)))
+            # compare.append("七位支付类型:%s" %{"-1":"未知","0":"信用点","1":"诚聊余额","2":"诚聊通余额","3":"微信","4":"支付宝","5":"后台","6":"银行卡","7":"诚聊通佣金","8":"诚聊通红包"})
         if old_filter_pay_type_8 != filter_pay_type_8:
-            compare.append("8位支付类型过滤 %s 变更为 %s" % (old_filter_pay_type_8, filter_pay_type_8))
-            compare.append("八位支付类型:%s" % {"-1": "信用点","0":"采购金", "1": "收银台", "2": "诚聊通余额", "3": "微信", "4": "支付宝", "5": "后台","6": "银行卡","8": "禄可商务转入"})
+            pay_type_8 = {-1: "信用点",0:"采购金", 1: "收银台", 2: "诚聊通余额", 3: "微信", 4: "支付宝", 5: "后台",6: "银行卡",8: "禄可商务转入"}
+            compare.append("8位支付类型过滤 %s 变更为 %s" % (pay_type_8.get(old_filter_pay_type_8), pay_type_8.get(filter_pay_type_8)))
+            # compare.append("八位支付类型:%s" % {"-1": "信用点","0":"采购金", "1": "收银台", "2": "诚聊通余额", "3": "微信", "4": "支付宝", "5": "后台","6": "银行卡","8": "禄可商务转入"})
         logger.info("compare:%s" % compare)
 
 
