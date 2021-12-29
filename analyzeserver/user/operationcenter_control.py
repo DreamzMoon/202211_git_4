@@ -132,7 +132,7 @@ def check_operate_detail_data():
         detail_data = pd.read_sql(detail_data_sql, conn_an)
         detail_data['create_time'] = detail_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         detail_data.fillna('', inplace=True)
-        return {"code": "0000", "status": "success", "msg": detail_data.to_dict("records")}
+        return {"code": "0000", "status": "success", "msg": detail_data.to_dict("records")[0]}
     except Exception as e:
         logger.error(e)
         logger.exception(traceback.format_exc())
