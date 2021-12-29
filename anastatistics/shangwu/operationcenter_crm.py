@@ -32,9 +32,11 @@ def operate_relationship_crm(mode='first'):
         #     '''
 
         supervisor_sql = '''
-            select unionid id,parent_id pid,phone,nickname,name,operatename,operate_id operateid where bus_phone = %s
-                    '''
+            select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user_{} where bus_phone = %s
+                    '''.format(current_time)
 
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        analyze_cusor = conn_analyze.cursor()
         conn_crm = direct_get_conn(crm_mysql_conf)
         if not conn_crm:
             return False, '10002'  # 数据库连接失败
@@ -51,10 +53,14 @@ def operate_relationship_crm(mode='first'):
         fina_center_data_list = []
         for phone in operate_telephone_list:
             logger.info(phone)
-            crm_cursor.execute(supervisor_sql, phone)
-            all_data = crm_cursor.fetchall()
+            logger.info(supervisor_sql)
+            analyze_cusor.execute(supervisor_sql, phone)
+            all_data = analyze_cusor.fetchall()
             # 总数据
             all_data = pd.DataFrame(all_data)
+            coll_lists = ["id", "pid", "phone", "nickname", "name", "operatename", "operateid"]
+            all_data.columns = coll_lists
+
             all_data.dropna(subset=['phone'], axis=0, inplace=True)
             all_data_phone = all_data['phone'].tolist()
             # 运营中心名称
@@ -69,9 +75,14 @@ def operate_relationship_crm(mode='first'):
                 if i in child_center_phone_list:
                     continue
                 first_child_center.append(i)
-                crm_cursor.execute(supervisor_sql, i)
-                center_data = crm_cursor.fetchall()
+                # crm_cursor.execute(supervisor_sql, i)
+                # center_data = crm_cursor.fetchall()
+                analyze_cusor.execute(supervisor_sql, phone)
+                center_data = analyze_cusor.fetchall()
+                # 总数据
                 center_df = pd.DataFrame(center_data)
+                coll_lists = ["id", "pid", "phone", "nickname", "name", "operatename", "operateid"]
+                center_df.columns = coll_lists
                 center_df.dropna(subset=['phone'], axis=0, inplace=True)
                 child_center_phone_list.extend(center_df['phone'].tolist())
             not_contains = list(set(all_data_phone) - set(child_center_phone_list))
@@ -89,7 +100,7 @@ def operate_relationship_crm(mode='first'):
             fina_center_data_list.append(ret)
         fina_df = pd.DataFrame(fina_center_data_list)
         result_df = operate_df.merge(fina_df, how='left', on='phone')
-        conn_crm.close()
+
         if mode == 'first':
             conn_rw = pd_conn(analyze_mysql_conf)
             logger.info(conn_rw)
@@ -104,7 +115,9 @@ def operate_relationship_crm(mode='first'):
     except:
         logger.error(traceback.format_exc())
         return False, '失败'
-
+    finally:
+        conn_crm.close()
+        conn_analyze.close()
 # result = operate_relationship_crm()
 # logger.info(result[1])
 
@@ -157,6 +170,7 @@ def refresh_operate_relationship_crm():
     finally:
         try:
             conn_rw_refresh.close()
+            conn_rw.close()
         except:
             pass
 

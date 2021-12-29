@@ -119,7 +119,7 @@ def check_operate_detail_data():
             check_token_result = check_token(token, user_id)
             if check_token_result["code"] != "0000":
                 return check_token_result
-            operate_id = request.json['operate_id']
+            operate_id = request.json['id']
         except:
             # 参数名错误
             logger.info(traceback.format_exc())
@@ -128,7 +128,7 @@ def check_operate_detail_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        detail_data_sql = '''select telephone phone, unionid, name, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where capacity=1 and id=%s''' % operate_id
+        detail_data_sql = '''select telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where capacity=1 and id=%s''' % operate_id
         detail_data = pd.read_sql(detail_data_sql, conn_an)
         detail_data['create_time'] = detail_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         detail_data.fillna('', inplace=True)
