@@ -63,7 +63,7 @@ def center_list():
 
 # 不支持crm的
 @ocbp.route("bus/center/list",methods=["GET"])
-def center_list():
+def bus_center_list():
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
 
