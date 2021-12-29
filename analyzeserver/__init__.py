@@ -32,6 +32,7 @@ from analyzeserver.lianghao.eight.pifa.person_market import personpfbp
 from analyzeserver.home.lh7_home_page import homebp
 from analyzeserver.home.lh8_second_home_page import lhhomebp
 from analyzeserver.home.lh8_wholesale_home import lhpfhome8
+from analyzeserver.user.operationcenter_control import operateconbp
 
 
 
@@ -58,13 +59,16 @@ app.register_blueprint(userrelatebp)
 app.register_blueprint(ppbp)
 app.register_blueprint(dailybp)
 
-# 8位
+# 8位二手
 app.register_blueprint(platsecondbp)
 app.register_blueprint(personsecondbp)
 
-# 8位
+# 8位批发
 app.register_blueprint(platpfbp)
 app.register_blueprint(personpfbp)
+
+# crm运营中心管理
+app.register_blueprint(operateconbp)
 
 #首页
 app.register_blueprint(homebp)
