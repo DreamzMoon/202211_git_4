@@ -600,13 +600,13 @@ def get_parent_by_phone(phone):
     :return:
     '''
     try:
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_crm = direct_get_conn(analyze_mysql_conf)
         with conn_crm.cursor() as cursor:
-            sql = '''select * from crm_user where phone = %s'''
+            sql = '''select unionid from crm_user where phone = %s'''
             cursor.execute(sql,(phone))
             data = cursor.fetchone()
             if data:
-                return 1,data["id"]
+                return 1,data[0]
             else:
                 return 0,"暂无该用户"
     except Exception as e:
