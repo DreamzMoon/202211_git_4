@@ -1116,7 +1116,7 @@ def transfer_public_order():
                 td_dict["publish_sell_count"] = float(td[3])
                 datas.append(td_dict)
             logger.info(datas)
-            last_data = {"circle": circle,"data": datas}
+            last_data = {"circle": circle,"today": datas}
             return {"code": "0000", "status": "successs", "msg": last_data}
         else:
             return {"code": "11009", "status": "failed", "msg": message["11009"]}
