@@ -249,6 +249,7 @@ def daily_user_summary():
         all_data = pd.read_sql(base_sql, conn_an)
 
         # 匹配数据
+        all_data['unionid'].fillna('', inplace=True)
         all_data['unionid'] = all_data['unionid'].astype(str)
         logger.info(all_data.shape)
 
@@ -294,6 +295,7 @@ def daily_user_summary():
         else:
             cut_data = match_data.copy()
         cut_data.fillna("", inplace=True)
+        cut_data['unionid'] = cut_data['unionid'].apply(lambda x: del_point(x))
         return_data = {
             'tital_data': tital_data,
             'data': cut_data.to_dict('records')
