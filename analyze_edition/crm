@@ -85,3 +85,8 @@ CREATE TABLE `crm_user` (
 ALTER TABLE `lh_analyze`.`operationcenter`
 MODIFY COLUMN `id` int(11) NOT NULL COMMENT '运营中心id' FIRST,
 ADD PRIMARY KEY (`id`);
+
+
+
+alter table crm_user_20211229 convert to character set utf8mb4;
+alter table crm_user convert to character set utf8mb4;
