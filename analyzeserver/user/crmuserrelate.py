@@ -335,7 +335,7 @@ def update_user_ascriptions():
         unionid = request.json.get("unionid")
 
         # 更新crm
-        update_crm = '''update crm_user_{} set'''.format(current_time)
+        update_crm = '''update crm_user set'''
         crm_where = ''' where unionid = %s''' %unionid
         crm_condition = []
 
