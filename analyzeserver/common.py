@@ -107,11 +107,13 @@ def get_busphne_by_id(bus_id):
     try:
         logger.info(bus_id)
         phone_lists = []
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        crm_cursor = conn_crm.cursor()
-        sql = '''select * from luke_lukebus.operationcenter where id = %s and crm=1 and capacity=1'''
-        crm_cursor.execute(sql, (bus_id))
-        operate_datas = crm_cursor.fetchall()
+        # conn_crm = direct_get_conn(crm_mysql_conf)
+        # crm_cursor = conn_crm.cursor()
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        analyze_cursor = conn_analyze.cursor()
+        sql = '''select * from lh_analyze.operationcenter where id = %s and crm=1 and capacity=1'''
+        analyze_cursor.execute(sql, (bus_id))
+        operate_datas = analyze_cursor.fetchall()
         logger.info("operate_datas:%s" % operate_datas)
         filter_phone_lists = []
         all_phone_lists = []
@@ -119,30 +121,33 @@ def get_busphne_by_id(bus_id):
             below_person_sql = '''
             select a.*,if (crm =0, Null, b.operatename) operatename from 
             (WITH RECURSIVE temp as (
-                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM lh_analyze.crm_user t WHERE phone = %s
                 UNION ALL
-                SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id)
+                SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM lh_analyze.crm_user t INNER JOIN temp ON t.parentid = temp.id)
             SELECT * FROM temp
-            )a left join luke_lukebus.operationcenter b
+            )a left join lh_analyze.operationcenter b
             on a.id = b.unionid where a.phone != ""
             '''
-            logger.info(operate_data)
-            crm_cursor.execute(below_person_sql, operate_data["telephone"])
-            below_datas = crm_cursor.fetchall()
-            logger.info(len(below_datas))
+            analyze_cursor.execute(below_person_sql, operate_data[7])
+            below_datas = pd.DataFrame(analyze_cursor.fetchall())
+            coll_lists = ["id", "pid", "phone", "nickname", "name", "sex", "status", "operatename"]
+            below_datas.columns = coll_lists
+            all_data_1 = below_datas[below_datas['phone'] == operate_data[7]]
+            all_data_2 = below_datas[below_datas['phone'] != operate_data[7]]
+            below_datas = pd.concat([all_data_1, all_data_2], axis=0, ignore_index=True)
             # 找运营中心
             other_operatecenter_phone_list = []
 
 
             # 直接下级的运营中心
-            all_phone_lists.append(below_datas[0]["phone"])
+            all_phone_lists.append(below_datas.loc[0]["phone"])
 
             for i in range(0, len(below_datas)):
                 if i == 0:
                     continue
-                if below_datas[i]["operatename"]:
-                    other_operatecenter_phone_list.append(below_datas[i]["phone"])
-                all_phone_lists.append(below_datas[i]["phone"])
+                if below_datas.loc[i]["operatename"]:
+                    other_operatecenter_phone_list.append(below_datas.loc[i]["phone"])
+                all_phone_lists.append(below_datas.loc[i]["phone"])
 
             logger.info("other_operatecenter_phone_list:%s" % other_operatecenter_phone_list)
             # 对这些手机号码进行下级查询
@@ -153,18 +158,20 @@ def get_busphne_by_id(bus_id):
                 filter_sql = '''
                 select a.*,if (crm =0, Null, b.operatename) operatename from 
                 (WITH RECURSIVE temp as (
-                    SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                    SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM lh_analyze.crm_user t WHERE phone = %s
                     UNION ALL
-                    SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id)
+                    SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM lh_analyze.crm_user t INNER JOIN temp ON t.parentid = temp.id)
                 SELECT * FROM temp
-                )a left join luke_lukebus.operationcenter b
+                )a left join lh_analyze.operationcenter b
                 on a.id = b.unionid 
-                    where a.phone != "" and phone != %s
+                where a.phone != ""
                 '''
-                crm_cursor.execute(filter_sql, (center_phone, center_phone))
-                filter_data = crm_cursor.fetchall()
-                for k in range(0, len(filter_data)):
-                    filter_phone_lists.append(filter_data[k]["phone"])
+                analyze_cursor.execute(filter_sql, center_phone)
+                filter_data = pd.DataFrame(analyze_cursor.fetchall())
+                filter_data.columns = coll_lists
+                filter_data = filter_data[filter_data['phone'] != center_phone].reset_index(drop=True)
+                for k in range(filter_data.shape[0]):
+                    filter_phone_lists.append(filter_data.loc[k]["phone"])
         # 不包含底下直属运营中心
         phone_lists = list(set(all_phone_lists) - set(filter_phone_lists) - set(other_operatecenter_phone_list))
         args_phone_lists = ",".join(phone_lists)
@@ -176,7 +183,7 @@ def get_busphne_by_id(bus_id):
         logger.exception(e)
         return 0,e
     finally:
-        conn_crm.close()
+        conn_analyze.close()
 
 
 
@@ -708,4 +715,4 @@ def get_all_user_operationcenter(crm_user_data=""):
 
 if __name__ == "__main__":
     result = get_all_user_operationcenter()
-    result[1].to_csv("e:/20211230.csv")
+    # result[1].to_csv("e:/20211230.csv")
