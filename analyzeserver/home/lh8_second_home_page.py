@@ -165,6 +165,10 @@ def data_center():
         filter_pay_type_7 = data[4]
         filter_pay_type_8 = data[5]
 
+        # filter_phone = json.loads(filter_phone)
+        # filter_pay_type_7 = json.loads(filter_pay_type_7)
+        # filter_pay_type_8 = json.loads(filter_pay_type_8)
+
 
         # if filter_phone:
         #     filter_phone = filter_phone[1: -1]
@@ -187,7 +191,9 @@ def data_center():
         condition_sql = ""
         if start_time and end_time:
             condition_sql = condition_sql + ''' and create_time >= "%s" and create_time <= "%s" ''' %(start_time,end_time)
-        if filter_phone:
+
+
+        if json.loads(filter_phone):
             condition_sql = condition_sql + ''' and phone not in (%s)''' %(filter_phone[1:-1])
 
 
@@ -210,15 +216,15 @@ def data_center():
             sql_7 = sql_7 + condition_sql
             sql_8 = sql_8 + condition_sql
 
-        if filter_pay_type_7:
+        if json.loads(filter_pay_type_7):
             sql_7 = sql_7 + ''' and pay_type not in (%s) ''' % (filter_pay_type_7[1:-1])
 
-        if filter_pay_type_8:
+        if json.loads(filter_pay_type_8):
             sql_8 = sql_8 + condition_sql + ''' and pay_type not in (%s) ''' % (filter_pay_type_8[1:-1])
 
         sql = sql_7 + sql_7_group + " union all " + sql_8 + sql_8_group
 
-        logger.info(sql)
+        logger.info("center_7_8:%s" %sql)
         data = pd.read_sql(sql,conn_lh)
         data = data.to_dict("records")[0]
         data["start_time"] = datetime.datetime.strftime(start_time, "%Y-%m-%d %H:%M:%S")
