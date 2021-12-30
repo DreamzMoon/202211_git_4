@@ -990,7 +990,7 @@ def user_belong_bus(need_data,crm_data=0):
         cursor_crm = conn_crm.cursor()
 
 
-        crm_user_sql = '''select id unionid,pid parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone is not null or phone != ""'''
+        crm_user_sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone is not null or phone != ""'''
         crm_user_data = pd.read_sql(crm_user_sql, conn_crm)
 
         if crm_data == 0:
@@ -999,7 +999,6 @@ def user_belong_bus(need_data,crm_data=0):
             user_data = need_data
         logger.info(user_data)
         phone_list = user_data.to_dict('list')['phone']
-        # logger.info(len(phone_list))
         # 查运营中心
         all_operate = []
         for pl in phone_list:
@@ -1009,9 +1008,9 @@ def user_belong_bus(need_data,crm_data=0):
             operate_sql = '''
                 select a.*,if (crm =0, Null, b.operatename) operatename,b.crm from 
                 (WITH RECURSIVE temp as (
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
                         UNION ALL
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.unionid = temp.pid
                 )
                 SELECT * FROM temp 
                 )a left join luke_lukebus.operationcenter b
@@ -1025,15 +1024,8 @@ def user_belong_bus(need_data,crm_data=0):
                 continue
             operate_data = pd.DataFrame(sql_data)
 
-            # logger.info(operate_data)
-            # logger.info("----------------")
-
             current_operate_data = operate_data[(operate_data["operatename"].notna()) & (operate_data["crm"] == 1)]
-            # logger.info(current_operate_data)
-            # logger.info("--------------------")
             if len(current_operate_data)>0:
-                # pandas可以保留排序 取出运营中心不为空的 并且 crm支持等于1的 第一个
-                # logger.info("有值")
                 pl_op_dict["operate_name"] = current_operate_data.iloc[0, :]["operatename"]
                 pl_op_dict["phone"] = pl
                 all_operate.append(pl_op_dict)
@@ -1059,7 +1051,7 @@ def one_belong_bus(phone):
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
 
-        crm_user_sql = '''select id unionid,pid parentid,phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from luke_sincerechat.user where phone = %s''' %phone
+        crm_user_sql = '''select unionid,parentid,phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone = %s''' %phone
         user_data = pd.read_sql(crm_user_sql,conn_crm)
 
         # 查运营中心
@@ -1069,9 +1061,9 @@ def one_belong_bus(phone):
         operate_sql = '''
                 select a.*,if (crm =0, Null, b.operatename) operatename,b.crm from 
                 (WITH RECURSIVE temp as (
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM crm_user t WHERE phone = %s
                         UNION ALL
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM crm_user t INNER JOIN temp ON t.unionid = temp.pid
                 )
                 SELECT * FROM temp 
                 )a left join luke_lukebus.operationcenter b
@@ -1133,9 +1125,9 @@ def user_belong_by_df(need_data):
             operate_sql = '''
                 select a.*, if (crm =0, Null, b.operatename) operatename,b.crm from 
                 (WITH RECURSIVE temp as (
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE phone = %s
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM crm_user t WHERE phone = %s
                         UNION ALL
-                        SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
+                        SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM crm_user t INNER JOIN temp ON t.unionid = temp.pid
                 )
                 SELECT * FROM temp 
                 )a left join luke_lukebus.operationcenter b
@@ -1201,7 +1193,7 @@ def get_phone_by_keyword(keyword):
             sql = '''
             select * from (
             select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname
-            ,phone,id from luke_sincerechat.user where phone like %s or id like %s or `name` like %s or nickname like %s) t where t.phone is not null and (t.nickname like %s or phone like %s or id like %s)
+            ,phone,id from crm_user where phone like %s or id like %s or `name` like %s or nickname like %s) t where t.phone is not null and (t.nickname like %s or phone like %s or id like %s)
             '''
             logger.info(sql)
             cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
@@ -1226,7 +1218,7 @@ def get_phone_by_unionid(unionid):
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
         with conn_crm.cursor() as cursor:
-            sql = '''select * from luke_sincerechat.user where id = %s'''
+            sql = '''select * from crm_user where id = %s'''
             cursor.execute(sql,(unionid))
             data = cursor.fetchone()
             if data:
@@ -1246,7 +1238,7 @@ def get_parent_by_phone(phone):
     try:
         conn_crm = direct_get_conn(crm_mysql_conf)
         with conn_crm.cursor() as cursor:
-            sql = '''select * from luke_sincerechat.user where phone = %s'''
+            sql = '''select * from crm_user where phone = %s'''
             cursor.execute(sql,(phone))
             data = cursor.fetchone()
             if data:
