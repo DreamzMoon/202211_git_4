@@ -572,27 +572,26 @@ def get_phone_by_keyword(keyword):
     :return:
     '''
     try:
-        conn_crm = direct_get_conn(crm_mysql_conf)
-        with conn_crm.cursor() as cursor:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        with conn_analyze.cursor() as cursor:
             sql = '''
             select * from (
             select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname
-            ,phone,id from crm_user where phone like %s or id like %s or `name` like %s or nickname like %s) t where t.phone is not null and (t.nickname like %s or phone like %s or id like %s)
+            ,phone,unionid from crm_user where phone like %s or unionid like %s or `name` like %s or nickname like %s) t 
+            where t.phone is not null and (t.nickname like %s or phone like %s or unionid like %s)
             '''
-            logger.info(sql)
             cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
-            # cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
             datas = cursor.fetchall()
-
+            logger.info(datas)
             if datas:
-                phone_list = [data["phone"] for data in datas]
+                phone_list = [data[1] for data in datas]
                 return 1,phone_list
             else:
                 return 0,"暂无数据"
     except Exception as e:
         return 0,e
     finally:
-        conn_crm.close()
+        conn_analyze.close()
 
 
 def get_parent_by_phone(phone):
@@ -714,5 +713,7 @@ def get_all_user_operationcenter(crm_user_data=""):
 
 
 if __name__ == "__main__":
-    result = get_all_user_operationcenter()
+    # result = get_all_user_operationcenter()
     # result[1].to_csv("e:/20211230.csv")
+    result = get_phone_by_keyword("13559436425")
+    logger.info(result)
