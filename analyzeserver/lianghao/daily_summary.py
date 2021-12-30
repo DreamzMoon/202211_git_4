@@ -57,9 +57,9 @@ def daily_plat_summary():
         page = request.json.get("page")
         size = request.json.get("size")
 
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
@@ -408,9 +408,9 @@ def daily_plat_value():
         page = request.json.get("page")
         size = request.json.get("size")
 
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
