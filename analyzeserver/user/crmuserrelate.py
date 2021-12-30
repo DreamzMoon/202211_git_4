@@ -279,7 +279,7 @@ def user_relate_detail():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        sql = '''select * from crm_user where del_flag = 0 and unionid = %s'''
+        sql = '''select * from crm_user where del_flag = 0 and unionid = %s''' %(unionid)
         data = pd.read_sql(sql,conn)
 
         data = data.to_dict("records")
@@ -335,14 +335,14 @@ def update_user_ascriptions():
         unionid = request.json.get("unionid")
 
         # 更新crm
-        update_crm = '''update crm_user set'''
+        update_crm = '''update crm_user '''
         crm_where = ''' where unionid = %s''' %unionid
         crm_condition = []
 
         #更新统计表
-        update_daily_order_sql = '''update user_daily_order_data set'''
-        update_store_vas_sql = '''update user_storage_value set'''
-        update_store_vasto_sql = '''update user_storage_value_today set'''
+        update_daily_order_sql = '''update user_daily_order_data '''
+        update_store_vas_sql = '''update user_storage_value '''
+        update_store_vasto_sql = '''update user_storage_value_today '''
         update_where = ''' where unionid = %s''' %unionid
 
         statistic_condition = []
@@ -450,24 +450,27 @@ def update_user_ascriptions():
         logger.info("crm_sql_condition:%s" %crm_sql_condition)
         logger.info("statistic_condition_sql:%s" %statistic_condition_sql)
 
-        update_daily_order_sql = update_daily_order_sql + statistic_condition_sql + update_where
-        update_store_vas_sql = update_store_vas_sql + statistic_condition_sql + update_where
-        update_store_vasto_sql = update_store_vasto_sql + statistic_condition_sql + update_where
+        if statistic_condition_sql:
+            update_daily_order_sql = update_daily_order_sql + " set " + statistic_condition_sql + update_where
+            update_store_vas_sql = update_store_vas_sql + " set " + statistic_condition_sql + update_where
+            update_store_vasto_sql = update_store_vasto_sql + " set " + statistic_condition_sql + update_where
 
-        update_crm = update_crm + crm_sql_condition + crm_where
-        logger.info("update_crm_sql:%s" %update_crm)
-        logger.info("update_daily_order_sql:%s" %update_daily_order_sql)
-        logger.info("update_store_vas_sql:%s" %update_store_vas_sql)
-        logger.info("update_store_vasto_sql:%s" %update_store_vasto_sql)
+            cursor.execute(update_daily_order_sql)
+            logger.info("执行成功")
+            cursor.execute(update_store_vas_sql)
+            logger.info("执行成功")
+            cursor.execute(update_store_vasto_sql)
+            logger.info("执行成功")
 
-        cursor.execute(update_crm)
-        logger.info("执行成功")
-        cursor.execute(update_daily_order_sql)
-        logger.info("执行成功")
-        cursor.execute(update_store_vas_sql)
-        logger.info("执行成功")
-        cursor.execute(update_store_vasto_sql)
-        logger.info("执行成功")
+        if crm_sql_condition:
+            update_crm = update_crm + " set " + crm_sql_condition + crm_where
+            cursor.execute(update_crm)
+            logger.info("执行成功")
+
+        logger.info("update_crm_sql:%s" % update_crm)
+        logger.info("update_daily_order_sql:%s" % update_daily_order_sql)
+        logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
+        logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
 
         # 日志接入
         compare = []
