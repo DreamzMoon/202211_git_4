@@ -67,7 +67,7 @@ def transfer_all():
                 if unioinid_lists:
                     # 走统计表
                     try:
-                        sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                        sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                         ags_list = ",".join(unioinid_lists)
                         logger.info(ags_list)
                         cursor_analyze.execute(sql, ags_list)
@@ -91,8 +91,7 @@ def transfer_all():
                     #     for op in ok_p:
                     #         args_list.append(op)
                     # args_list = ",".join(args_list)
-                    sql = '''select phone from crm_user_{} where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''.format(
-                        current_time)
+                    sql = '''select phone from crm_user where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''
                     cursor_analyze.execute(sql, str_bus_lists)
                     phone_lists = cursor_analyze.fetchall()
                     for p in phone_lists:
@@ -280,7 +279,7 @@ def operations_order_count():
         user_order_df = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), user_order_df_list)
 
         # 用户数据查询
-        user_info_sql = 'select unionid, phone, operate_id operateid, operatename, leader operate_leader_name, bus_phone operate_leader_phone, leader_unionid  operate_leader_unionid from lh_analyze.crm_user_%s where operatename is not null' % current_time
+        user_info_sql = 'select unionid, phone, operate_id operateid, operatename, leader operate_leader_name, bus_phone operate_leader_phone, leader_unionid  operate_leader_unionid from lh_analyze.crm_user where operatename is not null'
         user_info_df = pd.read_sql(user_info_sql, conn_an)
         # 合并得到运营中心负责人unionid
         # operate_unionid_df = user_info_df.loc[:, ['unionid', 'phone']].rename(columns={"unionid": "operate_leader_unionid", "phone": "operate_leader_phone"})
@@ -413,7 +412,7 @@ def transfer_buy_order():
         elif unioinid_lists:
 
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -667,7 +666,7 @@ def transfer_sell_order():
         elif unioinid_lists:
 
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -919,7 +918,7 @@ def transfer_public_order():
         elif unioinid_lists:
 
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)

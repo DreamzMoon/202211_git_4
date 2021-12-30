@@ -31,3 +31,57 @@ CREATE TABLE `sys_log` (
   `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '备注',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户操作日志';
+
+
+CREATE TABLE `crm_user` (
+  `unionid` bigint(20) NOT NULL COMMENT '用户id',
+  `parentid` bigint(20) DEFAULT NULL COMMENT '推荐id',
+  `phone` varchar(20) DEFAULT NULL COMMENT '手机号码',
+  `parent_phone` varchar(20) DEFAULT NULL COMMENT '上级手机号码',
+  `parent_nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '昵称',
+  `parent_name` varchar(50) DEFAULT NULL COMMENT '姓名',
+  `bus_parent_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的上级手机号码',
+  `bus_parent_nickname` varchar(100) DEFAULT NULL COMMENT '禄可商务的上级昵称',
+  `bus_parent_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '禄可商务的上级名字',
+  `bus_parentid` bigint(20) DEFAULT NULL COMMENT '禄可商务的推荐id',
+  `status` tinyint(1) DEFAULT '1' COMMENT '1正常 2禁用',
+  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '昵称',
+  `name` varchar(50) DEFAULT NULL COMMENT '姓名',
+  `sex` tinyint(1) DEFAULT '0' COMMENT '0：位置   1：男  2：女',
+  `birth` date DEFAULT NULL COMMENT '生日',
+  `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '地址',
+  `nationality` varchar(50) DEFAULT NULL COMMENT '族',
+  `vertify_status` tinyint(1) DEFAULT NULL COMMENT '0待认证 1待审核 2认证中 3失败 4成功',
+  `huoti_status` tinyint(1) DEFAULT NULL COMMENT '活体认证状态：0待认证 1待审核 2认证中 3失败 4成功',
+  `vip_grade` tinyint(1) DEFAULT NULL COMMENT '等级 1普通会员 2vip会员 3至尊VIP',
+  `vip_starttime` datetime DEFAULT NULL COMMENT 'vip开始时间',
+  `vip_endtime` datetime DEFAULT NULL COMMENT 'vip结束时间',
+  `serpro_grade` tinyint(1) DEFAULT NULL COMMENT '服务商等级：1初级 2中级 3高级 4机构服务商',
+  `serpro_status` tinyint(1) DEFAULT NULL COMMENT '服务视状态：1正常  0已注销',
+  `serpro_starttime` datetime DEFAULT NULL COMMENT '服务商开通时间',
+  `user_type` tinyint(1) DEFAULT '0' COMMENT '0:用户 1：开发 2：运营 3：测试',
+  `capacity` tinyint(2) DEFAULT NULL COMMENT '1运营中心/公司 2网店主 3带货者 20无身份(普通用户)',
+  `exclusive` tinyint(1) DEFAULT NULL COMMENT '网店主类型：1专营店 2自营店',
+  `addtime` datetime DEFAULT NULL COMMENT '用户的注册时间 可能在各业务系统',
+  `operate_id` bigint(20) DEFAULT NULL COMMENT 'crm运营中心的id',
+  `operatename` varchar(100) DEFAULT NULL COMMENT 'crm用户对应的运营中心',
+  `bus_phone` varchar(20) DEFAULT NULL COMMENT 'crm禄可商务的手机号码',
+  `operate_direct_id` bigint(20) DEFAULT NULL COMMENT '运营中心的id',
+  `operatenamedirect` varchar(100) DEFAULT NULL COMMENT '用户对应的运营中心',
+  `direct_bus_phone` varchar(20) DEFAULT NULL COMMENT '禄可商务的手机号码',
+  `direct_leader` varchar(20) DEFAULT NULL COMMENT '禄可商务对应的负责人',
+  `leader` varchar(20) DEFAULT NULL COMMENT 'crm禄可商务对应的负责人',
+  `direct_leader_unionid` bigint(20) DEFAULT NULL COMMENT '禄可商务运营中心负责人的id',
+  `leader_unionid` bigint(20) DEFAULT NULL COMMENT 'crm运营中心负责人的id',
+  `statistic_time` datetime DEFAULT NULL COMMENT '统计时间',
+  `del_flag` int(1) DEFAULT '0' COMMENT '1：删除',
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`unionid`),
+  KEY `phone_index` (`phone`) USING BTREE,
+  KEY `parent_id_index` (`parentid`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='crm用户表';
+
+
+ALTER TABLE `lh_analyze`.`operationcenter`
+MODIFY COLUMN `id` int(11) NOT NULL COMMENT '运营中心id' FIRST,
+ADD PRIMARY KEY (`id`);

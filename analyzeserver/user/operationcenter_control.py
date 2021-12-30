@@ -192,7 +192,7 @@ def update_operate_detail_data():
         oringinal_data = pd.read_sql(oringinal_data_sql, conn_an)
         # 进行数据判断
         # 修改手机号，其余unionid与姓名从crm_user表拿。如果用户不存在，则不让修改，统一信用编码为唯一，不能重复
-        crm_data_sql = '''select unionid, if(`name` != "",`name`,if(nickname is not null,nickname,"")) name from lh_analyze.crm_user_%s where phone=%s''' % (current_time, phone)
+        crm_data_sql = '''select unionid, if(`name` != "",`name`,if(nickname is not null,nickname,"")) name from lh_analyze.crm_user where phone=%s''' % phone
         crm_data = pd.read_sql(crm_data_sql, conn_an)
         # 判断用户是否存在
         if crm_data.shape[0] == 0:
