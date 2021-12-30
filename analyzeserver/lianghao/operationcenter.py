@@ -99,7 +99,7 @@ def operations_order_count():
         user_order_df = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), user_order_df_list)
 
         # 用户数据查询
-        user_info_sql = 'select unionid, phone, operate_id operateid, operatename, leader operate_leader_name, bus_phone operate_leader_phone from lh_analyze.crm_user_%s where operatename is not null' % current_time
+        user_info_sql = 'select unionid, phone, operate_id operateid, operatename, leader operate_leader_name, bus_phone operate_leader_phone from lh_analyze.crm_user where operatename is not null'
         user_info_df = pd.read_sql(user_info_sql, conn_an)
         # 合并得到运营中心负责人unionid
         operate_unionid_df = user_info_df.loc[:, ['unionid', 'phone']].rename(columns={"unionid": "operate_leader_unionid", "phone": "operate_leader_phone"})
