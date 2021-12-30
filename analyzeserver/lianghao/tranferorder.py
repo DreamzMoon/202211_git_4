@@ -59,7 +59,7 @@ def transfer_all():
                 if unioinid_lists:
                     # 走统计表
                     try:
-                        sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                        sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                         ags_list = ",".join(unioinid_lists)
                         logger.info(ags_list)
                         cursor_analyze.execute(sql, ags_list)
@@ -228,7 +228,7 @@ def transfer_buy_order():
         elif unioinid_lists:
 
             try:
-                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -480,7 +480,7 @@ def transfer_sell_order():
         elif unioinid_lists:
 
             try:
-                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -732,7 +732,7 @@ def transfer_public_order():
             args_phone_lists = ",".join(phone_lists)
         elif unioinid_lists:
             try:
-                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)

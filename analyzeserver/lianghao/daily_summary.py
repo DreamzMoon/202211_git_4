@@ -73,7 +73,7 @@ def daily_plat_summary():
         if unioinid_lists:
             # 走统计表
             try:
-                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -429,7 +429,7 @@ def daily_plat_value():
         if unioinid_lists:
             # 走统计表
             try:
-                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
