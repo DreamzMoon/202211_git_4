@@ -581,10 +581,6 @@ def get_phone_by_keyword(keyword):
             where t.phone is not null and (t.nickname like %s or phone like %s or unionid like %s)
             '''
             cursor.execute(sql,("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%"))
-
-            # sql = '''select * from crm_user where phone like %s'''
-            # cursor.execute(sql, ("%" + keyword + "%"))
-
             datas = cursor.fetchall()
             logger.info(datas)
             if datas:
