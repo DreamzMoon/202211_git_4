@@ -623,7 +623,7 @@ def personal_total():
                 result = get_parent_by_phone(parent)
                 logger.info(result)
                 if result[0] == 1:
-                    parent_id = result[1]
+                    parent_id = str(result[1])
                 else:
                     return {"code": "11014", "status": "failed", "msg": message["11014"]}
             else:
@@ -849,7 +849,7 @@ def personal_buy_all():
             if len(parent) == 11:
                 result = get_parent_by_phone(parent)
                 if result[0] == 1:
-                    parent_id = result[1]
+                    parent_id = str(result[1])
                 else:
                     return {"code": "11014", "status": "failed", "msg": message["code"]}
             else:
@@ -1305,7 +1305,7 @@ def personal_sell_all():
             if len(parent) == 11:
                 result = get_parent_by_phone(parent)
                 if result[0] == 1:
-                    parent_id = result[1]
+                    parent_id = str(result[1])
                 else:
                     return {"code": "11014", "status": "failed", "msg": message["code"]}
             else:
