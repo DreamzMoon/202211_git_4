@@ -53,7 +53,7 @@ def platform_data():
             args_phone_lists = ",".join(phone_lists)
         elif unioinid_lists:
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -189,7 +189,7 @@ def plat_statis():
             args_phone_lists = ",".join(phone_lists)
         elif unioinid_lists:
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
