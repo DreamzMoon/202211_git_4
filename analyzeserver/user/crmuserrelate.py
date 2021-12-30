@@ -404,8 +404,9 @@ def update_user_ascriptions():
                 return {"code":"11028","msg":message["11028"],"status":"failed"}
 
         #原用户数据 用户对比旧数据
-        select_sql = '''select * from crm_user where unionid=%s and del_flag = 0'''
+        select_sql = '''select * from crm_user where unionid = %s and del_flag = 0''' %(unionid)
         old_data = pd.read_sql(select_sql,conn)
+        logger.info(old_data)
         old_data = old_data.to_dict("records")[0]
         old_operate_id = old_data["operate_id"]
         old_operate_direct_id = old_data["operate_direct_id"]
