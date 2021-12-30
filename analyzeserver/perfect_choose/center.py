@@ -23,7 +23,7 @@ ocbp = Blueprint('operatecenter', __name__, url_prefix='/operations')
 @ocbp.route("/center/list",methods=["GET"])
 def center_list():
     try:
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         token = request.headers["Token"]
         user_id = request.args.get("user_id")
@@ -35,12 +35,12 @@ def center_list():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        with conn_crm.cursor() as cursor:
+        with conn_analyze.cursor() as cursor:
             # sql = '''select id,operatename from luke_lukebus.operationcenter where capacity = 1 and crm = 1'''
             sql = '''
                 select id, operatename from
                 (
-                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from luke_lukebus.operationcenter where capacity = 1 and crm = 1{}
+                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from operationcenter where capacity = 1 and crm = 1{}
                     order by sort_type asc
                 )t1
             '''
@@ -58,7 +58,7 @@ def center_list():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_crm.close()
+        conn_analyze.close()
 
 # 运营中心管理--运营中心状态
 @ocbp.route("/center/status/list",methods=["GET"])
@@ -101,7 +101,7 @@ def center_status_list():
 @ocbp.route("bus/center/list",methods=["GET"])
 def bus_center_list():
     try:
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
 
         token = request.headers["Token"]
         user_id = request.args.get("user_id")
@@ -113,12 +113,12 @@ def bus_center_list():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        with conn_crm.cursor() as cursor:
+        with conn_analyze.cursor() as cursor:
             # sql = '''select id,operatename from luke_lukebus.operationcenter where capacity = 1 and crm = 1'''
             sql = '''
                 select id, operatename from
                 (
-                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from luke_lukebus.operationcenter where capacity = 1{}
+                    select id,operatename, CONVERT(left(trim(operatename), 1) using gbk) sort_type from operationcenter where capacity = 1{}
                     order by sort_type asc
                 )t1
             '''
@@ -136,4 +136,4 @@ def bus_center_list():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_crm.close()
+        conn_analyze.close()
