@@ -431,17 +431,19 @@ def update_user_ascriptions():
 
         if parent_phone:
             user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(parent_phone)
-            user_data = pd.read_sql(user_sql,conn_crm).to_dict("records")[0]
-            if not user_data:
+            user_data = pd.read_sql(user_sql,conn_crm)
+            if user_data.shape[0] == 0:
                 return {"code":"11029","msg":message["11029"],"status":"failed"}
+            user_data = user_data.to_dict("records")[0]
             crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
             statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["id"],parent_phone))
 
         if bus_parent_phone:
             user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(bus_parent_phone)
-            user_data = pd.read_sql(user_sql,conn_crm).to_dict("records")[0]
-            if not user_data:
-                return {"code":"11029","msg":message["11029"],"status":"failed"}
+            user_data = pd.read_sql(user_sql, conn_crm)
+            if user_data.shape[0] == 0:
+                return {"code": "11029", "msg": message["11029"], "status": "failed"}
+            user_data = user_data.to_dict("records")[0]
             crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
 
         crm_sql_condition = ",".join(crm_condition)
