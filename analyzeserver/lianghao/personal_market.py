@@ -122,6 +122,8 @@ def personal_publish():
         # count_len = 0
 
         fina_df = df_merge.merge(crm_user_df, how='left', on='publish_phone')
+        fina_df['publish_unionid'].fillna('', inplace=True)
+        fina_df['parentid'].fillna('', inplace=True)
         fina_df.sort_values('near_time', ascending=False, inplace=True)
         # fina_df.fillna("", inplace=True)
         if operateid:
@@ -519,6 +521,8 @@ def personal_publish_order_flow():
         '''
         crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
+        fina_df['sell_unionid'].fillna('', inplace=True)
+        fina_df['parentid'].fillna('', inplace=True)
         fina_df['status'] = fina_df['status'].astype(str)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['transfer_type'].fillna(3, inplace=True)

@@ -239,6 +239,10 @@ def order_and_user_merge(order_df, user_df):
         fina_df.reset_index(drop=True, inplace=True)
 
         # 类型转换、填补空值
+        fina_df['unionid'].fillna('', inplace=True)
+        fina_df['buyer_unionid'].fillna('', inplace=True)
+        fina_df['parentid'].fillna('', inplace=True)
+        fina_df['sell_unionid'].fillna('', inplace=True)
         fina_df['buyer_unionid'] = fina_df['buyer_unionid'].astype(str)
         fina_df['buyer_unionid'] = fina_df['buyer_unionid'].apply(lambda x: del_point(x))
         fina_df['parentid'] = fina_df['parentid'].astype(str)
