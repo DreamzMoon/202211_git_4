@@ -279,7 +279,7 @@ def user_relate_detail():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        sql = '''select * from crm_user where del_flag = 0 and unionid = %s'''
+        sql = '''select * from crm_user where del_flag = 0 and unionid = %s''' %(unionid)
         data = pd.read_sql(sql,conn)
 
         data = data.to_dict("records")
