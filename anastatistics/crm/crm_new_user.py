@@ -145,7 +145,7 @@ try:
     # 查找crm库unionid
     crm_unionid_sql = '''select id unionid from luke_sincerechat.user'''
     # crm_user表unionid
-    crm_user_unionid_sql = '''select unionid from lh_analyze.crm_user_test'''
+    crm_user_unionid_sql = '''select unionid from lh_analyze.crm_user'''
     crm_uninonid_df = pd.read_sql(crm_unionid_sql, conn_crm)
     crm_user_unionid_df = pd.read_sql(crm_user_unionid_sql, conn_analyze)
     # unionid差集
@@ -230,7 +230,7 @@ try:
         # 第一次入库走这个
         logger.info("数据准备入库")
         conn = sqlalchemy_conn(analyze_mysql_conf)
-        last_data.to_sql("crm_user_test", con=conn, if_exists="append", index=False)
+        last_data.to_sql("crm_user", con=conn, if_exists="append", index=False)
         logger.info("写入成功")
     else:
         logger.info('无新增的用户数据')
