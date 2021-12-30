@@ -51,7 +51,10 @@ def center_list():
             sql = sql.format(check_sql)
             cursor.execute(sql)
             datas = cursor.fetchall()
-            logger.info(len(datas))
+            datas = pd.DataFrame(datas)
+            datas.columns=["id","operatename"]
+            # logger.info(len(datas))
+            datas = datas.to_dict("records")
             logger.info(datas)
             return {"code":"0000","status":"success","msg":datas}
     except:
@@ -129,7 +132,11 @@ def bus_center_list():
             sql = sql.format(check_sql)
             cursor.execute(sql)
             datas = cursor.fetchall()
-            logger.info(len(datas))
+
+            datas = pd.DataFrame(datas)
+            datas.columns = ["id", "operatename"]
+            datas = datas.to_dict("records")
+            # logger.info(len(datas))
             logger.info(datas)
             return {"code":"0000","status":"success","msg":datas}
     except:
