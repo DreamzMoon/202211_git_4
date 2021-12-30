@@ -64,7 +64,7 @@ def deal_person():
         logger.info(phone_lists)
         if not phone_lists:
             return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user_{} where phone in ({})'''.format(current_time,",".join(phone_lists))
+        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql,conn_analyze)
         datas = datas.merge(user_data,on="phone",how="left")
@@ -249,7 +249,7 @@ def today_dynamic_transaction():
         '''
 
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_%s where phone = "%s"
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
             '''
 
         order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
@@ -258,7 +258,7 @@ def today_dynamic_transaction():
             sell_phone_list = order_df_8['phone'].tolist()
             sell_df_list = []
             for phone in set(sell_phone_list):
-                sell_df_list.append(pd.read_sql(search_name_sql % (current_time, phone), conn_analyze))
+                sell_df_list.append(pd.read_sql(search_name_sql % (phone), conn_analyze))
             sell_df = pd.concat(sell_df_list, axis=0)
             sell_fina_df = order_df_8.merge(sell_df, how='left', on='phone')
             sell_fina_df.sort_values('sub_time', ascending=True, inplace=True)
@@ -309,7 +309,7 @@ def today_dynamic_publish():
 
         # 用户名称搜索
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user_%s where phone = "%s"
+                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
             '''
         # 转卖 + 二手
         # publish_order_sql = '''
@@ -344,7 +344,7 @@ def today_dynamic_publish():
             publish_phone_list = publish_order_df['phone'].to_list()
             publish_df_list = []
             for phone in set(publish_phone_list):
-                publish_df_list.append(pd.read_sql(search_name_sql % ( current_time, phone), conn_analyze))
+                publish_df_list.append(pd.read_sql(search_name_sql % (phone), conn_analyze))
             publish_df = pd.concat(publish_df_list, axis=0)
             publish_fina_df = publish_order_df.merge(publish_df, how='left', on='phone')
             publish_fina_df["username"].fillna("", inplace=True)

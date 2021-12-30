@@ -570,7 +570,7 @@ def bus_card_belong():
             pretty_type_sql = ''
         pretty_hold_sql_1 += pretty_type_sql
         # 读取用户信息
-        user_info_sql = '''select unionid, phone, if(`name` != "",`name`,if(nickname is not null,nickname,"")) nickname from crm_user_%s where phone is not null and phone != ""''' % current_time
+        user_info_sql = '''select unionid, phone, if(`name` != "",`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone is not null and phone != ""'''
         user_info_df = pd.read_sql(user_info_sql, conn_an)
         user_info_df['unionid'] = user_info_df['unionid'].astype(str)
         logger.info('读取用户信息表')

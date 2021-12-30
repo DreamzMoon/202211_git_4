@@ -73,7 +73,7 @@ def daily_plat_summary():
         if unioinid_lists:
             # 走统计表
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -96,8 +96,7 @@ def daily_plat_summary():
             #     for op in ok_p:
             #         args_list.append(op)
             # args_list = ",".join(args_list)
-            sql = '''select phone from crm_user_{} where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''.format(
-                current_time)
+            sql = '''select phone from crm_user where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''
             cursor_analyze.execute(sql, str_bus_lists)
             phone_lists = cursor_analyze.fetchall()
             for p in phone_lists:
@@ -435,7 +434,7 @@ def daily_plat_value():
         if unioinid_lists:
             # 走统计表
             try:
-                sql = '''select phone from crm_user_{} where find_in_set (unionid,%s)'''.format(current_time)
+                sql = '''select phone from crm_user where find_in_set (unionid,%s)'''
                 ags_list = ",".join(unioinid_lists)
                 logger.info(ags_list)
                 cursor_analyze.execute(sql, ags_list)
@@ -458,8 +457,7 @@ def daily_plat_value():
             #     for op in ok_p:
             #         args_list.append(op)
             # args_list = ",".join(args_list)
-            sql = '''select phone from crm_user_{} where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''.format(
-                current_time)
+            sql = '''select phone from crm_user where find_in_set (operate_id,%s) and crm = 1 and del_flag = 0'''
             cursor_analyze.execute(sql, str_bus_lists)
             phone_lists = cursor_analyze.fetchall()
             for p in phone_lists:
