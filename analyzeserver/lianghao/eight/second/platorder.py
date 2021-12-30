@@ -40,9 +40,9 @@ def transfer_all():
         if not user_id and not token:
             return {"code":"10001","status":"failed","msg":message["10001"]}
 
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
@@ -367,9 +367,9 @@ def transfer_buy_order():
         token = request.headers["Token"]
         user_id = request.json["user_id"]
 
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
         # 1 今日 2 本周 3 本月  4 可选择区域
         time_type = int(request.json["time_type"])
         start_time = request.json["start_time"]
@@ -617,9 +617,9 @@ def transfer_sell_order():
         logger.info(request.json)
         token = request.headers["Token"]
         user_id = request.json["user_id"]
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
         # 1 今日 2 本周 3 本月  4 可选择区域
         time_type = int(request.json["time_type"])
         start_time = request.json["start_time"]
@@ -867,9 +867,9 @@ def transfer_public_order():
         logger.info(request.json)
         token = request.headers["Token"]
         user_id = request.json["user_id"]
-        unioinid_lists = request.json["unioinid_lists"]
-        phone_lists = request.json["phone_lists"]
-        bus_lists = request.json["bus_lists"]
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
         # 1 今日 2 本周 3 本月  4 可选择区域
         time_type = int(request.json["time_type"])
         start_time = request.json["start_time"]
