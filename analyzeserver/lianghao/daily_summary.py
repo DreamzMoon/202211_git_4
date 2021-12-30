@@ -89,13 +89,12 @@ def daily_plat_summary():
         if bus_lists:
             str_bus_lists = ",".join(bus_lists)
             logger.info(str_bus_lists)
-            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            # sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            sql = '''select phone from crm_user where find_in_set (operate_id,%s)  and del_flag = 0'''
             cursor_analyze.execute(sql,str_bus_lists)
             phone_lists = cursor_analyze.fetchall()
-            for p in phone_lists:
-                ok_p = json.loads(p[0])
-                for op in ok_p:
-                    args_list.append(op)
+            logger.info(phone_lists)
+            args_list = [p[0] for p in phone_lists]
             args_list = ",".join(args_list)
 
 
@@ -443,14 +442,11 @@ def daily_plat_value():
         # 过滤运营中心的
         if bus_lists:
             str_bus_lists = ",".join(bus_lists)
-            logger.info(str_bus_lists)
-            sql = '''select not_contains from operate_relationship_crm where find_in_set (id,%s) and crm = 1 and del_flag = 0'''
+            sql = '''select phone from crm_user where find_in_set (operate_id,%s)  and del_flag = 0'''
             cursor_analyze.execute(sql, str_bus_lists)
             phone_lists = cursor_analyze.fetchall()
-            for p in phone_lists:
-                ok_p = json.loads(p[0])
-                for op in ok_p:
-                    args_list.append(op)
+            logger.info(phone_lists)
+            args_list = [p[0] for p in phone_lists]
             args_list = ",".join(args_list)
 
         # 过滤手机号码
