@@ -62,9 +62,9 @@ def user_relate_mes():
         cursor = conn.cursor()
         sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
         serpro_grade,serpro_status
-        from crm_user_%s where del_flag = 0''' %current_time
+        from crm_user where del_flag = 0'''
         count_sql = '''select count(*) count
-        from crm_user_%s where del_flag = 0''' %current_time
+        from crm_user where del_flag = 0'''
 
         if phone_lists:
             phone_lists = ",".join(phone_lists)
@@ -188,8 +188,8 @@ def user_relate_basicmes():
                 return {"code": "11020", "status": "failed", "msg": message["11020"]}
 
         logger.info("current_time:%s" %current_time)
-        sql = '''select phone,unionid,nickname,`name`,sex,birth,nationality,vertify_status,huoti_status,addtime,`status` from crm_user_%s where del_flag = 0 ''' %current_time
-        count_sql = '''select count(*) count from crm_user_%s where del_flag = 0 ''' %current_time
+        sql = '''select phone,unionid,nickname,`name`,sex,birth,nationality,vertify_status,huoti_status,addtime,`status` from crm_user where del_flag = 0 '''
+        count_sql = '''select count(*) count from crm_user where del_flag = 0 '''
 
 
         if phone_lists:
@@ -279,7 +279,7 @@ def user_relate_detail():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        sql = '''select * from crm_user_%s where del_flag = 0 and unionid = %s''' %(current_time,unionid)
+        sql = '''select * from crm_user where del_flag = 0 and unionid = %s'''
         data = pd.read_sql(sql,conn)
 
         data = data.to_dict("records")
@@ -404,7 +404,7 @@ def update_user_ascriptions():
                 return {"code":"11028","msg":message["11028"],"status":"failed"}
 
         #原用户数据 用户对比旧数据
-        select_sql = '''select * from crm_user_%s where unionid=%s and del_flag = 0''' %(current_time,unionid)
+        select_sql = '''select * from crm_user where unionid=%s and del_flag = 0'''
         old_data = pd.read_sql(select_sql,conn)
         old_data = old_data.to_dict("records")[0]
         old_operate_id = old_data["operate_id"]
