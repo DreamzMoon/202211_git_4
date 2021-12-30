@@ -621,10 +621,11 @@ def personal_total():
         if parent:
             if len(parent) == 11:
                 result = get_parent_by_phone(parent)
+                logger.info(result)
                 if result[0] == 1:
                     parent_id = result[1]
                 else:
-                    return {"code": "11014", "status": "failed", "msg": message["code"]}
+                    return {"code": "11014", "status": "failed", "msg": message["11014"]}
             else:
                 parent_id = parent
 
@@ -720,6 +721,7 @@ def personal_total():
         df_merged['parentid'] = df_merged['parentid'].apply(lambda x: del_point(x))
         df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
         if parent_id:
+            logger.info("parentid")
             df_merged = df_merged[df_merged["parentid"] == parent_id]
 
         # 算全部的钱
