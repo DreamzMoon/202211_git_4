@@ -34,21 +34,14 @@ def operate_relationship_crm(mode='first'):
         supervisor_sql = '''
             select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
             (WITH RECURSIVE temp as (
-            SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE phone = %s
+            SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM lh_analyze.crm_user t WHERE phone = %s
             UNION ALL
-            SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+            SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM lh_analyze.crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
             )
             SELECT * FROM temp
-            )a left join operationcenter b
+            )a left join lh_analyze.operationcenter b
             on a.id = b.unionid
         '''
-
-        # supervisor_sql = '''
-        #     select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user_{} where bus_phone = %s
-        #             '''.format(current_time)
-        # supervisor_sql = '''
-        #             select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user where bus_phone = %s
-        #                     '''
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         analyze_cusor = conn_analyze.cursor()
@@ -59,8 +52,8 @@ def operate_relationship_crm(mode='first'):
 
         # operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from luke_lukebus.operationcenter where capacity=1 and crm=1'
         operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from lh_analyze.operationcenter where capacity=1 and crm=1'
-        analyze_cusor.execute(operate_sql)
-        operate_data = analyze_cusor.fetchall()
+        # analyze_cusor.execute(operate_sql)
+        # operate_data = analyze_cusor.fetchall()
         operate_df = pd.read_sql(operate_sql, conn_analyze)
 
         # 运营中心手机号列表
@@ -77,6 +70,9 @@ def operate_relationship_crm(mode='first'):
             all_data.columns = coll_lists
 
             all_data.dropna(subset=['phone'], axis=0, inplace=True)
+            all_data_1 = all_data[all_data['phone'] == phone]
+            all_data_2 = all_data[all_data['phone'] != phone]
+            all_data = pd.concat([all_data_1, all_data_2], axis=0,ignore_index=True)
             all_data_phone = all_data['phone'].tolist()
             # 运营中心名称
             # operate_data = operate_df.loc[operate_df['telephone'] == phone, :]
@@ -122,7 +118,7 @@ def operate_relationship_crm(mode='first'):
             result_df['not_contains'] = result_df['not_contains'].apply(lambda x: json.dumps(x))
             result_df['child_center_id'] = result_df['child_center_id'].apply(lambda x: json.dumps(x))
             result_df['update_record'] = result_df['update_record'].apply(lambda x: json.dumps(x))
-            result_df.to_sql("operate_relationship_crm_test", con=conn_rw, if_exists="append", index=False)
+            result_df.to_sql("operate_relationship_crm", con=conn_rw, if_exists="append", index=False)
             return True, '添加数据成功'
         else:
             logger.info(result_df.shape)
@@ -133,8 +129,8 @@ def operate_relationship_crm(mode='first'):
     finally:
         # conn_crm.close()
         conn_analyze.close()
-result = operate_relationship_crm()
-logger.info(result[1])
+# result = operate_relationship_crm()
+# logger.info(result[1])
 
 
 # 更新数据
@@ -195,4 +191,4 @@ def refresh_operate_relationship_crm():
         except:
             pass
 
-# refresh_operate_relationship_crm()
+refresh_operate_relationship_crm()
