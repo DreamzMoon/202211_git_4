@@ -32,9 +32,12 @@ def operate_relationship_crm(mode='first'):
         #     on a.id = b.unionid
         #     '''
 
+        # supervisor_sql = '''
+        #     select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user_{} where bus_phone = %s
+        #             '''.format(current_time)
         supervisor_sql = '''
-            select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user_{} where bus_phone = %s
-                    '''.format(current_time)
+                    select unionid id,parentid pid,phone,nickname,name,operatename,operate_id operateid from crm_user where bus_phone = %s
+                            '''
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         analyze_cusor = conn_analyze.cursor()
