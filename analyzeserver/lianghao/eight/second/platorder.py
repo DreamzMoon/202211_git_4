@@ -291,7 +291,7 @@ def operations_order_count():
         if not check_close_operate:
             try:
                 conn_crm = direct_get_conn(crm_mysql_conf)
-                close_id_sql = '''select id from luke_lukebus.operationcenter where crm=1 and capacity=1 and status=2'''
+                close_id_sql = '''select id from luke_lukebus.operationcenter where crm=1 and status=2'''
                 close_id_df = pd.read_sql(close_id_sql, conn_crm)
                 close_id_list = close_id_df['id'].tolist()
                 conn_crm.close()
