@@ -350,55 +350,45 @@ def update_user_ascriptions():
         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
         if parent_phone:
             sql = '''
-            select a.id,a.phone,a.pid from 
-            (WITH RECURSIVE temp as (
-            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE id = %s
-            UNION ALL
-            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id
-            )
-            SELECT * FROM temp
-            )a left join luke_lukebus.operationcenter b
-            on a.id = b.unionid 
-            where a.phone != "" and a.phone is not null
-            ''' %unionid
-            logger.info(sql)
-            cursor_crm.execute(sql)
-            datas = cursor_crm.fetchall()
-            logger.info(datas)
-            pid = datas[0]["id"]
-            below_phone = []
-            for data in datas:
-                if data["pid"] == pid:
-                    continue
-                else:
-                    below_phone.append(data["phone"])
+                        select * from (						
+                            select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+                            (WITH RECURSIVE temp as (
+                            SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                            UNION ALL
+                            SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+                            )
+                            SELECT * FROM temp
+                            )a left join operationcenter b
+                            on a.id = b.unionid
+                            ) t where pid != %s and id != %s and phone is not null and phone !=""
+                        ''' % (unionid, unionid, unionid)
 
-            if parent_phone in below_phone:
-                return {"code":"11028","msg":message["11028"],"status":"failed"}
+            cursor.execute(sql)
+            datas = cursor.fetchall()
+            below_phone = [data[2] for data in datas]
+
+            if bus_parent_phone in below_phone:
+                return {"code": "11028", "msg": message["11028"], "status": "failed"}
 
 
         if bus_parent_phone:
             sql = '''
-            select a.id,a.phone,a.pid from 
-            (WITH RECURSIVE temp as (
-            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t WHERE id = %s
-            UNION ALL
-            SELECT t.id,t.pid,t.phone,t.nickname,t.`name`,t.sex,t.`status` FROM luke_sincerechat.user t INNER JOIN temp ON t.pid = temp.id
-            )
-            SELECT * FROM temp
-            )a left join luke_lukebus.operationcenter b
-            on a.id = b.unionid 
-            where a.phone != "" and a.phone is not null
-            ''' %unionid
-            cursor_crm.execute(sql)
-            datas = cursor_crm.fetchall()
-            pid = datas[0]["id"]
-            below_phone = []
-            for data in datas:
-                if data["pid"] == pid:
-                    continue
-                else:
-                    below_phone.append(data["phone"])
+            select * from (						
+                select a.*, if (crm =0, Null, b.operatenamedirect) operatenamedirect, b.id operate_direct_id from
+                (WITH RECURSIVE temp as (
+                SELECT t.unionid id,t.bus_parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                UNION ALL
+                SELECT t1.unionid id,t1.bus_parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.bus_parentid = temp.id
+                )
+                SELECT * FROM temp
+                )a left join operationcenter b
+                on a.id = b.unionid
+                ) t where pid != %s and id != %s and phone is not null and phone !=""
+            ''' %(unionid,unionid,unionid)
+
+            cursor.execute(sql)
+            datas = cursor.fetchall()
+            below_phone = [data[2] for data in datas]
 
             if bus_parent_phone in below_phone:
                 return {"code":"11028","msg":message["11028"],"status":"failed"}
@@ -417,34 +407,34 @@ def update_user_ascriptions():
 
         if operate_direct_id:
             #先去禄可商务拿运营中心的信息
-            operate_sql = '''select * from luke_lukebus.operationcenter where id = %s''' %operate_direct_id
-            bus_data = pd.read_sql(operate_sql,conn_crm).to_dict("records")[0]
+            operate_sql = '''select * from operationcenter where id = %s''' %operate_direct_id
+            bus_data = pd.read_sql(operate_sql,conn).to_dict("records")[0]
             crm_condition.append(''' operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s ''' %(bus_data["operatename"],bus_data["telephone"],bus_data["name"],bus_data["unionid"],operate_direct_id))
 
         if operate_id:
             # 先去禄可商务拿运营中心的信息
-            operate_sql = '''select * from luke_lukebus.operationcenter where id = %s''' %operate_id
-            bus_data = pd.read_sql(operate_sql, conn_crm).to_dict("records")[0]
+            operate_sql = '''select * from operationcenter where id = %s''' %operate_id
+            bus_data = pd.read_sql(operate_sql, conn).to_dict("records")[0]
             crm_condition.append(''' operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s ''' % (bus_data["operatename"], bus_data["telephone"], bus_data["name"], bus_data["unionid"], operate_id))
 
             statistic_condition.append(''' operate_id="%s",operatename="%s",leader_unionid="%s",leader="%s",leader_phone="%s" ''' %(operate_id,bus_data["operatename"],bus_data["unionid"], bus_data["name"],bus_data["telephone"]))
 
         if parent_phone:
-            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(parent_phone)
-            user_data = pd.read_sql(user_sql,conn_crm)
+            user_sql = '''select * from crm_user where phone = %s''' %(parent_phone)
+            user_data = pd.read_sql(user_sql,conn)
             if user_data.shape[0] == 0:
                 return {"code":"11029","msg":message["11029"],"status":"failed"}
             user_data = user_data.to_dict("records")[0]
-            crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
-            statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["id"],parent_phone))
+            crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
+            statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["unionid"],parent_phone))
 
         if bus_parent_phone:
-            user_sql = '''select * from luke_sincerechat.user where phone = %s''' %(bus_parent_phone)
-            user_data = pd.read_sql(user_sql, conn_crm)
+            user_sql = '''select * from crm_user where phone = %s''' %(bus_parent_phone)
+            user_data = pd.read_sql(user_sql, conn)
             if user_data.shape[0] == 0:
                 return {"code": "11029", "msg": message["11029"], "status": "failed"}
             user_data = user_data.to_dict("records")[0]
-            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["id"]))
+            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
 
         crm_sql_condition = ",".join(crm_condition)
         statistic_condition_sql = ",".join(statistic_condition)
