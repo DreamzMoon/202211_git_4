@@ -54,7 +54,7 @@ def get_user_operationcenter_direct(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select id operate_direct_id,unionid, name direct_leader, telephone, operatename operatenamedirect from luke_lukebus.operationcenter'
+        operate_sql = 'select id operate_direct_id,unionid, name direct_leader, telephone, operatename operatenamedirect from luke_lukebus.operationcenter where status=1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)

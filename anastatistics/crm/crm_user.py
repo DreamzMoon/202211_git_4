@@ -55,7 +55,7 @@ def get_user_operationcenter_direct(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select id operate_direct_id,unionid, name direct_leader, telephone, operatename operatenamedirect from luke_lukebus.operationcenter'
+        operate_sql = 'select id operate_direct_id,unionid, name direct_leader, telephone, operatename operatenamedirect from luke_lukebus.operationcenter where status=1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
@@ -282,9 +282,9 @@ try:
 
     # 第一次入库走这个
     logger.info("数据准备入库")
-    last_data.drop_duplicates('unionid', inplace=True)
+    # last_data.drop_duplicates('unionid', inplace=True)
     conn = sqlalchemy_conn(analyze_mysql_conf)
-    last_data.to_sql("crm_user", con=conn, if_exists="append", index=False)
+    last_data.to_sql("crm_user1", con=conn, if_exists="append", index=False)
     logger.info("写入成功")
 
 
