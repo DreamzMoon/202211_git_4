@@ -1437,7 +1437,11 @@ def personal_sell_all():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_read.close()
+        try:
+            conn_read.close()
+            conn_analyze.close()
+        except:
+            pass
 
 
 
