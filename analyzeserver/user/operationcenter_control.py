@@ -58,28 +58,33 @@ def check_operate_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        base_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where capacity=1'''
+        base_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter'''
         # sql 拼接
+        condition_sql_list = []
         if keyword:
-            keyword_sql = ''' and (operatename like "%{keyword}%" or name like "%{keyword}%" or telephone like "%{keyword}%" or unionid like "%{keyword}%")'''.format(keyword=keyword)
-        else:
-            keyword_sql = ''
-        base_sql += keyword_sql
+            keyword_sql = ''' (operatename like "%{keyword}%" or name like "%{keyword}%" or telephone like "%{keyword}%" or unionid like "%{keyword}%")'''.format(keyword=keyword)
+            condition_sql_list.append(keyword_sql)
         if status:
-            status_sql = ''' and status=%s''' % status
-        else:
-            status_sql = ''
-        base_sql += status_sql
+            status_sql = ''' status=%s''' % status
+            condition_sql_list.append(status_sql)
         if crm_status == 0 or crm_status == 1:
-            crm_status_sql = ''' and crm=%s''' % crm_status
-        else:
-            crm_status_sql = ''
-        base_sql += crm_status_sql
+            crm_status_sql = ''' crm=%s''' % crm_status
+            condition_sql_list.append(crm_status_sql)
         if create_start_time and create_end_time:
-            create_time_sql = ''' and create_time>="%s" and create_time<="%s"''' % (create_start_time, create_end_time)
+            create_time_sql = ''' create_time>="%s" and create_time<="%s"''' % (create_start_time, create_end_time)
+            condition_sql_list.append(create_time_sql)
+        # sql合并
+        len_sql = len(condition_sql_list)
+        if len_sql == 1:
+            base_sql = base_sql + ' where' + condition_sql_list[0]
+        elif len_sql > 1:
+            base_sql = base_sql + ' where' + condition_sql_list[0]
+            for condition_sql in condition_sql_list[1:]:
+                base_sql = base_sql + ' and' + condition_sql
         else:
-            create_time_sql = ''
-        base_sql += create_time_sql
+            base_sql = base_sql
+        return base_sql
+
         logger.info(base_sql)
         center_data = pd.read_sql(base_sql, conn_an)
         logger.info(center_data.shape)
@@ -129,7 +134,7 @@ def check_operate_detail_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        detail_data_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where capacity=1 and id=%s''' % operate_id
+        detail_data_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where id=%s''' % operate_id
         detail_data = pd.read_sql(detail_data_sql, conn_an)
         detail_data['create_time'] = detail_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         detail_data.fillna('', inplace=True)
@@ -188,7 +193,7 @@ def update_operate_detail_data():
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         # 数据对比
-        oringinal_data_sql = '''select telephone phone, operatename, address, authnumber, unifiedsocial, crm, status from lh_analyze.operationcenter where capacity=1 and id=%s''' % operate_id
+        oringinal_data_sql = '''select telephone phone, operatename, address, authnumber, unifiedsocial, crm, status from lh_analyze.operationcenter where id=%s''' % operate_id
         oringinal_data = pd.read_sql(oringinal_data_sql, conn_an)
         # 进行数据判断
         # 修改手机号，其余unionid与姓名从crm_user表拿。如果用户不存在，则不让修改，统一信用编码为唯一，不能重复

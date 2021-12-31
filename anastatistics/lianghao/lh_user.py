@@ -47,7 +47,7 @@ def get_operate_relationship(user_df, mode):
 
     if mode == 'crm':
         # 运营中心
-        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm=1'
+        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where crm=1'
         cursor.execute(operate_sql)
         operate_df = pd.DataFrame(cursor.fetchall())
         supervisor_sql = '''
@@ -64,7 +64,7 @@ def get_operate_relationship(user_df, mode):
         change_columns = ['phone', 'leader', 'operatename', 'operate_id', 'bus_phone']
     else:
         # 运营中心
-        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter where capacity=1'
+        operate_sql = 'select id, unionid, name, telephone, operatename from luke_lukebus.operationcenter'
         cursor.execute(operate_sql)
         operate_df = pd.DataFrame(cursor.fetchall())
         supervisor_sql = '''

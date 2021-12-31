@@ -51,7 +51,7 @@ def operate_relationship_crm(mode='first'):
         # crm_cursor = conn_crm.cursor()
 
         # operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from luke_lukebus.operationcenter where capacity=1 and crm=1'
-        operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from lh_analyze.operationcenter where capacity=1 and crm=1'
+        operate_sql = 'select id, unionid, punionid parentid, name, telephone phone, operatename, crm, status from lh_analyze.operationcenter where crm=1'
         # analyze_cusor.execute(operate_sql)
         # operate_data = analyze_cusor.fetchall()
         operate_df = pd.read_sql(operate_sql, conn_analyze)

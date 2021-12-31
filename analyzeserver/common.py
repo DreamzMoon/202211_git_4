@@ -26,7 +26,8 @@ def get_lukebus_phone(bus_lists):
         phone_lists = []
         conn_crm = direct_get_conn(crm_mysql_conf)
         crm_cursor = conn_crm.cursor()
-        sql = '''select * from luke_lukebus.operationcenter where find_in_set(operatename,%s) and crm =1 and capacity=1'''
+        # sql = '''select * from luke_lukebus.operationcenter where find_in_set(operatename,%s) and crm =1 and capacity=1'''
+        sql = '''select * from luke_lukebus.operationcenter where find_in_set(operatename,%s) and crm =1'''
         crm_cursor.execute(sql, (",".join(bus_lists)))
         operate_datas = crm_cursor.fetchall()
         logger.info("operate_datas:%s" % operate_datas)
@@ -111,7 +112,8 @@ def get_busphne_by_id(bus_id):
         # crm_cursor = conn_crm.cursor()
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         analyze_cursor = conn_analyze.cursor()
-        sql = '''select * from lh_analyze.operationcenter where id = %s and crm=1 and capacity=1'''
+        # sql = '''select * from lh_analyze.operationcenter where id = %s and crm=1 and capacity=1'''
+        sql = '''select * from lh_analyze.operationcenter where id = %s and crm=1'''
         analyze_cursor.execute(sql, (bus_id))
         operate_datas = analyze_cursor.fetchall()
         logger.info("operate_datas:%s" % operate_datas)
@@ -631,7 +633,8 @@ def get_all_user_operationcenter(crm_user_data=""):
         if not conn_crm:
             return False, '数据库连接失败'
         crm_cursor = conn_crm.cursor()
-        operate_sql = 'select id operate_id,unionid, name leader, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
+        operate_sql = 'select id operate_id,unionid, name leader, telephone, operatename from luke_lukebus.operationcenter where crm = 1'
+        # operate_sql = 'select id operate_id,unionid, name leader, telephone, operatename from luke_lukebus.operationcenter where capacity=1 and crm = 1'
         crm_cursor.execute(operate_sql)
         operate_data = crm_cursor.fetchall()
         operate_df = pd.DataFrame(operate_data)
