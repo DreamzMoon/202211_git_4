@@ -83,7 +83,6 @@ def check_operate_data():
                 base_sql = base_sql + ' and' + condition_sql
         else:
             base_sql = base_sql
-        return base_sql
 
         logger.info(base_sql)
         center_data = pd.read_sql(base_sql, conn_an)
