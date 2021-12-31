@@ -164,11 +164,11 @@ def personal_total():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         #这里要进行一个crm数据的合并
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        # conn_analyze = direct_get_conn(analyze_mysql_conf)
         sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
         logger.info(sql)
         crm_data = pd.read_sql(sql, conn_analyze)
-        conn_analyze.close()
+        # conn_analyze.close()
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
 
         df_merged["parentid"] = df_merged['parentid'].astype(str)
