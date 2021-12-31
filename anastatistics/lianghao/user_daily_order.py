@@ -27,9 +27,9 @@ def user_daily_order_data(mode='update'):
         # 用户数据
         user_info_sql = '''
             select unionid, parentid, phone, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, operate_id, operatename, leader, bus_phone leader_phone, leader_unionid
-            from crm_user_%s
+            from crm_user
             where phone is not null or phone != '' and del_flag=0
-        ''' % current_time
+        '''
         user_info_data = pd.read_sql(user_info_sql, conn_an)
         logger.info(user_info_data.shape)
 
