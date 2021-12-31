@@ -580,7 +580,7 @@ def personal_total():
     try:
 
         conn_read = direct_get_conn(lianghao_mysql_conf)
-
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
         logger.info(request.json)
 
         token = request.headers["Token"]
@@ -634,11 +634,16 @@ def personal_total():
                 parent_id = parent
 
         if bus_id:
-            result = get_busphne_by_id(bus_id)
-            if result[0] == 1:
-                bus_phone = result[1].split(",")
-            else:
-                return {"code":"11015","status":"failed","msg":message["11015"]}
+            sql = '''select phone from crm_user where operate_id = %s''' %bus_id
+            phone_data = pd.read_sql(sql, conn_analyze)
+            bus_phone = phone_data.tolist()
+            if not bus_phone:
+                return {"code": "11015", "status": "failed", "msg": message["11015"]}
+            # result = get_busphne_by_id(bus_id)
+            # if result[0] == 1:
+            #     bus_phone = result[1].split(",")
+            # else:
+            #     return {"code":"11015","status":"failed","msg":message["11015"]}
 
         logger.info(len(bus_phone))
 
@@ -777,6 +782,7 @@ def personal_total():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_read.close()
+        conn_analyze.close()
 
 
 
@@ -785,7 +791,7 @@ def personal_total():
 def personal_buy_all():
     try:
         conn_read = direct_get_conn(lianghao_mysql_conf)
-
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
         logger.info(request.json)
         token = request.headers["Token"]
         user_id = request.json["user_id"]
@@ -861,11 +867,16 @@ def personal_buy_all():
 
 
         if bus_id:
-            result = get_busphne_by_id(bus_id)
-            if result[0] == 1:
-                bus_phone = result[1].split(",")
-            else:
-                return {"code":"11015","status":"failed","msg":message["11015"]}
+            sql = '''select phone from crm_user where operate_id = %s''' %bus_id
+            phone_data = pd.read_sql(sql,conn_analyze)
+            bus_phone = phone_data.tolist()
+            if not bus_phone:
+                return {"code": "11015", "status": "failed", "msg": message["11015"]}
+            # result = get_busphne_by_id(bus_id)
+            # if result[0] == 1:
+            #     bus_phone = result[1].split(",")
+            # else:
+            #     return {"code":"11015","status":"failed","msg":message["11015"]}
 
         # 对手机号码差交集
         if keyword_phone and bus_phone:
@@ -971,6 +982,7 @@ def personal_buy_all():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_read.close()
+        conn_analyze.close()
 
 
 
