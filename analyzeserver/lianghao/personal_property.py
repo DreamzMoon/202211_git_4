@@ -486,6 +486,27 @@ def person_detail():
         if not hold_phone:
             return {"code":"10001","message":message["10001"],"status":"failed"}
 
+        data = {"up":"","middle":"","below":""}
+
+        # 先算投入价值
+        sql = '''select sum(total_price) total_price from lh_order where type in (1,4) and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
+        cursor_lh.execute(sql)
+        investment = cursor_lh.fetchone()[0]
+
+        sql = '''select public_count,public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,hold_price from user_storage_value_today where hold_phone = %s
+group by addtime order by addtime desc limit 1''' %hold_phone
+
+        sum_data = (pd.read_sql(sql, conn_analyze)).to_dict("records")[0]
+        data["up"] = {
+            "public_count": sum_data["public_total_count"], "public_price": sum_data["publish_total_price"],
+            "traned_count": sum_data["traned_total_count"], "traned_price": sum_data["traned_total_price"],
+            "used_count": sum_data["used_total_count"],
+            "tran_count": sum_data["tran_total_count"], "tran_price": sum_data["tran_total_price"],
+            "no_tran_count": sum_data["no_tran_total_count"],"no_tran_price": sum_data["no_tran_total_price"],
+            "hold_count": sum_data["hold_total_count"], "hold_price": sum_data["hold_total_price"],
+            "investment_money" : investment
+        }
+
         # # 统计表里面拿持有 可转让 不可转让的数量
         # up_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today where hold_phone = %s group by addtime order by addtime desc limit 1''' %hold_phone
         #
@@ -540,6 +561,8 @@ def person_detail():
         no_tran_data["no_tran_sum_price"] = no_tran_data["no_tran_count"]*no_tran_data["guide_price"]
         traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
 
+        logger.info(hold_data)
+
         hold_data = hold_data.to_dict("records")
         tran_data = tran_data.to_dict("records")
         traning_data = traning_data.to_dict("records")
@@ -548,7 +571,55 @@ def person_detail():
 
 
 
-        return "111"
+        hold_list = []
+        for hl in hold_data:
+            hl_dict = {}
+            hl_dict["pretty_type_name"] = hl["pretty_type_name"]
+            hl_dict["hold_count"] = hl["hold_count"]
+            hl_dict["hold_sum_price"] = hl["hold_sum_price"]
+            hold_list.append(hl_dict)
+
+        tran_list = []
+        for tn in tran_data:
+            tn_dict = {}
+            tn_dict["pretty_type_name"] = tn["pretty_type_name"]
+            tn_dict["tran_count"] = tn["tran_count"]
+            tn_dict["tran_sum_price"] = tn["tran_sum_price"]
+            tran_list.append(tn_dict)
+
+        traning_list = []
+        for tn in traning_data:
+            tn_dict = {}
+            tn_dict["pretty_type_name"] = tn["pretty_type_name"]
+            tn_dict["traning_count"] = tn["traning_count"]
+            tn_dict["traning_sum_price"] = tn["traning_sum_price"]
+            traning_list.append(tn_dict)
+
+        no_tran_list = []
+        for ntn in no_tran_data:
+            ntn_dict = {}
+            ntn_dict["pretty_type_name"] = ntn["pretty_type_name"]
+            ntn_dict["no_tran_count"] = ntn["no_tran_count"]
+            ntn_dict["no_tran_sum_price"] = ntn["no_tran_sum_price"]
+            no_tran_list.append(ntn_dict)
+
+        traned_list = []
+        for tn in traned_data:
+            tn_dict = {}
+            tn_dict["pretty_type_name"] = tn["pretty_type_name"]
+            tn_dict["traned_count"] = tn["traned_count"]
+            tn_dict["traned_sum_price"] = tn["traned_sum_price"]
+            traned_list.append(tn_dict)
+
+        data["middle"] = {
+            "hold":hold_list,
+            "tran":tran_list,
+            "traning":traning_list,
+            "no_tran":no_tran_list,
+            "traned":traned_list
+
+        }
+        return {"code":"0000","status":"success","msg":data}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
