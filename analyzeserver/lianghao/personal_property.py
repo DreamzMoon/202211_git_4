@@ -483,8 +483,13 @@ def person_detail():
 
 
         hold_phone = request.json.get("hold_phone")
+        time_type = request.json.get("time_type")
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
         if not hold_phone:
             return {"code":"10001","message":message["10001"],"status":"failed"}
+        if (time_type != 3 and start_time and end_time) or time_type not in range(1, 3) or (time_type == 4 and (not start_time or not end_time)):
+            return {"code": "10014", "status": "failed", "msg": message["10014"]}
 
         data = {"up":"","middle":"","below":""}
 
@@ -570,7 +575,14 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         traned_data = traned_data.to_dict("records")
 
 
-
+        # 数据分析
+        if time_type == 1: # 今日
+            today_sql = '''select t1.*, t2.ration_transferred_count, t2.ration_transferred_price from 
+                (select hold_phone, transferred_count, transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-03') t1
+                left join
+                (select hold_phone, transferred_count ration_transferred_count, transferred_price ration_transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-02') t2
+                on t1.hold_phone = t2.hold_phone
+            '''
         hold_list = []
         for hl in hold_data:
             hl_dict = {}
@@ -920,9 +932,12 @@ def personal_hold_total():
             # 归属上级
             parent = request.json['parent']
             # 过滤条件
+            # unionid_lists = [int(unionid) for unionid in request.json['unionid_lists']] # unionid
+            # phone_lists = request.json['phone_lists'] # 手机号
+            # bus_lists = [int(bus_id) for bus_id in request.json['bus_lists']] # 运营中心
             unionid_lists = request.json['unionid_lists'] # unionid
             phone_lists = request.json['phone_lists'] # 手机号
-            bus_lists = request.json['bus_lists'] # 运营中心
+            bus_lists = request.json['bus_lists']
             '''TODO'''
             # 用户标签
             # user_tag = request.json['user_tag']
@@ -971,7 +986,12 @@ def personal_hold_total():
         user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
         fina_df['unionid'].fillna('', inplace=True)
+        fina_df['unionid'] = fina_df['unionid'].astype(str)
         fina_df['parentid'].fillna('', inplace=True)
+        fina_df['parentid'] = fina_df['parentid'].astype(str)
+        # 去除小数点
+        fina_df['unionid'] = fina_df['unionid'].apply(lambda x: del_point(x))
+        fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
         # 条件匹配
         if keyword != "":
             fina_df = fina_df[
@@ -1010,9 +1030,7 @@ def personal_hold_total():
             cut_data = fina_df[start_index: end_index]
         else:
             cut_data = fina_df
-        # unionid 与 parent_id去除小数点
-        cut_data['unionid'] = cut_data['unionid'].apply(lambda x: del_point(x))
-        cut_data['parentid'] = cut_data['parentid'].apply(lambda x: del_point(x))
+
         cut_data.drop(['operate_id', 'parent_phone'], axis=1, inplace=True)
         # 填补空值
         cut_data.fillna('', inplace=True)
@@ -1020,7 +1038,7 @@ def personal_hold_total():
             "title_data": title_data,
             "data": cut_data.to_dict("records")
         }
-        return {"code": "0000", "status": "success", "msg": return_data, "count": cut_data.shape[0]}
+        return {"code": "0000", "status": "success", "msg": return_data, "count": fina_df.shape[0]}
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
