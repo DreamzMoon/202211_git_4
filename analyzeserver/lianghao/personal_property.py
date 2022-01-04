@@ -96,8 +96,9 @@ def platform_data():
         condition_sql = ""
         for i in range(0,len(condition)):
              condition_sql = " where " + condition[i] if i == 0 else " and " + condition[i]
+
         if condition_sql:
-            all_public_sql+condition_sql
+            all_public_sql = all_public_sql + condition_sql
 
         cursor_lh.execute(all_public_sql)
         all_public_count = cursor_lh.fetchone()[0]
@@ -458,6 +459,104 @@ def plat_statis():
     finally:
         conn_analyze.close()
         conn_lh.close()
+
+
+@ppbp.route("person/detail",methods=['POST'])
+def person_detail():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        cursor_lh = conn_lh.cursor()
+
+        try:
+            token = request.headers["Token"]
+            user_id = request.json.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+
+        hold_phone = request.json.get("hold_phone")
+        if not hold_phone:
+            return {"code":"10001","message":message["10001"],"status":"failed"}
+
+        # # 统计表里面拿持有 可转让 不可转让的数量
+        # up_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today where hold_phone = %s group by addtime order by addtime desc limit 1''' %hold_phone
+        #
+        # up_data = (pd.read_sql(up_sql, conn_analyze)).to_dict("records")[0]
+
+        #去user表拿id
+        user_sql = '''select id from lh_user where phone = %s'''
+        cursor_lh.execute(user_sql,(hold_phone))
+        lh_user_id = cursor_lh.fetchone()[0]
+
+        # 持有
+        hold_sql = '''select pretty_type_id,count(*) hold_count from lh_pretty_hold_%s where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        hold_data = pd.read_sql(hold_sql,conn_lh)
+
+        # 可转让
+        tran_sql = '''select pretty_type_id,count(*) tran_count from lh_pretty_hold_%s where del_flag=0 and `status` = 0 and is_open_vip = 0 and is_sell = 1 and pay_type !=0  and thaw_time<=now() and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        tran_data = pd.read_sql(tran_sql,conn_lh)
+
+        # 转让中
+        traning_sql = '''
+        select pretty_type_id,count(*) traning_count from (select sell_phone hold_phone,pretty_type_id from lh_sell where del_flag = 0 and `status` = 0 and sell_phone = %s
+        union all
+        select lsr.retail_user_phone hold_phone,pretty_type_id from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
+        and lsr.retail_user_phone = %s ) t group by pretty_type_id 
+        ''' %(hold_phone,hold_phone)
+        traning_data = pd.read_sql(traning_sql,conn_lh)
+
+        # 不可转让
+        no_tran_sql = '''SELECT pretty_type_id,count(*) no_tran_count FROM lh_pretty_hold_%s WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_%s WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],lh_user_id[0],hold_phone)
+        no_tran_data = pd.read_sql(no_tran_sql,conn_lh)
+
+        # 已转让
+        traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 0 and now() >= thaw_time and is_open_vip = 0 and is_sell = 1  and pay_type !=0 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        traned_data = pd.read_sql(traned_sql,conn_lh)
+
+        # 价格表
+        price_sql = '''select lh_config_guide.pretty_type_id,lh_pretty_type.name pretty_type_name,max(guide_price) guide_price from lh_config_guide  
+        left join lh_pretty_type on lh_config_guide.pretty_type_id = lh_pretty_type.id where lh_config_guide.del_flag = 0  and "%s">=lh_config_guide.date group by pretty_type_id ''' % current_time
+        price_data = pd.read_sql(price_sql, conn_lh)
+
+        hold_data = hold_data.merge(price_data,on="pretty_type_id")
+        tran_data = tran_data.merge(price_data,on="pretty_type_id")
+        traning_data = traning_data.merge(price_data,on="pretty_type_id")
+        no_tran_data = no_tran_data.merge(price_data,on="pretty_type_id")
+        traned_data = traned_data.merge(price_data,on="pretty_type_id")
+        logger.info(hold_data)
+
+        hold_data["hold_sum_price"] = hold_data["hold_count"]*hold_data["guide_price"]
+        tran_data["tran_sum_price"] = tran_data["tran_count"]*tran_data["guide_price"]
+        traning_data["traning_sum_price"] = traning_data["traning_count"]*traning_data["guide_price"]
+        no_tran_data["no_tran_sum_price"] = no_tran_data["no_tran_count"]*no_tran_data["guide_price"]
+        traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
+
+        hold_data = hold_data.to_dict("records")
+        tran_data = tran_data.to_dict("records")
+        traning_data = traning_data.to_dict("records")
+        no_tran_data = no_tran_data.to_dict("records")
+        traned_data = traned_data.to_dict("records")
+
+
+
+        return "111"
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
+        conn_lh.close()
+
 
 
 @ppbp.route('/belong', methods=['POST'])

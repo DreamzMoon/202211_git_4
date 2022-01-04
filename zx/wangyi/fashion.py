@@ -32,7 +32,7 @@ def get_proxy():
 main_url = "https://fashion.163.com/special/002688FE/fashion_datalist_"
 #翻页次数
 i = 1
-count = 9
+count = 1
 timeout = 5
 type = "时尚"
 crawlcount = 0
@@ -82,6 +82,7 @@ logger.info("去重后")
 logger.info(detail_urls)
 logger.info(len(detail_urls))
 time.sleep(2)
+
 
 # 换代理
 proxy_result = get_proxy()
