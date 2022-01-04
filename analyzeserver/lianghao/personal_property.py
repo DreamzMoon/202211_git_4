@@ -155,7 +155,7 @@ def platform_data():
         conn_analyze.close()
         conn_lh.close()
 
-
+# 平台名片网数据统计
 @ppbp.route("plat/statis",methods=['POST'])
 def plat_statis():
     try:
@@ -558,7 +558,7 @@ def person_detail():
         conn_lh.close()
 
 
-
+# 名片网归属数据表
 @ppbp.route('/belong', methods=['POST'])
 def bus_card_belong():
     try:
@@ -614,8 +614,8 @@ def bus_card_belong():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
         # 数据库连接
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        if not conn_lh or not conn_an:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_analyze:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
         pretty_hold_sql = '''
@@ -670,7 +670,7 @@ def bus_card_belong():
         pretty_hold_sql_1 += pretty_type_sql
         # 读取用户信息
         user_info_sql = '''select unionid, phone, if(`name` != "",`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone is not null and phone != ""'''
-        user_info_df = pd.read_sql(user_info_sql, conn_an)
+        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         user_info_df['unionid'] = user_info_df['unionid'].astype(str)
         logger.info('读取用户信息表')
         user_id_sql = '''select phone, left(id, 1) id from lh_pretty_client.lh_user where del_flag=0'''
@@ -818,17 +818,18 @@ def bus_card_belong():
     finally:
         try:
             conn_lh.close()
-            conn_an.close()
+            conn_analyze.close()
         except:
             pass
 
-@ppbp.route('/personal/hold/total')
+# 个人持有名片网估值统计
+@ppbp.route('/personal/hold/total', methods=["POST"])
 def personal_hold_total():
     try:
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 8:
+            if len(request.json) != 9:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -865,15 +866,96 @@ def personal_hold_total():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
         # 数据库连接
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        if not conn_lh or not conn_an:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_analyze:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
+
+        # 读取user_storage_value
+        user_storage_value_sql = '''select hold_phone, sum(transferred_count) transferred_count, sum(transferred_price) transferred_price from user_storage_value group by hold_phone'''
+
+        # 读取user_storage_value_today表(每10分钟一次，更新最近的是)
+        today_storage_sql = '''select a.hold_phone, a.transferred_count, a.transferred_price, a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_value_today a
+                    join (select hold_phone, max(addtime) time from lh_analyze.user_storage_value_today group by hold_phone) b
+                    on a.hold_phone = b.hold_phone
+                    and a.addtime = b.time
+                '''
+        # 读取转让中数据
+        public_sql = '''
+            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by hold_phone
+            union all
+            select lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
+            group by hold_phone ) t group by hold_phone
+        '''
+        user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
+        today_storage_df = pd.read_sql(today_storage_sql, conn_analyze)
+        public_df = pd.read_sql(public_sql, conn_lh)
+
+        merge_df = pd.concat([user_storage_df, today_storage_df, public_df], axis=0, ignore_index=True)
+        group_df = merge_df.groupby('hold_phone').sum().reset_index()
+        # 用户信息
+        user_info_sql = '''
+        select if(`name` is not null,`name`,nickname) nickname, phone hold_phone, unionid, operate_id, operatename, parentid, parent_phone from crm_user where del_flag = 0 and phone != "" and phone is not null
+        '''
+        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
+        fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
+        fina_df['unionid'].fillna('', inplace=True)
+        fina_df['parentid'].fillna('', inplace=True)
+        # 条件匹配
+        if keyword != "":
+            fina_df = fina_df[
+                (fina_df['nickname'].str.contains(keyword)) |
+                (fina_df['unionid'].str.contains(keyword)) |
+                (fina_df['hold_phone'].str.contains(keyword))
+            ]
+        if operateid != "":
+            fina_df = fina_df[fina_df['operate_id'] == operateid]
+        if parent != "":
+            fina_df = fina_df[
+                (fina_df['parentid'] == parent) |
+                (fina_df['parent_phone'] == parent)
+            ]
+        # 过滤条件
+        fina_df = fina_df[
+            ~((fina_df['unionid'].isin(unionid_lists)) |
+              (fina_df['hold_phone'].isin(phone_lists)) |
+              (fina_df['operate_id'].isin(bus_lists)))
+        ]
+        title_data = {
+            "hold_count": int(fina_df['hold_count'].sum()), # 靓号总数
+            "hold_price": round(float(fina_df['hold_price'].sum()), 2), # 靓号总价值
+            "tran_count": int(fina_df['tran_count'].sum()), # 可转让数量
+            "tran_price": round(float(fina_df['tran_price'].sum()) ,2), # 可转让价值
+            "no_tran_count": int(fina_df['no_tran_count'].sum()), # 不可转让数量
+            "no_tran_price": round(float(fina_df['no_tran_price'].sum()) ,2), # 不可转让价值
+            "transferred_count": int(fina_df['transferred_count'].sum()), # 已转让数量
+            "transferred_price": round(float(fina_df['transferred_price'].sum()) ,2), # 已转让价值
+            "public_count": int(fina_df['public_count'].sum()), # 转让中数量
+            "public_price": round(float(fina_df['public_price'].sum()) ,2), # 转让中价值
+        }
+        if page and size:
+            start_index = (page - 1) * size
+            end_index = page * size
+            cut_data = fina_df[start_index: end_index]
+        else:
+            cut_data = fina_df
+        # unionid 与 parent_id去除小数点
+        cut_data['unionid'] = cut_data['unionid'].apply(lambda x: del_point(x))
+        cut_data['parentid'] = cut_data['parentid'].apply(lambda x: del_point(x))
+        cut_data.drop(['operate_id', 'parent_phone'], axis=1, inplace=True)
+        # 填补空值
+        cut_data.fillna('', inplace=True)
+        return_data = {
+            "title_data": title_data,
+            "data": cut_data.to_dict("records")
+        }
+        return {"code": "0000", "status": "success", "msg": return_data, "count": cut_data.shape[0]}
     except Exception as e:
         logger.error(e)
         logger.error(traceback.format_exc())
     finally:
         try:
             conn_lh.close()
-            conn_an.close()
+            conn_analyze.close()
         except:
             pass
