@@ -676,7 +676,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
                 sum(tran_price) tran_price, sum(no_tran_count) no_tran_count, sum(no_tran_price) no_tran_price, sum(transferred_count) transferred_count, 
                 sum(transferred_price) transferred_price, sum(hold_count) hold_count, sum(hold_price) hold_price from user_storage_value_today
                 where hold_phone='{}' group by date_format(addtime,"%Y-%m-%d %H:%i:%S") 
-                order by date_format(addtime,"%Y-%m-%d %H:%i:%S") asc
+                order by date_format(addtime,"%Y-%m-%d %H:%i:%S") desc
                 ) user_store group by day_time
             '''.format(hold_phone)
             ration_sql = '''
