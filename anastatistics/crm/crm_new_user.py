@@ -229,6 +229,7 @@ try:
 
         # 第一次入库走这个
         logger.info("数据准备入库")
+        logger.info(last_data['unionid'].tolist())
         conn = sqlalchemy_conn(analyze_mysql_conf)
         last_data.to_sql("crm_user", con=conn, if_exists="append", index=False)
         logger.info("写入成功")
