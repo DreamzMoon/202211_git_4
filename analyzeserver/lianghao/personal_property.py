@@ -693,6 +693,8 @@ group by addtime order by addtime desc limit 1''' %hold_phone
                 "ration_hold_price": ration_df['hold_price'].sum(),
                 "tran_price": today_df['tran_price'].values[-1],
                 "ration_tran_price": ration_df['tran_price'].sum(),
+                "transferred_price": today_df['transferred_price'].values[-1],
+                "ration_transferred_price": ration_df['transferred_price'].sum()
             }
             analyze_data = {
                 "day_data": today_df.to_dict("records"),
@@ -770,6 +772,8 @@ group by addtime order by addtime desc limit 1''' %hold_phone
                 "ration_hold_price": ration_df['hold_price'].sum(),
                 "tran_price": round(float(current_df['tran_price'].sum()), 2),
                 "ration_tran_price": ration_df['tran_price'].sum(),
+                "transferred_price": round(float(current_df['hold_price'].sum()), 2),
+                "ration_transferred_price": ration_df['transferred_price'].sum()
             }
             analyze_data = {
                 "day_data": current_df.to_dict("records"),
