@@ -541,7 +541,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         no_tran_data = pd.read_sql(no_tran_sql,conn_lh)
 
         # 已转让
-        traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 0 and now() >= thaw_time and is_open_vip = 0 and is_sell = 1  and pay_type !=0 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 3 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         traned_data = pd.read_sql(traned_sql,conn_lh)
 
         # 价格表
