@@ -99,8 +99,7 @@ for i,detail_url in enumerate(detail_urls):
             proxy_result = get_proxy()
             proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
         res = res.content.decode(encoding=res.apparent_encoding)
-        with open("e:/123321.html","w+",encoding="utf-8") as f:
-            f.write(res)
+
         soup = BeautifulSoup(res, "lxml")
         detail["title"] = soup.select("h1.u-title")[0].text
         detail["public_time"] = soup.select("span.m-con-time")[0].text.strip()
