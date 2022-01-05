@@ -491,26 +491,22 @@ def person_detail():
         if (time_type != 3 and start_time and end_time) or time_type not in range(1, 3) or (time_type == 4 and (not start_time or not end_time)):
             return {"code": "10014", "status": "failed", "msg": message["10014"]}
 
-        data = {"up":"","middle":"","below":""}
+        data = {"up":{},"middle":"","below":""}
 
         # 先算投入价值
         sql = '''select sum(total_price) total_price from lh_order where type in (1,4) and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
         cursor_lh.execute(sql)
         investment = cursor_lh.fetchone()[0]
+        investment = round(float(investment),2)
 
-        sql = '''select public_count,public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,hold_price from user_storage_value_today where hold_phone = %s
+        sql = '''select public_count,public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,hold_price,transferred_count,transferred_price from user_storage_value_today where hold_phone = %s
 group by addtime order by addtime desc limit 1''' %hold_phone
 
+
+
         sum_data = (pd.read_sql(sql, conn_analyze)).to_dict("records")[0]
-        data["up"] = {
-            "public_count": sum_data["public_total_count"], "public_price": sum_data["publish_total_price"],
-            "traned_count": sum_data["traned_total_count"], "traned_price": sum_data["traned_total_price"],
-            "used_count": sum_data["used_total_count"],
-            "tran_count": sum_data["tran_total_count"], "tran_price": sum_data["tran_total_price"],
-            "no_tran_count": sum_data["no_tran_total_count"],"no_tran_price": sum_data["no_tran_total_price"],
-            "hold_count": sum_data["hold_total_count"], "hold_price": sum_data["hold_total_price"],
-            "investment_money" : investment
-        }
+        logger.info(sum_data)
+
 
         # # 统计表里面拿持有 可转让 不可转让的数量
         # up_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today where hold_phone = %s group by addtime order by addtime desc limit 1''' %hold_phone
@@ -566,7 +562,44 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         no_tran_data["no_tran_sum_price"] = no_tran_data["no_tran_count"]*no_tran_data["guide_price"]
         traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
 
-        logger.info(hold_data)
+        logger.info(traning_data)
+        logger.info(data["up"])
+        # 转让中的数据去现在查询的
+        public_count = int(traning_data["traning_count"].sum())
+        public_price = round(float(traning_data["traning_sum_price"].sum()),2)
+
+        # 已使用的现查
+        use_sql = '''select count(*) use_count from (
+        select pretty_id,count(*) use_count from lh_bind_pretty_log where hold_phone = %s and del_flag = 0 group by pretty_id
+        ) t''' %hold_phone
+        cursor_lh.execute(use_sql)
+        use_count = cursor_lh.fetchone()[0]
+
+        # data["up"]["use_count"] = use_count
+
+        # 已转让的数据去现在查询的
+        logger.info(traning_data)
+        traned_count = int(traned_data["traned_count"].sum())
+        traned_price = round(float(traned_data["traned_sum_price"].sum()),2)
+
+
+        # 靓号总数=靓号当前+已转让
+        logger.info(sum_data)
+        sum_count = sum_data["hold_count"]+sum_data["transferred_count"]
+        sum_price = sum_data["hold_price"]+sum_data["transferred_price"]
+
+        data["up"] = {
+            "public_count": public_count, "public_price": public_price,
+            "traned_count": traned_count,"traned_price": traned_price,
+            "tran_count": int(sum_data["tran_count"]), "tran_price": round(float(sum_data["tran_price"]), 2),
+            "no_tran_count": int(sum_data["no_tran_count"]),
+            "no_tran_price": round(float(sum_data["no_tran_price"]), 2),
+            "hold_count": int(sum_data["hold_count"]), "hold_price": round(float(sum_data["hold_price"]), 2),
+            "investment_money": investment,"use_count":use_count,
+            "sum_count":sum_count,"sum_price":sum_price
+        }
+        logger.info(data["up"])
+
 
         hold_data = hold_data.to_dict("records")
         tran_data = tran_data.to_dict("records")
@@ -576,13 +609,13 @@ group by addtime order by addtime desc limit 1''' %hold_phone
 
 
         # 数据分析
-        if time_type == 1: # 今日
-            today_sql = '''select t1.*, t2.ration_transferred_count, t2.ration_transferred_price from 
-                (select hold_phone, transferred_count, transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-03') t1
-                left join
-                (select hold_phone, transferred_count ration_transferred_count, transferred_price ration_transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-02') t2
-                on t1.hold_phone = t2.hold_phone
-            '''
+        # if time_type == 1: # 今日
+        #     today_sql = '''select t1.*, t2.ration_transferred_count, t2.ration_transferred_price from
+        #         (select hold_phone, transferred_count, transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-03') t1
+        #         left join
+        #         (select hold_phone, transferred_count ration_transferred_count, transferred_price ration_transferred_price from user_storage_value where hold_phone = 15359617688 and day_time = '2022-01-02') t2
+        #         on t1.hold_phone = t2.hold_phone
+        #     '''
         hold_list = []
         for hl in hold_data:
             hl_dict = {}
@@ -631,6 +664,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
             "traned":traned_list
 
         }
+        logger.info(data)
         return {"code":"0000","status":"success","msg":data}
 
     except Exception as e:
