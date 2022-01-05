@@ -11,10 +11,16 @@ from bs4 import BeautifulSoup
 import sys, os, time
 father_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__))).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
+
+print("father_dir:%s" %father_dir)
+print("sys.path:%s" %sys.path)
+
 import time
 import json
 from config import *
 import traceback
+
+
 
 def get_proxy():
     try:
