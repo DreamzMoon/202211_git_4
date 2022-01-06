@@ -33,3 +33,7 @@ CREATE TABLE `plat_lh_total_today` (
   `plat_total_count` bigint(20) DEFAULT NULL,
   `statistic_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+user_storage_value 修改发布--》由转让中(status=0) 改 有发布就算(status!=1)
+                   持有总数筛选条件由创建时间修改为支付时间
+crm_user 待定是否需要更新
