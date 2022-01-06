@@ -479,23 +479,10 @@ def person_detail():
 
 
         hold_phone = request.json.get("hold_phone")
-        time_type = request.json.get("time_type")
-        start_time = request.json.get("start_time")
-        end_time = request.json.get("end_time")
         if not hold_phone:
             return {"code":"10001","message":message["10001"],"status":"failed"}
-        if (time_type != 4 and start_time and end_time) or time_type not in range(1, 5) or (time_type == 4 and (not start_time or not end_time)):
-            return {"code": "10014", "status": "failed", "msg": message["10014"]}
-        if time_type == 4:
-            if not start_time or not end_time:
-                return {"code": "11009", "status": "failed", "msg": message["11009"]}
-            if start_time >= end_time:
-                return {"code": "11020", "status": "failed", "msg": message["11020"]}
-            datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-            datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
-            daysss = datetime_end_time - datetime_start_time
-            if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
-                return {"code": "11018", "status": "failed", "msg": message["11018"]}
+
+
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -503,7 +490,7 @@ def person_detail():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         cursor_lh = conn_lh.cursor()
 
-        data = {"user":{},"up":{},"middle":"","below":""}
+        data = {"user":{},"up":{},"middle":""}
 
         #根据手机号差个人信息
         user_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,phone,unionid,operatename,parentid,parent_phone from crm_user where phone = %s''' %hold_phone
@@ -521,15 +508,8 @@ def person_detail():
 group by addtime order by addtime desc limit 1''' %hold_phone
 
 
-
         sum_data = (pd.read_sql(sql, conn_analyze)).to_dict("records")[0]
         logger.info(sum_data)
-
-
-        # # 统计表里面拿持有 可转让 不可转让的数量
-        # up_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today where hold_phone = %s group by addtime order by addtime desc limit 1''' %hold_phone
-        #
-        # up_data = (pd.read_sql(up_sql, conn_analyze)).to_dict("records")[0]
 
         #去user表拿id
         user_sql = '''select id from lh_user where phone = %s'''
@@ -544,15 +524,6 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         tran_sql = '''select pretty_type_id,count(*) tran_count from lh_pretty_hold_%s where del_flag=0 and `status` = 0 and is_open_vip = 0 and is_sell = 1 and pay_type !=0  and thaw_time<=now() and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         tran_data = pd.read_sql(tran_sql,conn_lh)
 
-        # 转让中
-        # traning_sql = '''
-        # select pretty_type_id,count(*) traning_count from (select sell_phone hold_phone,pretty_type_id from lh_sell where del_flag = 0 and `status` = 0 and sell_phone = %s
-        # union all
-        # select lsr.retail_user_phone hold_phone,pretty_type_id from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-        # on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
-        # and lsr.retail_user_phone = %s ) t group by pretty_type_id
-        # ''' %(hold_phone,hold_phone)
-        # traning_data = pd.read_sql(traning_sql,conn_lh)
         traning_sql = '''
         select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%%Y-%%m-%%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
         union all
@@ -615,9 +586,6 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         logger.info(traning_data)
         traned_count = int(traned_data["traned_count"].sum())
         traned_price = round(float(traned_data["traned_sum_price"].sum()),2)
-
-        # traning_count = int(traning_data["public_count"].sum())
-        # traning_price = round(float(traning_data["public_price"].sum()), 2)
 
 
         # 靓号总数=靓号当前+已转让
@@ -695,120 +663,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
             "traned":traned_list
 
         }
-        # 数据分析
-        # 价格表
-        if time_type == 1:  # 今日
-            today_sql = '''
-                select * from (
-                select date_format(addtime,"%Y-%m-%d %H") day_time, sum(public_count) public_count, sum(public_price) public_price, sum(tran_count) tran_count, 
-                sum(tran_price) tran_price, sum(no_tran_count) no_tran_count, sum(no_tran_price) no_tran_price, sum(transferred_count) transferred_count, 
-                sum(transferred_price) transferred_price, sum(hold_count) hold_count, sum(hold_price) hold_price from user_storage_value_today
-                where hold_phone='{}' group by date_format(addtime,"%Y-%m-%d %H:%i:%S") 
-                order by date_format(addtime,"%Y-%m-%d %H:%i:%S") desc
-                ) user_store group by day_time
-            '''.format(hold_phone)
-            ration_sql = '''
-                select tran_price, transferred_price, hold_price
-                from user_storage_value
-                where day_time=date_sub(current_date, interval 1 day)
-                and hold_phone=%s
-            ''' % hold_phone
 
-            today_df = pd.read_sql(today_sql, conn_analyze)
-            ration_df = pd.read_sql(ration_sql, conn_analyze)
-            ration_data = {
-                "hold_price": today_df['hold_price'].values[-1],
-                "ration_hold_price": ration_df['hold_price'].sum(),
-                "tran_price": today_df['tran_price'].values[-1],
-                "ration_tran_price": ration_df['tran_price'].sum(),
-                "transferred_price": today_df['transferred_price'].values[-1],
-                "ration_transferred_price": ration_df['transferred_price'].sum()
-            }
-            analyze_data = {
-                "day_data": today_df.to_dict("records"),
-                "ration_data": ration_data
-            }
-        else:
-            today_new_sql = '''
-                select day_time, a.hold_phone, a.public_count, a.public_price, a.transferred_count, a.transferred_price,
-                a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_value_today a
-                join (select hold_phone, max(addtime) time from lh_analyze.user_storage_value_today group by hold_phone) b
-                on a.hold_phone = b.hold_phone
-                and a.addtime = b.time
-                where a.hold_phone=%s
-            ''' % hold_phone
-            today_new_df = pd.read_sql(today_new_sql, conn_analyze)
-            if time_type == 2: # 本周
-                week_start = datetime.datetime.now() - timedelta(days=6)
-                week_end = (datetime.datetime.now()).strftime('%Y-%m-%d')
-
-                ration_week_start = (week_start - timedelta(weeks=1)).strftime('%Y-%m-%d')
-                current_sql = '''
-                    select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                    no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                    where hold_phone=%s
-                    and day_time >="%s" and day_time <="%s"
-                ''' % (hold_phone, week_start.strftime('%Y-%m-%d'), week_end)
-                ration_sql = '''
-                    select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                    where hold_phone=%s
-                    and day_time >="%s" and day_time < "%s"
-                ''' % (hold_phone, ration_week_start, week_start.strftime('%Y-%m-%d'))
-                current_df = pd.read_sql(current_sql, conn_analyze)
-                current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
-            elif time_type == 3:  # 本月
-                month_start = datetime.datetime.now() - timedelta(days=29)
-                month_end = (datetime.datetime.now()).strftime('%Y-%m-%d')
-
-                ration_month_start = (month_start - timedelta(days=30)).strftime('%Y-%m-%d')
-                current_sql = '''
-                        select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                        no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                        where hold_phone=%s
-                        and day_time >="%s" and day_time <="%s"
-                    ''' % (hold_phone, month_start.strftime('%Y-%m-%d'), month_end)
-                ration_sql = '''
-                        select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                        where hold_phone=%s
-                        and day_time >="%s" and day_time < "%s"
-                    ''' % (hold_phone, ration_month_start, month_start.strftime('%Y-%m-%d'))
-                current_df = pd.read_sql(current_sql, conn_analyze)
-                current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
-            else:
-                sub_day = int(daysss.days + 1)
-                before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
-                before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
-                current_sql = '''
-                    select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                    no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                    where hold_phone=%s
-                    and day_time >="%s" and day_time <="%s"
-                ''' % (hold_phone, start_time, end_time)
-                ration_sql = '''
-                    select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                    where hold_phone=%s
-                    and day_time >="%s" and day_time <= "%s"
-                ''' % (hold_phone, before_start_time, before_end_time)
-                current_df = pd.read_sql(current_sql, conn_analyze)
-                if end_time == datetime.datetime.now().strftime("%Y-%m-%d"):
-                    current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
-            current_df['day_time'] = current_df['day_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
-            current_df.sort_values('day_time', inplace=True)
-            ration_df = pd.read_sql(ration_sql, conn_analyze)
-            ration_data = {
-                "hold_price": round(float(current_df['hold_price'].sum()), 2),
-                "ration_hold_price": ration_df['hold_price'].sum(),
-                "tran_price": round(float(current_df['tran_price'].sum()), 2),
-                "ration_tran_price": ration_df['tran_price'].sum(),
-                "transferred_price": round(float(current_df['hold_price'].sum()), 2),
-                "ration_transferred_price": ration_df['transferred_price'].sum()
-            }
-            analyze_data = {
-                "day_data": current_df.to_dict("records"),
-                "ration_data": ration_data
-            }
-
-        data['below'] = analyze_data
         return {"code":"0000","status":"success","msg":data}
     except Exception as e:
         logger.exception(traceback.format_exc())
@@ -837,6 +692,146 @@ def person_charts():
                 return check_token_result
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+
+        time_type = request.json.get("time_type")
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+
+        hold_phone = request.json.get("hold_phone")
+        if not hold_phone:
+            return {"code": "10001", "message": message["10001"], "status": "failed"}
+
+        if (time_type != 4 and start_time and end_time) or time_type not in range(1, 5) or (
+                time_type == 4 and (not start_time or not end_time)):
+            return {"code": "10014", "status": "failed", "msg": message["10014"]}
+        if time_type == 4:
+            if not start_time or not end_time:
+                return {"code": "11009", "status": "failed", "msg": message["11009"]}
+            if start_time >= end_time:
+                return {"code": "11020", "status": "failed", "msg": message["11020"]}
+            datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+            datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+            daysss = datetime_end_time - datetime_start_time
+            if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
+                return {"code": "11018", "status": "failed", "msg": message["11018"]}
+
+        # 数据分析
+        # 价格表
+        if time_type == 1:  # 今日
+            today_sql = '''
+                        select * from (
+                        select date_format(addtime,"%Y-%m-%d %H") day_time, sum(public_count) public_count, sum(public_price) public_price, sum(tran_count) tran_count, 
+                        sum(tran_price) tran_price, sum(no_tran_count) no_tran_count, sum(no_tran_price) no_tran_price, sum(transferred_count) transferred_count, 
+                        sum(transferred_price) transferred_price, sum(hold_count) hold_count, sum(hold_price) hold_price from user_storage_value_today
+                        where hold_phone='{}' group by date_format(addtime,"%Y-%m-%d %H:%i:%S") 
+                        order by date_format(addtime,"%Y-%m-%d %H:%i:%S") desc
+                        ) user_store group by day_time
+                    '''.format(hold_phone)
+            ration_sql = '''
+                        select tran_price, transferred_price, hold_price
+                        from user_storage_value
+                        where day_time=date_sub(current_date, interval 1 day)
+                        and hold_phone=%s
+                    ''' % hold_phone
+
+            today_df = pd.read_sql(today_sql, conn_analyze)
+            ration_df = pd.read_sql(ration_sql, conn_analyze)
+            ration_data = {
+                "hold_price": today_df['hold_price'].values[-1],
+                "ration_hold_price": ration_df['hold_price'].sum(),
+                "tran_price": today_df['tran_price'].values[-1],
+                "ration_tran_price": ration_df['tran_price'].sum(),
+                "transferred_price": today_df['transferred_price'].values[-1],
+                "ration_transferred_price": ration_df['transferred_price'].sum()
+            }
+            analyze_data = {
+                "day_data": today_df.to_dict("records"),
+                "ration_data": ration_data
+            }
+        else:
+            today_new_sql = '''
+                        select day_time, a.hold_phone, a.public_count, a.public_price, a.transferred_count, a.transferred_price,
+                        a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_value_today a
+                        join (select hold_phone, max(addtime) time from lh_analyze.user_storage_value_today group by hold_phone) b
+                        on a.hold_phone = b.hold_phone
+                        and a.addtime = b.time
+                        where a.hold_phone=%s
+                    ''' % hold_phone
+            today_new_df = pd.read_sql(today_new_sql, conn_analyze)
+            if time_type == 2:  # 本周
+                week_start = datetime.datetime.now() - timedelta(days=6)
+                week_end = (datetime.datetime.now()).strftime('%Y-%m-%d')
+
+                ration_week_start = (week_start - timedelta(weeks=1)).strftime('%Y-%m-%d')
+                current_sql = '''
+                            select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
+                            no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
+                            where hold_phone=%s
+                            and day_time >="%s" and day_time <="%s"
+                        ''' % (hold_phone, week_start.strftime('%Y-%m-%d'), week_end)
+                ration_sql = '''
+                            select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
+                            where hold_phone=%s
+                            and day_time >="%s" and day_time < "%s"
+                        ''' % (hold_phone, ration_week_start, week_start.strftime('%Y-%m-%d'))
+                current_df = pd.read_sql(current_sql, conn_analyze)
+                current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
+            elif time_type == 3:  # 本月
+                month_start = datetime.datetime.now() - timedelta(days=29)
+                month_end = (datetime.datetime.now()).strftime('%Y-%m-%d')
+
+                ration_month_start = (month_start - timedelta(days=30)).strftime('%Y-%m-%d')
+                current_sql = '''
+                                select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
+                                no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
+                                where hold_phone=%s
+                                and day_time >="%s" and day_time <="%s"
+                            ''' % (hold_phone, month_start.strftime('%Y-%m-%d'), month_end)
+                ration_sql = '''
+                                select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
+                                where hold_phone=%s
+                                and day_time >="%s" and day_time < "%s"
+                            ''' % (hold_phone, ration_month_start, month_start.strftime('%Y-%m-%d'))
+                current_df = pd.read_sql(current_sql, conn_analyze)
+                current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
+            else:
+                sub_day = int(daysss.days + 1)
+                before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
+                before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
+                current_sql = '''
+                            select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
+                            no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
+                            where hold_phone=%s
+                            and day_time >="%s" and day_time <="%s"
+                        ''' % (hold_phone, start_time, end_time)
+                ration_sql = '''
+                            select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
+                            where hold_phone=%s
+                            and day_time >="%s" and day_time <= "%s"
+                        ''' % (hold_phone, before_start_time, before_end_time)
+                current_df = pd.read_sql(current_sql, conn_analyze)
+                if end_time == datetime.datetime.now().strftime("%Y-%m-%d"):
+                    current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
+            current_df['day_time'] = current_df['day_time'].apply(lambda x: x.strftime('%Y-%m-%d'))
+            current_df.sort_values('day_time', inplace=True)
+            ration_df = pd.read_sql(ration_sql, conn_analyze)
+            ration_data = {
+                "hold_price": round(float(current_df['hold_price'].sum()), 2),
+                "ration_hold_price": ration_df['hold_price'].sum(),
+                "tran_price": round(float(current_df['tran_price'].sum()), 2),
+                "ration_tran_price": ration_df['tran_price'].sum(),
+                "transferred_price": round(float(current_df['hold_price'].sum()), 2),
+                "ration_transferred_price": ration_df['transferred_price'].sum()
+            }
+            analyze_data = {
+                "day_data": current_df.to_dict("records"),
+                "ration_data": ration_data
+            }
+
+        return {"code":"0000","msg":analyze_data,"status":"success"}
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
