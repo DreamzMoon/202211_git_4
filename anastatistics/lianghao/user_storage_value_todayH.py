@@ -5,6 +5,7 @@
 # @Author : xiaowangwang
 # @Email : www@qq.com
 # @File : user_storage_value_todayH.py
+'''用户个人已转让、已使用、转让中按小时统计'''
 import os
 import sys
 
@@ -31,13 +32,18 @@ def transferred_count_and_value():
         hold_df_list = []
         for hold_table_type in hold_table_type_list:
             logger.info(hold_table_type)
+            # # 第一次
             # pretty_hold_sql = '''
-            #     select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') day_time from lh_pretty_hold_%s
-            #     where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') = date_sub(current_date, interval 0 day)
+            # select if(hold_phone,hold_phone,hold_user_id) hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H') day_time
+            # from lh_pretty_hold_%s
+            # where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = current_date
+            # and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') <= now()
             # ''' % hold_table_type
+            # 更新
             pretty_hold_sql = '''
-            select if(hold_phone,hold_phone,hold_user_id) hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from lh_pretty_hold_%s
-where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = current_date and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') <= now()
+                select if(hold_phone,hold_phone,hold_user_id) hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H') day_time
+                from lh_pretty_hold_%s
+                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H') = date_format(date_sub(now(), interval 1 hour), '%%Y-%%m-%%d %%H')
             ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
@@ -87,13 +93,12 @@ def public_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
+        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d %H") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
         union all
-        select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
-        group by day_time,hold_phone ) t group by day_time,hold_phone having day_time = date_sub(current_date, interval 0 day) order by day_time desc
+        select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d %H") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
+        group by day_time,hold_phone ) t group by day_time,hold_phone having day_time = date_format(date_sub(now(), interval 1 hour),"%Y-%m-%d %H") order by day_time desc
         '''
-        # day_time = date_sub(current_date, interval 1 day)
         public_data = pd.read_sql(sql,conn_lh)
         return True,public_data
     except Exception as e:
@@ -270,9 +275,6 @@ def no_tran_lh():
         return False, e
     finally:
         conn_lh.close()
-
-
-
 
 #用户信息
 def user_mes():

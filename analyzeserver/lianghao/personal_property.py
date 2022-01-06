@@ -1161,10 +1161,10 @@ def personal_hold_total():
                 '''
         # 读取转让中数据
         public_sql = '''
-            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by hold_phone
+            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by hold_phone
             union all
             select lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
+            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
             group by hold_phone ) t group by hold_phone
         '''
         user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
