@@ -739,6 +739,7 @@ def person_charts():
 
             today_df = pd.read_sql(today_sql, conn_analyze)
             ration_df = pd.read_sql(ration_sql, conn_analyze)
+            today_df.sort_values('day_time', inplace=True)
             ration_data = {
                 "hold_price": today_df['hold_price'].values[-1],
                 "ration_hold_price": ration_df['hold_price'].sum(),
