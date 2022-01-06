@@ -150,7 +150,7 @@ def tran_hold():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         current_time = datetime.datetime.now()
-        ergodic_time = (current_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
+        ergodic_time = (current_time).strftime("%Y-%m-%d %H")
 
         #可转让 持有
         sql = '''
@@ -179,9 +179,9 @@ def tran_hold():
         hold_datas = data.loc[:, ['hold_phone', 'pretty_type_id', 'pay_time']]
 
         # 满足当前时间的可转让数据
-        current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
+        current_tran_datas = tran_datas[tran_datas["thaw_time"] < ergodic_time]
         # 满足当前时间的持有数据
-        current_hold_datas = hold_datas[hold_datas['pay_time'] <= ergodic_time]
+        current_hold_datas = hold_datas[hold_datas['pay_time'] < ergodic_time]
         logger.info(current_hold_datas.shape)
         #匹配当前的价格表
         price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
@@ -201,13 +201,13 @@ def tran_hold():
         transfer_data = current_tran_datas[["hold_phone","guide_price","tran_count"]]
         # transfer_data = transfer_data.groupby('hold_phone')['guide_price'].sum().reset_index()
         transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index().rename(columns={"guide_price": "tran_price"})
-        transfer_data["day_time"] = ergodic_time
+        transfer_data["day_time"] = (current_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
 
         # 持有
         current_hold_datas["hold_count"] = 0
         # hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
         hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index().rename(columns={"guide_price": "hold_price"})
-        hold_grouped['day_time'] = ergodic_time
+        hold_grouped['day_time'] = (current_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
         logger.info(hold_grouped)
         fina_data = hold_grouped.merge(transfer_data, how='outer', on=['day_time', 'hold_phone'])
         fina_data.fillna(0, inplace=True)
