@@ -539,21 +539,37 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         tran_data = pd.read_sql(tran_sql,conn_lh)
 
         # 转让中
+        # traning_sql = '''
+        # select pretty_type_id,count(*) traning_count from (select sell_phone hold_phone,pretty_type_id from lh_sell where del_flag = 0 and `status` = 0 and sell_phone = %s
+        # union all
+        # select lsr.retail_user_phone hold_phone,pretty_type_id from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+        # on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
+        # and lsr.retail_user_phone = %s ) t group by pretty_type_id
+        # ''' %(hold_phone,hold_phone)
+        # traning_data = pd.read_sql(traning_sql,conn_lh)
         traning_sql = '''
-        select pretty_type_id,count(*) traning_count from (select sell_phone hold_phone,pretty_type_id from lh_sell where del_flag = 0 and `status` = 0 and sell_phone = %s
+        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%%Y-%%m-%%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
         union all
-        select lsr.retail_user_phone hold_phone,pretty_type_id from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+        select DATE_FORMAT(lsrd.update_time,"%%Y-%%m-%%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
         on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
-        and lsr.retail_user_phone = %s ) t group by pretty_type_id
-        ''' %(hold_phone,hold_phone)
-        traning_data = pd.read_sql(traning_sql,conn_lh)
+        group by day_time,hold_phone ) t group by day_time,hold_phone having day_time = date_sub(current_date, interval 0 day) and hold_phone = %s order by day_time desc
+                ''' %hold_phone
+        traning_data = pd.read_sql(traning_sql, conn_lh)
 
         # 不可转让
         no_tran_sql = '''SELECT pretty_type_id,count(*) no_tran_count FROM lh_pretty_hold_%s WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_%s WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],lh_user_id[0],hold_phone)
         no_tran_data = pd.read_sql(no_tran_sql,conn_lh)
 
         # 已转让
-        traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 3 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        # traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 3 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        traned_sql = '''
+        select pretty_type_name,count(*) traned_count,sum(unit_price) traned_sum_price from (
+        select pretty_hold.pretty_type_name,lh_order.unit_price from lh_pretty_hold_%s pretty_hold
+        left join lh_order on pretty_hold.order_sn = lh_order.order_sn
+        where pretty_hold.hold_phone = %s and pretty_hold.del_flag=0 and pretty_hold.`status`= 3 
+        ) t
+        group by pretty_type_name
+        '''%(lh_user_id[0],hold_phone)
         traned_data = pd.read_sql(traned_sql,conn_lh)
 
         # 价格表
@@ -563,22 +579,22 @@ group by addtime order by addtime desc limit 1''' %hold_phone
 
         hold_data = hold_data.merge(price_data,on="pretty_type_id")
         tran_data = tran_data.merge(price_data,on="pretty_type_id")
-        traning_data = traning_data.merge(price_data,on="pretty_type_id")
+        # traning_data = traning_data.merge(price_data,on="pretty_type_id")
         no_tran_data = no_tran_data.merge(price_data,on="pretty_type_id")
-        traned_data = traned_data.merge(price_data,on="pretty_type_id")
+        # traned_data = traned_data.merge(price_data,on="pretty_type_id")
         logger.info(hold_data)
 
         hold_data["hold_sum_price"] = hold_data["hold_count"]*hold_data["guide_price"]
         tran_data["tran_sum_price"] = tran_data["tran_count"]*tran_data["guide_price"]
-        traning_data["traning_sum_price"] = traning_data["traning_count"]*traning_data["guide_price"]
+        # traning_data["traning_sum_price"] = traning_data["traning_count"]*traning_data["guide_price"]
         no_tran_data["no_tran_sum_price"] = no_tran_data["no_tran_count"]*no_tran_data["guide_price"]
-        traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
+        # traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
 
         logger.info(traning_data)
         logger.info(data["up"])
         # 转让中的数据去现在查询的
-        public_count = int(traning_data["traning_count"].sum())
-        public_price = round(float(traning_data["traning_sum_price"].sum()),2)
+        public_count = int(traning_data["public_count"].sum())
+        public_price = round(float(traning_data["public_price"].sum()),2)
 
         # 已使用的现查
         use_sql = '''select count(*) use_count from (
@@ -594,11 +610,16 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         traned_count = int(traned_data["traned_count"].sum())
         traned_price = round(float(traned_data["traned_sum_price"].sum()),2)
 
+        # traning_count = int(traning_data["public_count"].sum())
+        # traning_price = round(float(traning_data["public_price"].sum()), 2)
+
 
         # 靓号总数=靓号当前+已转让
         logger.info(sum_data)
         sum_count = sum_data["hold_count"]+sum_data["transferred_count"]
         sum_price = sum_data["hold_price"]+sum_data["transferred_price"]
+
+
 
         data["up"] = {
             "public_count": public_count, "public_price": public_price,
@@ -637,10 +658,11 @@ group by addtime order by addtime desc limit 1''' %hold_phone
 
         traning_list = []
         for tn in traning_data:
+            logger.info(tn)
             tn_dict = {}
             tn_dict["pretty_type_name"] = tn["pretty_type_name"]
-            tn_dict["traning_count"] = tn["traning_count"]
-            tn_dict["traning_sum_price"] = tn["traning_sum_price"]
+            tn_dict["traning_count"] = tn["public_count"]
+            tn_dict["traning_sum_price"] = tn["public_price"]
             traning_list.append(tn_dict)
 
         no_tran_list = []
