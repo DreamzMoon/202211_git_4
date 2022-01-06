@@ -539,12 +539,12 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         tran_data = pd.read_sql(tran_sql,conn_lh)
 
         traning_sql = '''
-        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%%Y-%%m-%%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
-        union all
-        select DATE_FORMAT(lsrd.update_time,"%%Y-%%m-%%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
-        group by day_time,hold_phone ) t group by day_time,hold_phone having day_time = date_sub(current_date, interval 0 day) and hold_phone = %s order by day_time desc
-                ''' %hold_phone
+            select day_time,hold_phone, pretty_type_name, sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, pretty_type_name, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone, pretty_type_name
+            union all
+            select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone, lsrd.pretty_type_name, count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
+            group by day_time,hold_phone, pretty_type_name) t group by day_time,hold_phone, pretty_type_name having day_time =current_date and hold_phone = {} order by day_time desc
+        '''.format(hold_phone)
         traning_data = pd.read_sql(traning_sql, conn_lh)
 
         # 不可转让
@@ -1248,6 +1248,25 @@ def personal_hold_total():
         cut_data.drop(['operate_id', 'parent_phone'], axis=1, inplace=True)
         # 填补空值
         cut_data.fillna('', inplace=True)
+        # 数值圆整
+        cut_data['hold_price'] = cut_data['hold_price'].astype(float)
+        cut_data['no_tran_price'] = cut_data['no_tran_price'].astype(float)
+        cut_data['public_price'] = cut_data['public_price'].astype(float)
+        cut_data['tran_price'] = cut_data['tran_price'].astype(float)
+        cut_data['transferred_price'] = cut_data['transferred_price'].astype(float)
+
+        cut_data['hold_price'] = cut_data['hold_price'].apply(lambda x: round(x, 2))
+        cut_data['no_tran_price'] = cut_data['no_tran_price'].apply(lambda x: round(x, 2))
+        cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(x, 2))
+        cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(x, 2))
+        cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(x, 2))
+
+        # cut_data['hold_price'] = cut_data['hold_price'].apply(lambda x: round(float(x), 2))
+        # cut_data['no_tran_price'] = cut_data['no_tran_price'].apply(lambda x: round(float(x), 2))
+        # cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(float(x), 2))
+        # cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(float(x), 2))
+        # cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(float(x), 2))
+
         return_data = {
             "title_data": title_data,
             "data": cut_data.to_dict("records")
