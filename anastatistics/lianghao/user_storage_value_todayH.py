@@ -201,13 +201,12 @@ def tran_hold():
         transfer_data = current_tran_datas[["hold_phone","guide_price","tran_count"]]
         # transfer_data = transfer_data.groupby('hold_phone')['guide_price'].sum().reset_index()
         transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index().rename(columns={"guide_price": "tran_price"})
-        transfer_data["day_time"] = current_time.strftime("%Y-%m-%d")
+        transfer_data["day_time"] = ergodic_time
 
         # 持有
         current_hold_datas["hold_count"] = 0
         # hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
         hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index().rename(columns={"guide_price": "hold_price"})
-        # hold_grouped['day_time'] = current_time.strftime("%Y-%m-%d")
         hold_grouped['day_time'] = ergodic_time
         logger.info(hold_grouped)
         fina_data = hold_grouped.merge(transfer_data, how='outer', on=['day_time', 'hold_phone'])
