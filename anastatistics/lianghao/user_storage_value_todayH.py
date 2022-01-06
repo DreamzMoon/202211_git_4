@@ -106,7 +106,7 @@ def use_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select DATE_FORMAT(b.statistic_time,"%Y-%m-%d") day_time,hold_phone,sum(unit_price) use_total_price,count(*) use_count from (
+        select DATE_FORMAT(b.statistic_time,"%Y-%m-%d %H") day_time,hold_phone,sum(unit_price) use_total_price,count(*) use_count from (
         (
         select if(hold_0.hold_phone,hold_0.hold_phone,hold_0.hold_user_id) hold_phone,if(hold_0.unit_price,hold_0.unit_price,0) unit_price,hold_0.pretty_id pretty_id from lh_pretty_hold_0 hold_0 where hold_0.del_flag = 0 and (hold_0.`status` = 1 or hold_0.is_open_vip=1) union all 
         select if(hold_1.hold_phone,hold_1.hold_phone,hold_1.hold_user_id) hold_phone,if(hold_1.unit_price,hold_1.unit_price,0) unit_price,hold_1.pretty_id pretty_id from lh_pretty_hold_1 hold_1 where hold_1.del_flag = 0 and (hold_1.`status` = 1 or hold_1.is_open_vip=1) union all 

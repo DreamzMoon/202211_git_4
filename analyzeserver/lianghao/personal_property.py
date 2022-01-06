@@ -821,6 +821,32 @@ group by addtime order by addtime desc limit 1''' %hold_phone
             pass
 
 
+
+@ppbp.route("/chart",methods=["POST"])
+def person_charts():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.json.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_analyze.close()
+            conn_lh.close()
+        except:
+            pass
+
 # 名片网归属数据表
 @ppbp.route('/belong', methods=['POST'])
 def bus_card_belong():
