@@ -556,22 +556,12 @@ group by addtime order by addtime desc limit 1''' %hold_phone
 
         hold_data = hold_data.merge(price_data,on="pretty_type_id")
         tran_data = tran_data.merge(price_data,on="pretty_type_id")
-        # traning_data = traning_data.merge(price_data,on="pretty_type_id")
         no_tran_data = no_tran_data.merge(price_data,on="pretty_type_id")
-        # traned_data = traned_data.merge(price_data,on="pretty_type_id")
         logger.info(hold_data)
 
         hold_data["hold_sum_price"] = hold_data["hold_count"]*hold_data["guide_price"]
         tran_data["tran_sum_price"] = tran_data["tran_count"]*tran_data["guide_price"]
-        # traning_data["traning_sum_price"] = traning_data["traning_count"]*traning_data["guide_price"]
         no_tran_data["no_tran_sum_price"] = no_tran_data["no_tran_count"]*no_tran_data["guide_price"]
-        # traned_data["traned_sum_price"] = traned_data["traned_count"]*traned_data["guide_price"]
-
-        logger.info(traning_data)
-        logger.info(data["up"])
-        # 转让中的数据去现在查询的
-        public_count = int(traning_data["public_count"].sum())
-        public_price = round(float(traning_data["public_price"].sum()),2)
 
         # 已使用的现查
         use_sql = '''select count(*) use_count from (
@@ -583,27 +573,35 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         # data["up"]["use_count"] = use_count
 
         # 已转让的数据去现在查询的
-        logger.info(traning_data)
         traned_count = int(traned_data["traned_count"].sum())
         traned_price = round(float(traned_data["traned_sum_price"].sum()),2)
 
+        public_count = int(traning_data["public_count"].sum())
+        public_price = round(float(traning_data["public_price"].sum()), 2)
+
+        hold_count = int(hold_data["hold_count"].sum())
+        hold_price = round(float(hold_data["hold_sum_price"].sum()),2)
+
+        tran_count = int(tran_data["tran_count"].sum())
+        tran_price = round(float(tran_data["tran_sum_price"].sum()), 2)
+
+        no_tran_count = int(no_tran_data["no_tran_count"].sum())
+        no_tran_price = round(float(no_tran_data["no_tran_sum_price"].sum()), 2)
 
         # 靓号总数=靓号当前+已转让
         logger.info(sum_data)
-        sum_count = sum_data["hold_count"]+sum_data["transferred_count"]
-        sum_price = sum_data["hold_price"]+sum_data["transferred_price"]
 
-
+        sum_count = hold_count + traned_count
+        sum_price = hold_price + traned_price
 
         data["up"] = {
             "public_count": public_count, "public_price": public_price,
-            "traned_count": traned_count,"traned_price": traned_price,
-            "tran_count": int(sum_data["tran_count"]), "tran_price": round(float(sum_data["tran_price"]), 2),
-            "no_tran_count": int(sum_data["no_tran_count"]),
-            "no_tran_price": round(float(sum_data["no_tran_price"]), 2),
-            "hold_count": int(sum_data["hold_count"]), "hold_price": round(float(sum_data["hold_price"]), 2),
-            "investment_money": investment,"use_count":use_count,
-            "sum_count":sum_count,"sum_price":sum_price
+            "traned_count": traned_count, "traned_price": traned_price,
+            "tran_count": tran_count, "tran_price": tran_price,
+            "no_tran_count": no_tran_count,"no_tran_price": no_tran_price,
+            "hold_count": hold_count, "hold_price": hold_price,
+            "investment_money": investment, "use_count": use_count,
+            "sum_count": sum_count, "sum_price": sum_price
         }
         logger.info(data["up"])
 
@@ -728,7 +726,7 @@ def person_charts():
                         sum(transferred_price) transferred_price, sum(hold_count) hold_count, sum(hold_price) hold_price from user_storage_value_today
                         where hold_phone='{}' group by date_format(addtime,"%Y-%m-%d %H:%i:%S") 
                         order by date_format(addtime,"%Y-%m-%d %H:%i:%S") desc
-                        ) user_store group by day_time
+                        ) user_store group by day_time 
                     '''.format(hold_phone)
             ration_sql = '''
                         select tran_price, transferred_price, hold_price
@@ -985,13 +983,7 @@ def bus_card_belong():
             logger.info(hold_user_phone_list)
             hold_table_type_list = hold_user_info_df.loc[hold_user_info_df['phone'].isin(hold_user_phone_list), :]['id'].unique().tolist()
 
-        # use_user_table_list = []
-        # if use_user_info:
-        #     use_user_table_list.extend(user_info_df.loc[(user_info_df['unionid'].str.contains(use_user_info)) |
-        #                                     (user_info_df['phone'].str.contains(use_user_info)) |
-        #                                     (user_info_df['nickname'].str.contains(hold_user_info)), :])
-        # logger.info(user_table_list)
-        # 读取表格
+
 
         hold_df_list = []
         cursor = conn_lh.cursor()

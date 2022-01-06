@@ -18,6 +18,8 @@ from functools import reduce
 from analyzeserver.common import *
 import time
 
+start_run_time = datetime.datetime.now().strftime("%Y-%m-%d %H")
+
 # 已转让数量与价值
 def transferred_count_and_value():
     try:
