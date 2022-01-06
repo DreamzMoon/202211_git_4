@@ -294,7 +294,7 @@ def delete_yes_data():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor_analyze = conn_analyze.cursor()
-        delete_sql = '''delete from user_storage_value_today where day_time != CURRENT_DATE'''
+        delete_sql = '''delete from user_storage_value_today where date_format(day_time, "%Y-%m-%d") != CURRENT_DATE'''
         cursor_analyze.execute(delete_sql)
         conn_analyze.commit()
         logger.info("删除成功了")
