@@ -503,7 +503,13 @@ def person_detail():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         cursor_lh = conn_lh.cursor()
 
-        data = {"up":{},"middle":"","below":""}
+        data = {"user":{},"up":{},"middle":"","below":""}
+
+        #根据手机号差个人信息
+        user_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,phone,unionid,operatename,parentid,parent_phone from crm_user where phone = %s''' %hold_phone
+        user_data = pd.read_sql(user_sql,conn_analyze)
+        user_data = user_data.to_dict("records")
+        data["user"] = user_data
 
         # 先算投入价值
         sql = '''select sum(total_price) total_price from lh_order where type in (1,4) and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
