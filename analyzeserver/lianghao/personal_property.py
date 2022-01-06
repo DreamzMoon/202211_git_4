@@ -515,8 +515,12 @@ def person_detail():
         # 先算投入价值
         sql = '''select sum(total_price) total_price from lh_order where type in (1,4) and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
         cursor_lh.execute(sql)
-        investment = cursor_lh.fetchone()[0]
-        investment = round(float(investment),2)
+        investment = cursor_lh.fetchone()
+        logger.info(investment)
+        try:
+            investment = round(float(investment[0]),2)
+        except:
+            investment = 0
 
         sql = '''select public_count,public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,hold_price,transferred_count,transferred_price from user_storage_value_today where hold_phone = %s
 group by addtime order by addtime desc limit 1''' %hold_phone
@@ -528,7 +532,10 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         #去user表拿id
         user_sql = '''select id from lh_user where phone = %s'''
         cursor_lh.execute(user_sql,(hold_phone))
-        lh_user_id = cursor_lh.fetchone()[0]
+        lh_user_id = cursor_lh.fetchone()
+        if not lh_user_id:
+            return {"code":"11014","status":"failed","msg":message["11014"]}
+        lh_user_id = lh_user_id[0]
 
         # 持有
         hold_sql = '''select pretty_type_id,count(*) hold_count from lh_pretty_hold_%s where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
