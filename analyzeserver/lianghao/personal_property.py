@@ -278,6 +278,7 @@ def plat_statis():
                 '''
 
             form_data = pd.read_sql(form_sql, conn_analyze)
+            form_data['day_time'] = form_data['day_time'].apply(lambda x: x.strftime('%Y-%m-%d %H'))
             form_data = form_data.to_dict("records")
 
             circle_data = pd.read_sql(circle_sql, conn_analyze)
@@ -744,8 +745,8 @@ def person_charts():
             today_sql = '''
                 select day_time, public_count, public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
                  hold_count, hold_price
-                 from user_storage_value_todayH where hold_phone=%s
-            ''' % hold_phone
+                 from user_storage_value_todayH where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
+            '''.format(hold_phone)
             ration_sql = '''
                 select tran_price, transferred_price, hold_price
                 from user_storage_value
