@@ -214,7 +214,7 @@ def plat_statis():
 
         logger.info("args_phone_lists:%s" % args_phone_lists)
 
-
+        logger.info("start_time:%s" %start_time)
         if time_type == 4:
             if not start_time or not end_time:
                 return {"code": "11009", "status": "failed", "msg": message["11009"]}
