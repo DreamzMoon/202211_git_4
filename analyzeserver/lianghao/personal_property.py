@@ -677,7 +677,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
 
 
 
-@ppbp.route("/chart",methods=["POST"])
+@ppbp.route("person/chart",methods=["POST"])
 def person_charts():
     try:
         try:
