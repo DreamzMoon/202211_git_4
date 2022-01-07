@@ -173,6 +173,8 @@ def tran_hold():
         '''
         data = pd.read_sql(sql,conn_lh)
 
+        logger.info("持有转让数据查询结束")
+
         # tran 转让
         tran_datas = data[(data["status"] == 0) & (data["is_sell"] == 1) & (data["pay_type"] != 0)]
         # hold持有
@@ -186,6 +188,8 @@ def tran_hold():
         #匹配当前的价格表
         price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
         price_data = pd.read_sql(price_sql,conn_lh)
+
+        logger.info("价格表读取完成")
 
         # 转让
         current_tran_datas = pd.merge(current_tran_datas,price_data,on="pretty_type_id",how="left")
@@ -203,11 +207,15 @@ def tran_hold():
         transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index().rename(columns={"guide_price": "tran_price"})
         transfer_data["day_time"] = (current_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
 
+        logger.info("转让分组ok")
+
         # 持有
         current_hold_datas["hold_count"] = 0
         # hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
         hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index().rename(columns={"guide_price": "hold_price"})
         hold_grouped['day_time'] = (current_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
+        logger.info("持有分组ok")
+
         logger.info(hold_grouped)
         fina_data = hold_grouped.merge(transfer_data, how='outer', on=['day_time', 'hold_phone'])
         fina_data.fillna(0, inplace=True)
@@ -247,6 +255,8 @@ def no_tran_lh():
         '''
         no_tran_data = pd.read_sql(sql, conn_lh)
 
+        logger.info("不可转数据ok")
+
         # 满足当前时间的可转让数据
         # current_no_tran_datas = no_tran_data[no_tran_data["update_time"] <= ergodic_time]
 
@@ -255,7 +265,7 @@ def no_tran_lh():
         # 匹配当前的价格表
         price_sql = '''select pretty_type_id,max(guide_price) guide_price from lh_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
         price_data = pd.read_sql(price_sql, conn_lh)
-
+        logger.info("价格表ok")
         # 转让
         current_no_tran_datas = pd.merge(current_no_tran_datas, price_data, on="pretty_type_id", how="left")
         # 找不到的话就19
@@ -265,6 +275,8 @@ def no_tran_lh():
         # 转让
         no_tran_datas = current_no_tran_datas[["hold_phone", "guide_price","no_tran_count"]]
         no_tran_datas = no_tran_datas.groupby("hold_phone").agg({"guide_price": "sum", "no_tran_count": "count"}).reset_index()
+
+        logger.info("不可转分组ok")
         # no_tran_datas["day_time"] = ergodic_time
         no_tran_datas["day_time"] = (end_time + datetime.timedelta(hours=-1)).strftime("%Y-%m-%d %H")
         no_tran_datas.rename(columns={"guide_price": "no_tran_price"}, inplace=True)
