@@ -87,11 +87,11 @@ def platform_data():
         #发布总的单独取
         all_public_sql = '''
         select sum(public_count) from (
-        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
-        union all
-        select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
-        group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
+select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
+union all
+select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
+group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
         '''
         condition_sql = ""
         for i in range(0,len(condition)):
@@ -123,13 +123,13 @@ def platform_data():
         if args_phone_lists:
             use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                         select sum(use_count) use_count,sum(public_count) public_count from user_storage_value ''' + condition_sql +'''union all
-                        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by addtime order by addtime desc 
+                        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                         limit 1)
                         ) user_storage'''
         else:
             use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
             select sum(use_count) use_count,sum(public_count) public_count from user_storage_value union all
-            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today group by addtime order by addtime desc 
+            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
             limit 1)
             ) user_storage'''
 
