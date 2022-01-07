@@ -492,6 +492,7 @@ def update_user_ascriptions():
 
         #日志插入
         if compare:
+            compare.insert(0,"用户的unionid为：%s" %unionid)
             insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
             params = []
             params.append(user_id)
