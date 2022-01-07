@@ -1073,16 +1073,18 @@ def bus_card_belong():
             # 跨表
             if span_table_flag:
                 sql_list = sql_list[indexs-1:indexs+1]
-                start_index = start_index - sum(count_list[:indexs-1])
-                end_index = end_index - sum(count_list[:indexs-1])
+                start_index = start_index - sum(count_list[:indexs])
+                end_index = end_index - sum(count_list[:indexs])
                 pretty_hold_sql_1 = ''' union all '''.join(sql_list)
                 pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, size)
             else:
                 logger.info('没有跨表')
+                logger.info(indexs)
                 pretty_hold_sql_1 = sql_list[indexs]
                 if indexs !=0:
-                    start_index = start_index - sum(count_list[:indexs - 1])
-                    end_index = end_index - sum(count_list[:indexs - 1])
+                    start_index = start_index - sum(count_list[:indexs])
+                    end_index = end_index - sum(count_list[:indexs])
+
                 pretty_hold_sql_1 = pretty_hold_sql_1 + '''limit %s, %s''' % (start_index, size)
                 logger.info(pretty_hold_sql_1)
             hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
