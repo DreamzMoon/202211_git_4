@@ -1006,11 +1006,42 @@ def bus_card_belong():
             start_index = 0
             end_index = 0
         count = 0
-        if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
-            if start_index == 0 and end_index ==0:
-                return {'code': "0000", "status": "success", "msg": "数据量过大,暂不支持导出"}
+        # if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
+        #     if start_index == 0 and end_index ==0:
+        #         return {'code': "0000", "status": "success", "msg": "数据量过大,暂不支持导出"}
+        #
+        #    # 获取统计次数
+        #     count_list = []
+        #     # sql列表
+        #     sql_list = []
+        #     for hold_table_type in hold_table_type_list:
+        #         sql_list.append(pretty_hold_sql_1.format(table_name=hold_table_type))
+        #         count_sql = '''
+        #         select count(*) count
+        #         from lh_pretty_client.lh_pretty_hold_%s
+        #         where del_flag=0
+        #         ''' % hold_table_type
+        #         cursor.execute(count_sql)
+        #         count_list.append(int(cursor.fetchone()[0]))
+        #     count = sum(count_list)
+        #     logger.info(count)
+        #     pretty_hold_sql_1 = ''' union all '''.join(sql_list)
+        #     pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+        #     hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
+        # else:
+        #     for hold_table_type in hold_table_type_list:
+        #         hold_df = pd.read_sql(pretty_hold_sql_1.format(table_name=hold_table_type), conn_lh)
+        #         hold_df_list.append(hold_df)
+        #     hold_all_df = pd.concat(hold_df_list, axis=0)
 
-           # 获取统计次数
+        # 转让类型
+        # 正常
+
+        if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
+            if start_index == 0 and end_index == 0:
+                return {'code': "10017", "status": "failed", "msg": "数据量过大,暂不支持导出"}
+
+            # 获取统计次数
             count_list = []
             # sql列表
             sql_list = []
@@ -1025,8 +1056,31 @@ def bus_card_belong():
                 count_list.append(int(cursor.fetchone()[0]))
             count = sum(count_list)
             logger.info(count)
-            pretty_hold_sql_1 = ''' union all '''.join(sql_list)
-            pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+            indexs = 0
+            count_sum = 0
+            # 是否跨表标志位
+            span_table_flag = False
+            for index, count_s in enumerate(count_list):
+                count_sum += count_s
+                if count_sum >= end_index:
+                    # 是否跨表判断
+                    if index != 0 and start_index <= sum(count_list[:index]):
+                        span_table_flag = True
+                    indexs = index
+                    break
+                else:
+                    continue
+            # 跨表
+            if span_table_flag:
+                sql_list = sql_list[indexs-1:indexs+1]
+                start_index = start_index - sum(count_list[:indexs-1])
+                end_index = end_index - sum(count_list[:indexs-1])
+                pretty_hold_sql_1 = ''' union all '''.join(sql_list)
+                pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+            else:
+                logger.info('没有跨表')
+                pretty_hold_sql_1 = sql_list[indexs]
+                pretty_hold_sql_1 = pretty_hold_sql_1 + '''limit %s, %s''' % (start_index, end_index)
             hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
         else:
             for hold_table_type in hold_table_type_list:
@@ -1034,8 +1088,7 @@ def bus_card_belong():
                 hold_df_list.append(hold_df)
             hold_all_df = pd.concat(hold_df_list, axis=0)
 
-        # 转让类型
-        # 正常
+
         normal_df = hold_all_df[(hold_all_df['status'] == 0) & (hold_all_df['is_open_vip'] == 0) & (
                     hold_all_df['thaw_time'] <= datetime.datetime.now()) & (hold_all_df['is_sell'] == 1) & (
                                           hold_all_df['pay_type'] != 0)]
@@ -1097,7 +1150,8 @@ def bus_card_belong():
         hold_all_df['create_time'] = hold_all_df['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         hold_all_df['thaw_time'] = hold_all_df['thaw_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         hold_all_df.fillna('', inplace=True)
-
+        if start_index == 0 and end_index == 0 and count>500000:
+            return {'code': "10017", "status": "failed", "msg": "数据量过大,暂不支持导出"}
         return {"code": "0000", "status": "success", "msg": hold_all_df.to_dict("records"), "count": count}
 
     except Exception as e:
