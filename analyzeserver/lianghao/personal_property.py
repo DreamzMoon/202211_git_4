@@ -85,14 +85,23 @@ def platform_data():
             condition.append(''' hold_phone not in (%s)''' %args_phone_lists)
 
         #发布总的单独取
+#         all_public_sql = '''
+#         select sum(public_count) from (
+# select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
+# union all
+# select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+# on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
+# group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
+#         '''
+
         all_public_sql = '''
-        select sum(public_count) from (
-select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
-union all
-select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
-        '''
+                select sum(public_count) from (
+        select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` = 0 group by day_time, hold_phone
+        union all
+        select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
+        on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status = 0
+        group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
+                '''
         condition_sql = ""
         for i in range(0,len(condition)):
              condition_sql = " where " + condition[i] if i == 0 else " and " + condition[i]
