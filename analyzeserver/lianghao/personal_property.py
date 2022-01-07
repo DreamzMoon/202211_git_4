@@ -240,7 +240,7 @@ def plat_statis():
                 form_sql = '''
                     select day_time, sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,
                     sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price, sum(hold_count) hold_count,sum(hold_price)  hold_price
-                    from user_storage_value_todayH where hold_phone not in ({}) and date_format(day_time, "%Y-%m-%d") = current_date
+                    from user_storage_value_hour where hold_phone not in ({}) and date_format(day_time, "%Y-%m-%d") = current_date
                     group by day_time
                     order by day_time asc
                 '''.format(args_phone_lists)
@@ -256,7 +256,7 @@ def plat_statis():
             else:
                 form_sql = '''
                     select day_time, sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price, sum(hold_count) hold_count,sum(hold_price)  hold_price
-                    from user_storage_value_todayH where date_format(day_time, "%Y-%m-%d") = current_date
+                    from user_storage_value_hour where date_format(day_time, "%Y-%m-%d") = current_date
                     group by day_time
                     order by day_time asc
                 '''.format(args_phone_lists)
@@ -737,7 +737,7 @@ def person_charts():
             today_sql = '''
                 select day_time, public_count, public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
                  hold_count, hold_price
-                 from user_storage_value_todayH where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
+                 from user_storage_value_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
             '''.format(hold_phone)
             ration_sql = '''
                 select tran_price, transferred_price, hold_price

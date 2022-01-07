@@ -306,7 +306,7 @@ def delete_yes_data():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor_analyze = conn_analyze.cursor()
-        delete_sql = '''delete from user_storage_value_todayH where date_format(day_time, "%Y-%m-%d") != CURRENT_DATE'''
+        delete_sql = '''delete from user_storage_value_hour where date_format(day_time, "%Y-%m-%d") != CURRENT_DATE'''
         cursor_analyze.execute(delete_sql)
         conn_analyze.commit()
         logger.info("删除成功了")
@@ -391,7 +391,7 @@ if __name__ == "__main__":
         # 数据入库
         logger.info('写入数据')
         conn_analyze = pd_conn(analyze_mysql_conf)
-        df_merge.to_sql('user_storage_value_todayH', con=conn_analyze, if_exists="append", index=False)
+        df_merge.to_sql('user_storage_value_hour', con=conn_analyze, if_exists="append", index=False)
         run_end = time.time()
         logger.info(run_start - run_end)
         break
