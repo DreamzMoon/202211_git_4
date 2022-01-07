@@ -1153,7 +1153,8 @@ def bus_card_belong():
         hold_all_df.drop(['hold_name', 'use_user_name', 'is_sell', 'pay_type', 'is_open_vip', 'status'], axis=1, inplace=True)
         if count == 0:
             count = hold_all_df.shape[0]
-            hold_all_df = hold_all_df[start_index:end_index]
+            if page and size:
+                hold_all_df = hold_all_df[start_index:end_index]
         hold_all_df['create_time'] = hold_all_df['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         hold_all_df['thaw_time'] = hold_all_df['thaw_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         hold_all_df.fillna('', inplace=True)
