@@ -124,7 +124,7 @@ crm_mysql_conf = {
 }
 
 #靓号的配置数据
-plat_lh_total_count_seven = 11331322
+plat_lh_total_count_seven = 11331349
 
 
 #默认配置

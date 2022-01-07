@@ -136,7 +136,13 @@ def platform_data():
         cursor_analyze.execute(use_public_sql)
         use_public = cursor_analyze.fetchone()
 
-        all_data["plat_count"] = plat_lh_total_count_seven
+        try:
+            r = get_redis()
+            plat_lh_total_count_7 = r.get("plat_lh_total_count_seven")
+        except:
+            plat_lh_total_count_7 = plat_lh_total_count_seven
+
+        all_data["plat_count"] = plat_lh_total_count_7
         all_data["plat_hold_count"] = today_data["hold_count"]
         all_data["plat_surplus_count"] = all_data["plat_count"] - all_data["plat_hold_count"]
         all_data["plat_tran_count"] = today_data["tran_count"]
