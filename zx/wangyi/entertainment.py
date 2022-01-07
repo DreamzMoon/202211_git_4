@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022/1/4 10:33
+# @Time : 2022/1/7 16:39
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
-# @File : fashion.py
+# @File : entertainment.py
+
 import requests
 from bs4 import BeautifulSoup
 import sys, os, time
@@ -29,12 +30,12 @@ def get_proxy():
 # https://fashion.163.com/special/002688FE/fashion_datalist_03.js 时尚
 
 
-main_url = "https://fashion.163.com/special/002688FE/fashion_datalist_"
+main_url = "https://ent.163.com/special/000380VU/newsdata_index_"
 #翻页次数
 i = 1
 count = 9
 timeout = 5
-type = "时尚"
+type = "文娱"
 crawlcount = 0
 
 detail_urls = []
