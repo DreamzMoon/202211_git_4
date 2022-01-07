@@ -17,6 +17,8 @@ from config import *
 import traceback
 import re
 
+from util.help_fun import send_dingding
+
 def get_proxy():
     try:
         proxy = "http://http.tiqu.letecs.com/getip3?num=1&type=1&pro=&city=0&yys=0&port=1&time=1&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions=&gm=4"
@@ -162,3 +164,5 @@ for i,detail_url in enumerate(detail_urls):
             crawlcount = crawlcount + 1
 
 logger.info("一共推送了:%s" %crawlcount)
+
+send_dingding(["资讯--文娱板块去重后一共推送 :%s" %crawlcount])

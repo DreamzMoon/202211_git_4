@@ -17,6 +17,11 @@ import pandas as pd
 import sqlalchemy as sa
 import redis
 
+import requests
+import datetime
+import json
+
+
 
 def ssh_get_conn(ssh_conf,mysql_conf):
     '''
@@ -163,12 +168,40 @@ def get_redis():
     except:
         return None
 
-if __name__ == "__main__":
-    logger.info("start")
+def send_dingding(send_mes):
+    if send_mes:
+        url = "https://oapi.dingtalk.com/robot/send?access_token=f67d6a4d005654a96b904a7bafb9c469b70c013bfd17b120ae5a420eb509b101"
+        HEADERS = {"Content-Type": "application/json;charset=utf-8"}
+        send_mes.insert(0, u"业务预警：")
+        data = {
+            "msgtype": "text",
+            "text": {
+                "content": "\n".join(send_mes)
+            },
+            "at": {
+                # "isAtAll": True
+                "atMobiles": [
+                    ""  # 需要填写自己的手机号，钉钉通过手机号@对应人
+                ],
+                "isAtAll": False  # 是否@所有人，默认否
+            }
+        }
+        json_data = json.dumps(data).encode(encoding='utf-8')
+        header_encoding = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko',
+                           "Content-Type": "application/json"}
+        req = requests.post(url=url, data=json_data, headers=header_encoding)
+        print(req.text)
+        print(req.status_code)
 
-    rclient = ssh_redis()
-    logger.info(rclient)
-    logger.info(rclient.get("hello"))
+
+if __name__ == "__main__":
+    send_dingding(["ceshi"])
+
+    # logger.info("start")
+    #
+    # rclient = ssh_redis()
+    # logger.info(rclient)
+    # logger.info(rclient.get("hello"))
 
     # 跳板机连接
     # conn = ssh_get_conn(lianghao_ssh_conf,lianghao_mysql_conf)

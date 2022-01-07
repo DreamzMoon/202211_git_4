@@ -15,6 +15,7 @@ import time
 import json
 from config import *
 import traceback
+from util.help_fun import send_dingding
 
 def get_proxy():
     try:
@@ -157,3 +158,4 @@ for i,detail_url in enumerate(detail_urls):
             crawlcount = crawlcount + 1
 
 logger.info("一共推送了:%s" %crawlcount)
+send_dingding(["资讯--报刊板块去重后一共推送 :%s" %crawlcount])
