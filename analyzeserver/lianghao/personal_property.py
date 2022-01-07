@@ -106,7 +106,8 @@ def platform_data():
         # 按照统计表倒序排序按照时间分组取出最新的
 
         below_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today '''
-        below_group_sql = ''' group by addtime order by addtime desc limit 1'''
+        # below_group_sql = ''' group by addtime order by addtime desc limit 1'''
+        below_group_sql = ''' group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1'''
 
         below_sql = below_sql + condition_sql + below_group_sql if condition_sql else below_sql+below_group_sql
 
