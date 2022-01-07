@@ -19,7 +19,7 @@ from functools import reduce
 from analyzeserver.common import *
 import time
 
-#设置7位靓号数量 每两个小时 30 分跑一次
+#设置7位靓号数量 每30 分跑一次
 
 seven_sql = '''select sum(count) seven_count from(
 select count(*) count from lh_pretty_0 union all

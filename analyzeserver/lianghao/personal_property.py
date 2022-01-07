@@ -138,9 +138,10 @@ def platform_data():
 
         try:
             r = get_redis()
-            plat_lh_total_count_7 = r.get("plat_lh_total_count_seven")
+            plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
         except:
             plat_lh_total_count_7 = plat_lh_total_count_seven
+        logger.info(plat_lh_total_count_7)
 
         all_data["plat_count"] = plat_lh_total_count_7
         all_data["plat_hold_count"] = today_data["hold_count"]
