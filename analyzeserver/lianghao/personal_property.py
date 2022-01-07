@@ -1026,7 +1026,7 @@ def bus_card_belong():
         #     count = sum(count_list)
         #     logger.info(count)
         #     pretty_hold_sql_1 = ''' union all '''.join(sql_list)
-        #     pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+        #     pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, size)
         #     hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
         # else:
         #     for hold_table_type in hold_table_type_list:
@@ -1076,11 +1076,15 @@ def bus_card_belong():
                 start_index = start_index - sum(count_list[:indexs-1])
                 end_index = end_index - sum(count_list[:indexs-1])
                 pretty_hold_sql_1 = ''' union all '''.join(sql_list)
-                pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, end_index)
+                pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, size)
             else:
                 logger.info('没有跨表')
                 pretty_hold_sql_1 = sql_list[indexs]
-                pretty_hold_sql_1 = pretty_hold_sql_1 + '''limit %s, %s''' % (start_index, end_index)
+                if indexs !=0:
+                    start_index = start_index - sum(count_list[:indexs - 1])
+                    end_index = end_index - sum(count_list[:indexs - 1])
+                pretty_hold_sql_1 = pretty_hold_sql_1 + '''limit %s, %s''' % (start_index, size)
+                logger.info(pretty_hold_sql_1)
             hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
         else:
             for hold_table_type in hold_table_type_list:

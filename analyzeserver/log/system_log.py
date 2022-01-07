@@ -43,7 +43,7 @@ def sys_log():
         cursor.execute(count_sql)
         count = cursor.fetchone()[0]
 
-        sql = '''select sys_user.username,sys_log.log_time,sys_log.log_action,sys_log.remark from sys_log left join sys_user on sys_log.user_id = sys_user.id order by log_time desc limit %s,%s''' %((page-1)*size,page*size)
+        sql = '''select sys_user.username,sys_log.log_time,sys_log.log_action,sys_log.remark from sys_log left join sys_user on sys_log.user_id = sys_user.id order by log_time desc limit %s,%s''' %((page-1)*size,size)
         log_datas = pd.read_sql(sql,conn)
         log_datas = log_datas.to_dict("records")
         for log_data in log_datas:
