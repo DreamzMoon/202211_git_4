@@ -993,6 +993,7 @@ def bus_card_belong():
             return {"code": "0000", "status": "success", "msg": []}
         if hold_user_phone_list:
             logger.info(hold_user_phone_list)
+            hold_user_info_df.dropna(subset=['id'], inplace=True)
             hold_table_type_list = hold_user_info_df.loc[hold_user_info_df['phone'].isin(hold_user_phone_list), :]['id'].unique().tolist()
 
 
@@ -1079,8 +1080,6 @@ def bus_card_belong():
                 pretty_hold_sql_1 = ''' union all '''.join(sql_list)
                 pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, size)
             else:
-                logger.info('没有跨表')
-                logger.info(indexs)
                 pretty_hold_sql_1 = sql_list[indexs]
                 if indexs !=0:
                     start_index = start_index - sum(count_list[:indexs])
