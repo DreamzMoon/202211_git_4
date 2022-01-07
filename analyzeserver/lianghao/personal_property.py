@@ -553,7 +553,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
             union all
             select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone, lsrd.pretty_type_name, count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
             on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-            group by day_time,hold_phone, pretty_type_name) t group by day_time,hold_phone, pretty_type_name having day_time =current_date and hold_phone = {} order by day_time desc
+            group by day_time,hold_phone, pretty_type_name) t group by day_time,hold_phone, pretty_type_name having hold_phone = {} order by day_time desc
         '''.format(hold_phone)
         traning_data = pd.read_sql(traning_sql, conn_lh)
 
