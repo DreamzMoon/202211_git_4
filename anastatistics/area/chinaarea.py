@@ -51,11 +51,14 @@ city_datas = []
 region_datas = []
 town_datas = []
 
-pro_list = [pro_lists[0]]
-
+logger.info(len(pro_lists))
+pro_list = [pro_lists[6]]
+logger.info(pro_list)
 for p in pro_list:
-
-    logger.info(proxies)
+    # time.sleep(3)
+    # proxy_result = get_proxy()
+    # proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
+    # logger.info(proxies)
     logger.info(p)
 
     p_dict = {}
@@ -84,6 +87,7 @@ for p in pro_list:
             c_dict["province_code"] = p_dict["code"]
 
             #请求区域
+            logger.info("area:%s" %c_dict["url"])
             region_res = requests.get(url=c_dict["url"],proxies=proxies,timeout=timeout)
             if region_res.status_code != 200:
                 time.sleep(2)
@@ -92,7 +96,7 @@ for p in pro_list:
                 region_res = requests.get(url=c_dict["url"], proxies=proxies, timeout=timeout)
             region_res.content.decode(encoding=region_res.apparent_encoding)
             region_soup = BeautifulSoup(region_res.content,"lxml")
-            region_list = region_soup.select("table.countytable tr td a")[1:]
+            region_list = region_soup.select("table.countytable tr td a")
             for j in range(0, len(region_list)):
                 r_dict = {}
                 if j % 2 != 0:
@@ -104,7 +108,7 @@ for p in pro_list:
                     r_dict["province_code"] = p_dict["code"]
 
                     #请求镇
-                    logger.info(r_dict["url"])
+                    logger.info("zhen:%s" %r_dict["url"])
                     town_res = requests.get(url=r_dict["url"],proxies=proxies,timeout=timeout)
                     if town_res.status_code != 200:
                         logger.info("error:%s" %r_dict["url"])
@@ -112,16 +116,19 @@ for p in pro_list:
                         proxy_result = get_proxy()
                         proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
                         town_res = requests.get(url=r_dict["url"], proxies=proxies, timeout=timeout)
-                    town_res.content.decode(encoding=town_res.apparent_encoding)
+                    try:
+                        town_res.content.decode(encoding=town_res.apparent_encoding)
+                    except:
+                        pass
                     town_soup = BeautifulSoup(town_res.content,"lxml")
-                    town_list = town_soup.select("table.countytable tr td a")
+                    town_list = town_soup.select("table.towntable tr td a")
+                    logger.info(town_list)
                     for k in range(0, len(town_list)):
                         t_dict = {}
                         if k % 2 != 0:
-                            time.sleep(2)
-                            t_dict["url"] = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/" +region_list[k].text[0:2]+"/"+region_list[k].text[2:4] + "/" + region_list[k].get("href")
-                            t_dict["name"] = region_list[k].text
-                            t_dict["code"] = str(region_list[k].get("href").split("/")[1].split(".")[0]) + "0" * 3
+                            # t_dict["url"] = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/" +town_list[k].text[0:2]+"/"+town_list[k].text[2:4] + "/" + town_list[k].get("href")
+                            t_dict["name"] = town_list[k].text
+                            t_dict["code"] = str(town_list[k].get("href").split("/")[1].split(".")[0]) + "0" * 3
                             t_dict["city_code"] = c_dict["code"]
                             t_dict["province_code"] = p_dict["code"]
                             t_dict["region_code"] = r_dict["code"]
@@ -155,10 +162,9 @@ town_datas = pd.DataFrame(town_datas)
 pro_datas.drop("url",axis=1,inplace=True)
 city_datas.drop("url",axis=1,inplace=True)
 region_datas.drop("url",axis=1,inplace=True)
-town_datas.drop("url",axis=1,inplace=True)
 
-conn_analyze = ssh_get_sqlalchemy_conn(analyze_mysql_conf)
-pro_datas.to_sql("province",conn_analyze)
-city_datas.to_sql("city",conn_analyze)
-region_datas.to_sql("region",conn_analyze)
-town_datas.to_sql("town",conn_analyze)
+conn_analyze = sqlalchemy_conn(analyze_mysql_conf)
+pro_datas.to_sql("province",conn_analyze,if_exists="append", index=False)
+city_datas.to_sql("city",conn_analyze,if_exists="append", index=False)
+region_datas.to_sql("region",conn_analyze,if_exists="append", index=False)
+town_datas.to_sql("town",conn_analyze,if_exists="append", index=False)
