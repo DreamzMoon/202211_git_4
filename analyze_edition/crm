@@ -97,3 +97,5 @@ alter table crm_user convert to character set utf8mb4;
 
 
 #2021-01-10
+
+pip install oss2
