@@ -49,7 +49,7 @@ while i <= count:
     try:
         current_url = ""
         if i == 1:
-            current_url = main_url[0:-1]
+            current_url = main_url[0:-1]+"/"
         else:
             page = "0"+str(i) if len(str(i))<2 else str(i)
             logger.info(page)
