@@ -52,13 +52,14 @@ def upload_img():
 
         # 1 身份证前面  2身份证反面
         front_back = request.json.get("front_back")
-        front_back = "front" if int(front_back) == 1 else "back"
+
 
         if not front_back or not type or not unionid or not img:
             return {"code":"10001","msg":message["code"],"status":"failed"}
 
         t = int(time.time()*1000)
 
+        front_back = "front" if int(front_back) == 1 else "back"
         file_name = ""
         if type == 1:
             file_name = "usericon" + str(t)
