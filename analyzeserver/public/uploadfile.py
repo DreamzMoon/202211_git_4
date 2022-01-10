@@ -50,16 +50,26 @@ def upload_img():
         img = request.json.get("img")
         img_data = base64.b64decode(img)
 
+        # 1 身份证前面  2身份证反面
+        front_back = request.json.get("front_back")
+        front_back = "front" if int(front_back) == 1 else "back"
+
+        if not front_back or not type or not unionid or not img:
+            return {"code":"10001","msg":message["code"],"status":"failed"}
+
         t = int(time.time()*1000)
 
         file_name = ""
         if type == 1:
             file_name = "usericon" + str(t)
         elif type == 2 or type == 3:
-            file_name = "identify" + str(t)
+            file_name = "identify" + str(front_back) + str(t)
         elif type == 4:
             file_name = "userface" + str(t)
+        else:
+            return {"code":"11030","message":message["11030"],"status":"failed"}
         #如果是身份证正反面
+
 
         bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
         return_url = "https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name)
