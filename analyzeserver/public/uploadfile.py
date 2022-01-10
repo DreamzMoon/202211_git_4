@@ -71,10 +71,12 @@ def upload_img():
             return {"code":"11030","message":message["11030"],"status":"failed"}
         #如果是身份证正反面
 
-
-        bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
-        return_url = "https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name)
-        return {"code":"0000","msg":"上传成功","data":return_url,"status":"success"}
+        try:
+            bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
+            return_url = "https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name)
+            return {"code":"0000","msg":"上传成功","data":return_url,"status":"success"}
+        except:
+            return {"code": "11031", "msg": message["11031"], "status": "failed"}
 
     except Exception as e:
         logger.error(e)
