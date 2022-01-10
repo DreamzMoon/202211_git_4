@@ -25,6 +25,10 @@ base_url = 'https://luke-sincerechat.oss-cn-beijing.aliyuncs.com'
 auth = oss2.Auth(AccessKeyID, AccessKeySecret)
 bucket = oss2.Bucket(auth, endpoint, 'luke-analyze')
 
+def adress_split(addr):
+    pass
+
+
 # 图片上传函数
 def sub_img(data):
     identify_front_url = base_url + '/' + data['identify_front']

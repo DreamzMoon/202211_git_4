@@ -54,12 +54,14 @@ def upload_img():
         front_back = request.json.get("front_back")
 
 
-        if not front_back or not type or not unionid or not img:
-            return {"code":"10001","msg":message["code"],"status":"failed"}
+        # if not front_back or not type or not unionid or not img:
+        #     return {"code":"10001","msg":message["10001"],"status":"failed"}
 
         t = int(time.time()*1000)
 
-        front_back = "front" if int(front_back) == 1 else "back"
+
+        if type == 2 or type ==3:
+            front_back = "front" if int(front_back) == 1 else "back"
         file_name = ""
         if type == 1:
             file_name = "usericon" + str(t)
@@ -80,6 +82,9 @@ def upload_img():
 
     except Exception as e:
         logger.error(e)
+        logger.exception(traceback.format_exc())
         # 参数名错误
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
 
