@@ -90,3 +90,10 @@ ADD PRIMARY KEY (`id`);
 
 alter table crm_user_20211229 convert to character set utf8mb4;
 alter table crm_user convert to character set utf8mb4;
+
+
+
+
+
+
+#2021-01-10
