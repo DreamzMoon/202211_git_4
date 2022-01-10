@@ -34,7 +34,7 @@ from analyzeserver.home.lh8_second_home_page import lhhomebp
 from analyzeserver.home.lh8_wholesale_home import lhpfhome8
 from analyzeserver.user.operationcenter_control import operateconbp
 from analyzeserver.log.system_log import syslogbp
-
+from analyzeserver.public.uploadfile import uploadmodubp
 
 
 app = Flask(__name__,instance_relative_config=True)
@@ -78,6 +78,9 @@ app.register_blueprint(lhpfhome8)
 
 # 日志
 app.register_blueprint(syslogbp)
+
+# 公共
+app.register_blueprint(uploadmodubp)
 
 if __name__ == "__main__":
     # app.run()

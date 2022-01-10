@@ -195,3 +195,7 @@ current_time = (date.today()).strftime("%Y%m%d")
 
 
 
+#aliyun
+AccessKeyID = "LTAI4FmMu531TSvt6jJPJejw"
+AccessKeySecret = "cl5uauXWgkbqQclu9KRmpcReybLOWO"
+endpoint = "https://oss-cn-beijing.aliyuncs.com"
