@@ -76,7 +76,8 @@ while i <= count:
     except:
         logger.info("当前主地址不要")
         continue
-    i += 1
+    finally:
+        i += 1
 
 logger.info(detail_urls)
 logger.info(len(detail_urls))
