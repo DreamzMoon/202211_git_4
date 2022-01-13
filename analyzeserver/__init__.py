@@ -36,6 +36,7 @@ from analyzeserver.user.operationcenter_control import operateconbp
 from analyzeserver.log.system_log import syslogbp
 from analyzeserver.public.uploadfile import uploadmodubp
 from analyzeserver.public.chinaaddress import chaddrbp
+from analyzeserver.user.crm_user_tag import usertagbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -82,6 +83,7 @@ app.register_blueprint(syslogbp)
 # 公共
 app.register_blueprint(uploadmodubp)
 app.register_blueprint(chaddrbp)
+app.register_blueprint(usertagbp)
 
 if __name__ == "__main__":
     # app.run()
