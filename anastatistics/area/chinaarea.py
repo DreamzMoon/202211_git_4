@@ -22,6 +22,7 @@ from analyzeserver.common import *
 import numpy as np
 import time
 from bs4 import BeautifulSoup
+import random
 
 def get_proxy():
     try:
@@ -32,12 +33,15 @@ def get_proxy():
     except:
         return False,""
 
+
+
 main_url = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/index.html"
 
 timeout = 10
 proxies = ""
 proxy_result = get_proxy()
 proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
+
 
 res = requests.get(url=main_url,proxies=proxies)
 res.content.decode(encoding=res.apparent_encoding)
@@ -52,13 +56,10 @@ region_datas = []
 town_datas = []
 
 logger.info(len(pro_lists))
-pro_list = [pro_lists[22]]
+pro_list = [pro_lists[30]]
 logger.info(pro_list)
 for p in pro_list:
-    # time.sleep(3)
-    # proxy_result = get_proxy()
-    # proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
-    # logger.info(proxies)
+
     logger.info(p)
 
     p_dict = {}
@@ -68,8 +69,10 @@ for p in pro_list:
     logger.info(p_dict["url"])
     logger.info("--------------------------------------")
     # 城市结果
-    city_res = requests.get(url=p_dict["url"],proxies=proxies,timeout=timeout)
-    if city_res.status_code != 200:
+    try:
+        city_res = requests.get(url=p_dict["url"],proxies=proxies,timeout=timeout)
+    except:
+        logger.info("省份换代理")
         time.sleep(2)
         proxy_result = get_proxy()
         proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
@@ -88,8 +91,12 @@ for p in pro_list:
 
             #请求区域
             logger.info("area:%s" %c_dict["url"])
-            region_res = requests.get(url=c_dict["url"],proxies=proxies,timeout=timeout)
-            if region_res.status_code != 200:
+            logger.info("c_dict[\"name\"]:%s" %c_dict["name"])
+            logger.info("================================")
+            try:
+                region_res = requests.get(url=c_dict["url"],proxies=proxies,timeout=timeout)
+            except:
+                logger.info("城市换代理")
                 time.sleep(2)
                 proxy_result = get_proxy()
                 proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
@@ -103,7 +110,6 @@ for p in pro_list:
             for j in range(0, len(region_list)):
                 r_dict = {}
                 if j % 2 != 0:
-                    logger.info(region_list[j])
                     r_dict["url"] = "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/" + str(p_dict["code"]) +"/"+ region_list[j].get("href")
                     r_dict["name"] = region_list[j].text
                     r_dict["code"] = str(region_list[j].get("href").split("/")[1].split(".")[0]) + "0" * 6
@@ -111,21 +117,23 @@ for p in pro_list:
                     r_dict["province_code"] = p_dict["code"]
 
                     #请求镇
-                    logger.info("zhen:%s" %r_dict["url"])
-                    town_res = requests.get(url=r_dict["url"],proxies=proxies,timeout=timeout)
-                    if town_res.status_code != 200:
-                        logger.info("error:%s" %r_dict["url"])
+                    # logger.info("zhen:%s" %r_dict["url"])
+                    try:
+                        town_res = requests.get(url=r_dict["url"],proxies=proxies,timeout=timeout)
+                    except:
+                        logger.info("区域换代理")
                         time.sleep(2)
                         proxy_result = get_proxy()
                         proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
                         town_res = requests.get(url=r_dict["url"], proxies=proxies, timeout=timeout)
+
                     try:
                         town_res.content.decode(encoding=town_res.apparent_encoding)
                     except:
                         pass
                     town_soup = BeautifulSoup(town_res.content,"lxml")
                     town_list = town_soup.select("table.towntable tr td a")
-                    logger.info(town_list)
+                    # logger.info(town_list)
                     for k in range(0, len(town_list)):
                         t_dict = {}
                         if k % 2 != 0:
