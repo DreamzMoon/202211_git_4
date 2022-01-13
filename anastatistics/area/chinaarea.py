@@ -52,7 +52,7 @@ region_datas = []
 town_datas = []
 
 logger.info(len(pro_lists))
-pro_list = [pro_lists[6]]
+pro_list = [pro_lists[22]]
 logger.info(pro_list)
 for p in pro_list:
     # time.sleep(3)
@@ -94,7 +94,10 @@ for p in pro_list:
                 proxy_result = get_proxy()
                 proxies = {'http': 'http://' + proxy_result[1]} if proxy_result[0] else ""
                 region_res = requests.get(url=c_dict["url"], proxies=proxies, timeout=timeout)
-            region_res.content.decode(encoding=region_res.apparent_encoding)
+            try:
+                region_res.content.decode(encoding=region_res.apparent_encoding)
+            except:
+                region_res.content.decode(encoding='gb18030')
             region_soup = BeautifulSoup(region_res.content,"lxml")
             region_list = region_soup.select("table.countytable tr td a")
             for j in range(0, len(region_list)):
