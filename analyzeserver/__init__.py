@@ -35,7 +35,7 @@ from analyzeserver.home.lh8_wholesale_home import lhpfhome8
 from analyzeserver.user.operationcenter_control import operateconbp
 from analyzeserver.log.system_log import syslogbp
 from analyzeserver.public.uploadfile import uploadmodubp
-
+from analyzeserver.public.chinaaddress import chaddrbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -81,6 +81,7 @@ app.register_blueprint(syslogbp)
 
 # 公共
 app.register_blueprint(uploadmodubp)
+app.register_blueprint(chaddrbp)
 
 if __name__ == "__main__":
     # app.run()
