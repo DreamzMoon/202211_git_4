@@ -298,8 +298,6 @@ def user_relate_detail():
         # 参数名错误
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
-
-
 @userrelatebp.route("update/user/ascription",methods=["POST"])
 def update_user_ascriptions():
     try:
@@ -332,179 +330,184 @@ def update_user_ascriptions():
         #运营中心的上级修改 传手机号码
         bus_parent_phone = request.json.get("bus_parent_phone")
 
-        unionid = request.json.get("unionid")
+        unionid_lists = request.json.get("unionid_lists")
 
-        # 更新crm
-        update_crm = '''update crm_user '''
-        crm_where = ''' where unionid = %s''' %unionid
-        crm_condition = []
-
-        #更新统计表
-        update_daily_order_sql = '''update user_daily_order_data '''
-        update_store_vas_sql = '''update user_storage_value '''
-        update_store_vasto_sql = '''update user_storage_value_today '''
-        update_where = ''' where unionid = %s''' %unionid
-
-        statistic_condition = []
-        logger.info("unionid:%s" %unionid)
         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
         if parent_phone:
-            sql = '''
-                        select * from (						
-                            select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
-                            (WITH RECURSIVE temp as (
-                            SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
-                            UNION ALL
-                            SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
-                            )
-                            SELECT * FROM temp
-                            )a left join operationcenter b
-                            on a.id = b.unionid
-                            ) t where pid != %s and id != %s and phone is not null and phone !=""
-                        ''' % (unionid, unionid, unionid)
+            for unionid in unionid_lists:
+                sql = '''
+                            select * from (						
+                                select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+                                (WITH RECURSIVE temp as (
+                                SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                                UNION ALL
+                                SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+                                )
+                                SELECT * FROM temp
+                                )a left join operationcenter b
+                                on a.id = b.unionid
+                                ) t where pid != %s and id != %s and phone is not null and phone !=""
+                            ''' % (unionid, unionid, unionid)
 
-            cursor.execute(sql)
-            datas = cursor.fetchall()
-            below_phone = [data[2] for data in datas]
+                cursor.execute(sql)
+                datas = cursor.fetchall()
+                below_phone = [data[2] for data in datas]
 
-            if bus_parent_phone in below_phone:
-                return {"code": "11028", "msg": message["11028"], "status": "failed"}
+                if bus_parent_phone in below_phone:
+                    return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
 
 
         if bus_parent_phone:
-            sql = '''
-            select * from (						
-                select a.*, if (crm =0, Null, b.operatenamedirect) operatenamedirect, b.id operate_direct_id from
-                (WITH RECURSIVE temp as (
-                SELECT t.unionid id,t.bus_parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
-                UNION ALL
-                SELECT t1.unionid id,t1.bus_parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.bus_parentid = temp.id
-                )
-                SELECT * FROM temp
-                )a left join operationcenter b
-                on a.id = b.unionid
-                ) t where pid != %s and id != %s and phone is not null and phone !=""
-            ''' %(unionid,unionid,unionid)
+            for unionid in unionid_lists:
+                sql = '''
+                select * from (						
+                    select a.*, if (crm =0, Null, b.operatenamedirect) operatenamedirect, b.id operate_direct_id from
+                    (WITH RECURSIVE temp as (
+                    SELECT t.unionid id,t.bus_parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                    UNION ALL
+                    SELECT t1.unionid id,t1.bus_parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.bus_parentid = temp.id
+                    )
+                    SELECT * FROM temp
+                    )a left join operationcenter b
+                    on a.id = b.unionid
+                    ) t where pid != %s and id != %s and phone is not null and phone !=""
+                ''' %(unionid,unionid,unionid)
 
-            cursor.execute(sql)
-            datas = cursor.fetchall()
-            below_phone = [data[2] for data in datas]
+                cursor.execute(sql)
+                datas = cursor.fetchall()
+                below_phone = [data[2] for data in datas]
 
-            if bus_parent_phone in below_phone:
-                return {"code":"11028","msg":message["11028"],"status":"failed"}
+                if bus_parent_phone in below_phone:
+                    return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
 
         #原用户数据 用户对比旧数据
-        select_sql = '''select * from crm_user where unionid = %s and del_flag = 0''' %(unionid)
-        old_data = pd.read_sql(select_sql,conn)
-        logger.info(old_data)
-        old_data = old_data.to_dict("records")[0]
-        old_operate_id = old_data["operate_id"]
-        old_operate_direct_id = old_data["operate_direct_id"]
-        old_parent_phone = old_data["parent_phone"]
-        old_bus_parent_phone = old_data["bus_parent_phone"]
+        for unionid in unionid_lists:
+            # 更新crm
+            update_crm = '''update crm_user '''
+            crm_where = ''' where unionid = %s''' %unionid
+            crm_condition = []
+
+            # 更新统计表
+            update_daily_order_sql = '''update user_daily_order_data '''
+            update_store_vas_sql = '''update user_storage_value '''
+            update_store_vasto_sql = '''update user_storage_value_today '''
+            update_where = ''' where unionid = %s''' %unionid
+
+            statistic_condition = []
+
+            select_sql = '''select * from crm_user where unionid = %s and del_flag = 0''' %(unionid)
+            old_data = pd.read_sql(select_sql,conn)
+            logger.info(old_data)
+            old_data = old_data.to_dict("records")[0]
+            old_operate_id = old_data["operate_id"]
+            old_operate_direct_id = old_data["operate_direct_id"]
+            old_parent_phone = old_data["parent_phone"]
+            old_bus_parent_phone = old_data["bus_parent_phone"]
 
 
 
-        if operate_direct_id:
-            #先去禄可商务拿运营中心的信息
-            operate_sql = '''select * from operationcenter where id = %s''' %operate_direct_id
-            bus_data = pd.read_sql(operate_sql,conn).to_dict("records")[0]
-            crm_condition.append(''' operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s ''' %(bus_data["operatename"],bus_data["telephone"],bus_data["name"],bus_data["unionid"],operate_direct_id))
+            if operate_direct_id:
+                #先去禄可商务拿运营中心的信息
+                operate_sql = '''select * from operationcenter where id = %s''' %operate_direct_id
+                bus_data = pd.read_sql(operate_sql,conn).to_dict("records")[0]
+                crm_condition.append(''' operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s ''' %(bus_data["operatename"],bus_data["telephone"],bus_data["name"],bus_data["unionid"],operate_direct_id))
 
-        if operate_id:
-            # 先去禄可商务拿运营中心的信息
-            operate_sql = '''select * from operationcenter where id = %s''' %operate_id
-            bus_data = pd.read_sql(operate_sql, conn).to_dict("records")[0]
-            crm_condition.append(''' operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s ''' % (bus_data["operatename"], bus_data["telephone"], bus_data["name"], bus_data["unionid"], operate_id))
+            if operate_id:
+                # 先去禄可商务拿运营中心的信息
+                operate_sql = '''select * from operationcenter where id = %s''' %operate_id
+                bus_data = pd.read_sql(operate_sql, conn).to_dict("records")[0]
+                crm_condition.append(''' operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s ''' % (bus_data["operatename"], bus_data["telephone"], bus_data["name"], bus_data["unionid"], operate_id))
 
-            statistic_condition.append(''' operate_id="%s",operatename="%s",leader_unionid="%s",leader="%s",leader_phone="%s" ''' %(operate_id,bus_data["operatename"],bus_data["unionid"], bus_data["name"],bus_data["telephone"]))
+                statistic_condition.append(''' operate_id="%s",operatename="%s",leader_unionid="%s",leader="%s",leader_phone="%s" ''' %(operate_id,bus_data["operatename"],bus_data["unionid"], bus_data["name"],bus_data["telephone"]))
 
-        if parent_phone:
-            user_sql = '''select * from crm_user where phone = %s''' %(parent_phone)
-            user_data = pd.read_sql(user_sql,conn)
-            if user_data.shape[0] == 0:
-                return {"code":"11029","msg":message["11029"],"status":"failed"}
-            user_data = user_data.to_dict("records")[0]
-            crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
-            statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["unionid"],parent_phone))
+            if parent_phone:
+                user_sql = '''select * from crm_user where phone = %s''' %(parent_phone)
+                user_data = pd.read_sql(user_sql,conn)
+                if user_data.shape[0] == 0:
+                    return {"code":"11029","msg":message["11029"],"status":"failed"}
+                user_data = user_data.to_dict("records")[0]
+                crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
+                statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["unionid"],parent_phone))
 
-        if bus_parent_phone:
-            user_sql = '''select * from crm_user where phone = %s''' %(bus_parent_phone)
-            user_data = pd.read_sql(user_sql, conn)
-            if user_data.shape[0] == 0:
-                return {"code": "11029", "msg": message["11029"], "status": "failed"}
-            user_data = user_data.to_dict("records")[0]
-            crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
+            if bus_parent_phone:
+                user_sql = '''select * from crm_user where phone = %s''' %(bus_parent_phone)
+                user_data = pd.read_sql(user_sql, conn)
+                if user_data.shape[0] == 0:
+                    return {"code": "11029", "msg": message["11029"], "status": "failed"}
+                user_data = user_data.to_dict("records")[0]
+                crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
 
-        crm_sql_condition = ",".join(crm_condition)
-        statistic_condition_sql = ",".join(statistic_condition)
+            crm_sql_condition = ",".join(crm_condition)
+            statistic_condition_sql = ",".join(statistic_condition)
 
-        logger.info("crm_sql_condition:%s" %crm_sql_condition)
-        logger.info("statistic_condition_sql:%s" %statistic_condition_sql)
+            logger.info("crm_sql_condition:%s" %crm_sql_condition)
+            logger.info("statistic_condition_sql:%s" %statistic_condition_sql)
 
-        if statistic_condition_sql:
-            update_daily_order_sql = update_daily_order_sql + " set " + statistic_condition_sql + update_where
-            update_store_vas_sql = update_store_vas_sql + " set " + statistic_condition_sql + update_where
-            update_store_vasto_sql = update_store_vasto_sql + " set " + statistic_condition_sql + update_where
+            if statistic_condition_sql:
+                update_daily_order_sql = update_daily_order_sql + " set " + statistic_condition_sql + update_where
+                update_store_vas_sql = update_store_vas_sql + " set " + statistic_condition_sql + update_where
+                update_store_vasto_sql = update_store_vasto_sql + " set " + statistic_condition_sql + update_where
 
-            cursor.execute(update_daily_order_sql)
-            logger.info("执行成功")
-            cursor.execute(update_store_vas_sql)
-            logger.info("执行成功")
-            cursor.execute(update_store_vasto_sql)
-            logger.info("执行成功")
+                logger.info(update_daily_order_sql)
 
-        if crm_sql_condition:
-            update_crm = update_crm + " set " + crm_sql_condition + crm_where
-            cursor.execute(update_crm)
-            logger.info("执行成功")
+                cursor.execute(update_daily_order_sql)
+                logger.info("执行成功")
+                cursor.execute(update_store_vas_sql)
+                logger.info("执行成功")
+                cursor.execute(update_store_vasto_sql)
+                logger.info("执行成功")
 
-        logger.info("update_crm_sql:%s" % update_crm)
-        logger.info("update_daily_order_sql:%s" % update_daily_order_sql)
-        logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
-        logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
+            if crm_sql_condition:
+                update_crm = update_crm + " set " + crm_sql_condition + crm_where
+                cursor.execute(update_crm)
+                logger.info("执行成功")
 
-        # 日志接入
-        compare = []
-        if operate_direct_id:
-            if int(operate_direct_id) != int(old_operate_direct_id):
-                sql = '''select operatename from operationcenter where id in (%s,%s)''' %(old_operate_direct_id,operate_direct_id)
-                cursor.execute(sql)
-                operatena = cursor.fetchall()
-                logger.info(operatena)
-                old_operate_direct_operatena = operatena[0][0]
-                operate_direct_operatena = operatena[1][0]
-                compare.append("运营中心由 %s 变更为 %s" %(old_operate_direct_operatena,operate_direct_operatena))
-        if operate_id:
-            if int(operate_id) != int(old_operate_id):
-                sql = '''select operatename from operationcenter where id in (%s,%s)''' % (old_operate_id, operate_id)
-                cursor.execute(sql)
-                operatena = cursor.fetchall()
-                old_operate_operatena = operatena[0][0]
-                operate_operatena = operatena[1][0]
-                compare.append("支持crm运营中心由 %s 变更为 %s" % (old_operate_operatena, operate_operatena))
-        if parent_phone:
-            if int(parent_phone) != int(old_parent_phone):
-                compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
-        if bus_parent_phone:
-            if int(bus_parent_phone) != int(old_bus_parent_phone):
-                compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
+            logger.info("update_crm_sql:%s" % update_crm)
+            logger.info("update_daily_order_sql:%s" % update_daily_order_sql)
+            logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
+            logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
 
-        #日志插入
-        if compare:
-            compare.insert(0,"用户的unionid为：%s" %unionid)
-            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
-            params = []
-            params.append(user_id)
-            params.append("/user/relate/update/user/ascription")
-            params.append(json.dumps(request.json))
-            params.append("修改用户数据")
-            # params.append(json.dumps(compare,ensure_ascii=False))
-            params.append("<br>".join(compare))
-            logger.info(params)
-            cursor.execute(insert_sql,params)
+            # 日志接入
+            compare = []
+            if operate_direct_id:
+                if int(operate_direct_id) != int(old_operate_direct_id):
+                    sql = '''select operatename from operationcenter where id in (%s,%s)''' %(old_operate_direct_id,operate_direct_id)
+                    cursor.execute(sql)
+                    operatena = cursor.fetchall()
+                    logger.info(operatena)
+                    old_operate_direct_operatena = operatena[0][0]
+                    operate_direct_operatena = operatena[1][0]
+                    compare.append("运营中心由 %s 变更为 %s" %(old_operate_direct_operatena,operate_direct_operatena))
+            if operate_id:
+                if int(operate_id) != int(old_operate_id):
+                    sql = '''select operatename from operationcenter where id in (%s,%s)''' % (old_operate_id, operate_id)
+                    cursor.execute(sql)
+                    operatena = cursor.fetchall()
+                    old_operate_operatena = operatena[0][0]
+                    operate_operatena = operatena[1][0]
+                    compare.append("支持crm运营中心由 %s 变更为 %s" % (old_operate_operatena, operate_operatena))
+            if parent_phone:
+                if int(parent_phone) != int(old_parent_phone):
+                    compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
+            if bus_parent_phone:
+                if int(bus_parent_phone) != int(old_bus_parent_phone):
+                    compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
 
-        conn.commit()
+            #日志插入
+            if compare:
+                compare.insert(0,"用户的unionid为：%s" %unionid)
+                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+                params = []
+                params.append(user_id)
+                params.append("/user/relate/update/user/ascription")
+                params.append(json.dumps(request.json))
+                params.append("修改用户数据")
+                # params.append(json.dumps(compare,ensure_ascii=False))
+                params.append("<br>".join(compare))
+                logger.info(params)
+                cursor.execute(insert_sql,params)
+
+            conn.commit()
 
         return {"code": "0000", "msg": "更新成功", "status": "success"}
     except Exception as e:
@@ -515,3 +518,220 @@ def update_user_ascriptions():
     finally:
         conn.close()
         conn_crm.close()
+
+
+# @userrelatebp.route("update/user/ascription",methods=["POST"])
+# def update_user_ascriptions():
+#     try:
+#         conn = direct_get_conn(analyze_mysql_conf)
+#         cursor = conn.cursor()
+#         conn_crm = direct_get_conn(crm_mysql_conf)
+#         cursor_crm = conn_crm.cursor()
+#         try:
+#             token = request.headers["Token"]
+#             user_id = request.json.get("user_id")
+#
+#             if not user_id and not token:
+#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#             check_token_result = check_token(token, user_id)
+#             if check_token_result["code"] != "0000":
+#                 return check_token_result
+#         except:
+#             return {"code": "10004", "status": "failed", "msg": message["10004"]}
+#
+#         #直属运营中心修改 传直属运营中心id
+#         operate_direct_id = request.json.get("operate_direct_id")
+#
+#         #支持crm的运营中心修改 传crm运营中心的id
+#         operate_id = request.json.get("operate_id")
+#
+#         #上级修改传手机号码
+#         parent_phone = request.json.get("parent_phone")
+#
+#         #运营中心的上级修改 传手机号码
+#         bus_parent_phone = request.json.get("bus_parent_phone")
+#
+#         unionid = request.json.get("unionid")
+#
+#         # 更新crm
+#         update_crm = '''update crm_user '''
+#         crm_where = ''' where unionid = %s''' %unionid
+#         crm_condition = []
+#
+#         #更新统计表
+#         update_daily_order_sql = '''update user_daily_order_data '''
+#         update_store_vas_sql = '''update user_storage_value '''
+#         update_store_vasto_sql = '''update user_storage_value_today '''
+#         update_where = ''' where unionid = %s''' %unionid
+#
+#         statistic_condition = []
+#         logger.info("unionid:%s" %unionid)
+#         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
+#         if parent_phone:
+#             sql = '''
+#                         select * from (
+#                             select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+#                             (WITH RECURSIVE temp as (
+#                             SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+#                             UNION ALL
+#                             SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+#                             )
+#                             SELECT * FROM temp
+#                             )a left join operationcenter b
+#                             on a.id = b.unionid
+#                             ) t where pid != %s and id != %s and phone is not null and phone !=""
+#                         ''' % (unionid, unionid, unionid)
+#
+#             cursor.execute(sql)
+#             datas = cursor.fetchall()
+#             below_phone = [data[2] for data in datas]
+#
+#             if bus_parent_phone in below_phone:
+#                 return {"code": "11028", "msg": message["11028"], "status": "failed"}
+#
+#
+#         if bus_parent_phone:
+#             sql = '''
+#             select * from (
+#                 select a.*, if (crm =0, Null, b.operatenamedirect) operatenamedirect, b.id operate_direct_id from
+#                 (WITH RECURSIVE temp as (
+#                 SELECT t.unionid id,t.bus_parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+#                 UNION ALL
+#                 SELECT t1.unionid id,t1.bus_parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.bus_parentid = temp.id
+#                 )
+#                 SELECT * FROM temp
+#                 )a left join operationcenter b
+#                 on a.id = b.unionid
+#                 ) t where pid != %s and id != %s and phone is not null and phone !=""
+#             ''' %(unionid,unionid,unionid)
+#
+#             cursor.execute(sql)
+#             datas = cursor.fetchall()
+#             below_phone = [data[2] for data in datas]
+#
+#             if bus_parent_phone in below_phone:
+#                 return {"code":"11028","msg":message["11028"],"status":"failed"}
+#
+#         #原用户数据 用户对比旧数据
+#         select_sql = '''select * from crm_user where unionid = %s and del_flag = 0''' %(unionid)
+#         old_data = pd.read_sql(select_sql,conn)
+#         logger.info(old_data)
+#         old_data = old_data.to_dict("records")[0]
+#         old_operate_id = old_data["operate_id"]
+#         old_operate_direct_id = old_data["operate_direct_id"]
+#         old_parent_phone = old_data["parent_phone"]
+#         old_bus_parent_phone = old_data["bus_parent_phone"]
+#
+#
+#
+#         if operate_direct_id:
+#             #先去禄可商务拿运营中心的信息
+#             operate_sql = '''select * from operationcenter where id = %s''' %operate_direct_id
+#             bus_data = pd.read_sql(operate_sql,conn).to_dict("records")[0]
+#             crm_condition.append(''' operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s ''' %(bus_data["operatename"],bus_data["telephone"],bus_data["name"],bus_data["unionid"],operate_direct_id))
+#
+#         if operate_id:
+#             # 先去禄可商务拿运营中心的信息
+#             operate_sql = '''select * from operationcenter where id = %s''' %operate_id
+#             bus_data = pd.read_sql(operate_sql, conn).to_dict("records")[0]
+#             crm_condition.append(''' operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s ''' % (bus_data["operatename"], bus_data["telephone"], bus_data["name"], bus_data["unionid"], operate_id))
+#
+#             statistic_condition.append(''' operate_id="%s",operatename="%s",leader_unionid="%s",leader="%s",leader_phone="%s" ''' %(operate_id,bus_data["operatename"],bus_data["unionid"], bus_data["name"],bus_data["telephone"]))
+#
+#         if parent_phone:
+#             user_sql = '''select * from crm_user where phone = %s''' %(parent_phone)
+#             user_data = pd.read_sql(user_sql,conn)
+#             if user_data.shape[0] == 0:
+#                 return {"code":"11029","msg":message["11029"],"status":"failed"}
+#             user_data = user_data.to_dict("records")[0]
+#             crm_condition.append(''' parent_phone="%s",parent_nickname="%s",parent_name="%s",parentid="%s" ''' %(parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
+#             statistic_condition.append(''' parentid="%s",parent_phone="%s" ''' %(user_data["unionid"],parent_phone))
+#
+#         if bus_parent_phone:
+#             user_sql = '''select * from crm_user where phone = %s''' %(bus_parent_phone)
+#             user_data = pd.read_sql(user_sql, conn)
+#             if user_data.shape[0] == 0:
+#                 return {"code": "11029", "msg": message["11029"], "status": "failed"}
+#             user_data = user_data.to_dict("records")[0]
+#             crm_condition.append(''' bus_parent_phone="%s",bus_parent_nickname="%s",bus_parent_name="%s",bus_parentid="%s" ''' %(bus_parent_phone,user_data["nickname"],user_data["name"],user_data["unionid"]))
+#
+#         crm_sql_condition = ",".join(crm_condition)
+#         statistic_condition_sql = ",".join(statistic_condition)
+#
+#         logger.info("crm_sql_condition:%s" %crm_sql_condition)
+#         logger.info("statistic_condition_sql:%s" %statistic_condition_sql)
+#
+#         if statistic_condition_sql:
+#             update_daily_order_sql = update_daily_order_sql + " set " + statistic_condition_sql + update_where
+#             update_store_vas_sql = update_store_vas_sql + " set " + statistic_condition_sql + update_where
+#             update_store_vasto_sql = update_store_vasto_sql + " set " + statistic_condition_sql + update_where
+#
+#             cursor.execute(update_daily_order_sql)
+#             logger.info("执行成功")
+#             cursor.execute(update_store_vas_sql)
+#             logger.info("执行成功")
+#             cursor.execute(update_store_vasto_sql)
+#             logger.info("执行成功")
+#
+#         if crm_sql_condition:
+#             update_crm = update_crm + " set " + crm_sql_condition + crm_where
+#             cursor.execute(update_crm)
+#             logger.info("执行成功")
+#
+#         logger.info("update_crm_sql:%s" % update_crm)
+#         logger.info("update_daily_order_sql:%s" % update_daily_order_sql)
+#         logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
+#         logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
+#
+#         # 日志接入
+#         compare = []
+#         if operate_direct_id:
+#             if int(operate_direct_id) != int(old_operate_direct_id):
+#                 sql = '''select operatename from operationcenter where id in (%s,%s)''' %(old_operate_direct_id,operate_direct_id)
+#                 cursor.execute(sql)
+#                 operatena = cursor.fetchall()
+#                 logger.info(operatena)
+#                 old_operate_direct_operatena = operatena[0][0]
+#                 operate_direct_operatena = operatena[1][0]
+#                 compare.append("运营中心由 %s 变更为 %s" %(old_operate_direct_operatena,operate_direct_operatena))
+#         if operate_id:
+#             if int(operate_id) != int(old_operate_id):
+#                 sql = '''select operatename from operationcenter where id in (%s,%s)''' % (old_operate_id, operate_id)
+#                 cursor.execute(sql)
+#                 operatena = cursor.fetchall()
+#                 old_operate_operatena = operatena[0][0]
+#                 operate_operatena = operatena[1][0]
+#                 compare.append("支持crm运营中心由 %s 变更为 %s" % (old_operate_operatena, operate_operatena))
+#         if parent_phone:
+#             if int(parent_phone) != int(old_parent_phone):
+#                 compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
+#         if bus_parent_phone:
+#             if int(bus_parent_phone) != int(old_bus_parent_phone):
+#                 compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
+#
+#         #日志插入
+#         if compare:
+#             compare.insert(0,"用户的unionid为：%s" %unionid)
+#             insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+#             params = []
+#             params.append(user_id)
+#             params.append("/user/relate/update/user/ascription")
+#             params.append(json.dumps(request.json))
+#             params.append("修改用户数据")
+#             # params.append(json.dumps(compare,ensure_ascii=False))
+#             params.append("<br>".join(compare))
+#             logger.info(params)
+#             cursor.execute(insert_sql,params)
+#
+#         conn.commit()
+#
+#         return {"code": "0000", "msg": "更新成功", "status": "success"}
+#     except Exception as e:
+#         conn.rollback()
+#         logger.exception(traceback.format_exc())
+#         # 参数名错误
+#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+#     finally:
+#         conn.close()
+#         conn_crm.close()
