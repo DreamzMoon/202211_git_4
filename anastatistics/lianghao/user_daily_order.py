@@ -26,7 +26,7 @@ def user_daily_order_data(mode='update'):
 
         # 用户数据
         user_info_sql = '''
-            select unionid, parentid, phone, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, operate_id, operatename, leader, bus_phone leader_phone, leader_unionid
+            select unionid, parentid, phone, parent_phone, name, nickname, operate_id, operatename, leader, bus_phone leader_phone, leader_unionid
             from crm_user
             where phone is not null or phone != '' and del_flag=0
         '''
