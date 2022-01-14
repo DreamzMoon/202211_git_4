@@ -324,7 +324,13 @@ def user_relate_detail():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        sql = '''select * from crm_user where del_flag = 0 and unionid = %s''' %(unionid)
+        sql = '''select crm_user.*,crm_user_info.identity,crm_user_info.identify_front,crm_user_info.identify_back,crm_user_info.face_pic,crm_user_info.usericon,crm_user_info.issue,crm_user_info.province_code,crm_user_info.city_code,crm_user_info.region_code,crm_user_info.town_code,crm_user_info.address_detail,GROUP_CONCAT(crm_tag.tag_name) tag_name from crm_user 
+                left join crm_user_info on crm_user.unionid = crm_user_info.unionid
+                left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+                left join crm_tag on crm_tag.id = crm_user_tag.tag_id
+                where crm_user.del_flag = 0 and crm_user.unionid = %s
+                group by crm_user.unionid
+                ''' % unionid
         data = pd.read_sql(sql,conn)
 
         data = data.to_dict("records")
