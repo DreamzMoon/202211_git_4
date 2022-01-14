@@ -116,7 +116,7 @@ def user_tag_insert():
         params = []
         params.append(tag_name)
 
-        insert_sql = '''INSERT INTO `lh_analyze`.`crm_tag` (`tag_name`) VALUES ("%s")'''
+        insert_sql = '''INSERT INTO `lh_analyze`.`crm_tag` (`tag_name`) VALUES (%s)'''
         cursor_analyze.execute(insert_sql,(params))
         conn_analyze.commit()
         return {"code":"0000","msg":"标签新增成功","status":"success"}
