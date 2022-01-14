@@ -103,8 +103,6 @@ def user_relate_mes():
                 keyword_sql = ''' and (nickname like "%s" or phone like "%s" or crm_user.unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
-
-
             if bus_id:
                 bus_sql = ''' and operate_id = %s''' %(bus_id)
                 sql = sql + bus_sql
@@ -151,12 +149,16 @@ def user_relate_mes():
             limit_sql = ''' limit %s,%s''' %(code_page,code_size)
             sql = sql + limit_sql
 
-        logger.info(count_sql)
-        count = cursor.execute(count_sql)
+
 
         logger.info(sql)
         cursor.execute(sql)
         datas = cursor.fetchall()
+        logger.info(datas)
+
+        logger.info(count_sql)
+        count = cursor.execute(count_sql)
+
         last_datas = []
         for data in datas:
             data_dict = {}
