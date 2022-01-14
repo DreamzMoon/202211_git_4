@@ -534,7 +534,7 @@ def update_user_ascriptions():
         conn_crm.close()
 
 # 查看用户基础信息详情
-@userrelatebp.route("/edit/baseinfo",methods=["POST"])
+@userrelatebp.route("/check/baseinfo",methods=["POST"])
 def check_base_info():
     try:
         try:
@@ -576,6 +576,63 @@ def check_base_info():
 
         user_info = user_base_info.merge(user_img_info, how='left', on='unionid')
         user_info.fillna('', inplace=True)
+
+        return {"code": "0000", "status": "success", "msg": user_info.to_dict("records")[0]}
+    except:
+        logger.info(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_analyze.close()
+        except:
+            pass
+
+@userrelatebp.route("/edit/baseinfo",methods=["POST"])
+def edit_base_info():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) < 2:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+            unionid = request.json['unionid']
+            request_dict = request.json
+            del request_dict['unionid']
+            del request_dict['user_id']
+        except:
+            # 参数名错误
+            logger.info(traceback.format_exc())
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_analyze:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+        # 划分字段
+        crm_user_info_table_columns = ['unionid', 'usericon', 'identify_front', 'identify_back', 'face_pic', 'identity', 'address', 'province_code',
+                                       'city_code', 'region_code', 'town_code', 'address_detail']
+        update_crm_user_info_base_sql = '''update lh_analyze.crm_user_info set'''
+        update_crm_user_info_sql = ''
+        update_crm_user_base_sql = '''update lh_analyze.crm_user set'''
+        update_crm_user_sql = ''
+        columns_list = []
+        key_list = []
+        crm_user_info_flag = False
+        for k,v in request_dict.items():
+            if k in crm_user_info_table_columns:
+                pass
+            columns_list.append(k)
+            key_list.append(v)
+
 
         return {"code": "0000", "status": "success", "msg": user_info.to_dict("records")[0]}
     except:
