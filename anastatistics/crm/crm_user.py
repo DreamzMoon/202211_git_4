@@ -5,6 +5,7 @@
 # @Author : xiaowangwang
 # @Email : www@qq.com
 # @File : crm_user.py
+'''首次入库crm用户数据'''
 import os
 import sys
 
