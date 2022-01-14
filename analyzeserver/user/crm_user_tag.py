@@ -72,7 +72,13 @@ def user_tag_uinsert():
         params = []
         for tag_id in tag_list:
             for unionid in unionid_list:
-                params.append((unionid,tag_id))
+                #判断标签是否存在 如果存在不在进行打标
+                sql = '''select * from crm_user_tag where unionid = %s and tag_id = %s'''
+                cursor_analyze.execute(sql,(unionid,tag_id))
+                exist = cursor_analyze.fetchone()
+                if not exist:
+                    params.append((unionid,tag_id))
+
         logger.info(params)
 
         insert_sql = '''insert into crm_user_tag (unionid,tag_id) values (%s,%s)'''
