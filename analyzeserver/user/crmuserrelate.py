@@ -60,9 +60,20 @@ def user_relate_mes():
 
         #先默认查全部
         cursor = conn.cursor()
-        sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
-        serpro_grade,serpro_status
-        from crm_user where del_flag = 0'''
+        # sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
+        # serpro_grade,serpro_status
+        # from crm_user where del_flag = 0'''
+        sql = '''
+        select nickname,phone,crm_user.unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
+        serpro_grade,serpro_status,GROUP_CONCAT(crm_tag.tag_name) tag_name
+        from crm_user
+        left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+        left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+        where crm_user.del_flag = 0
+        '''
+
+        group_sql = ''' group by crm_user.unionid '''
+
         count_sql = '''select count(*) count
         from crm_user where del_flag = 0'''
 
@@ -73,7 +84,7 @@ def user_relate_mes():
             count_sql = count_sql +phone_lists_sql
         else:
             if keyword:
-                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+                keyword_sql = ''' and (nickname like "%s" or phone like "%s" or crm_user.unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
@@ -102,6 +113,8 @@ def user_relate_mes():
                 bus_parentid_sql = ''' and (bus_parentid = %s or bus_parent_phone = %s)''' %(bus_parent,bus_parent)
                 sql = sql + bus_parentid_sql
                 count_sql = count_sql + bus_parentid_sql
+
+        sql = sql + group_sql
 
         logger.info("code_page:%s" % code_page)
         logger.info("code_size:%s" % code_size)
@@ -135,6 +148,7 @@ def user_relate_mes():
             data_dict["vip_endtime"] = data[13].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
             data_dict["serpro_grade"] = data[14]
             data_dict["serpro_status"] = data[15]
+            data_dict["tag_name"] = data[16]
             last_datas.append(data_dict)
 
 
