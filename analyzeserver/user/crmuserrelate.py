@@ -26,9 +26,7 @@ def user_relate_mes():
         conn = direct_get_conn(analyze_mysql_conf)
 
         logger.info(request.json)
-        # 参数个数错误
-        if len(request.json) != 10:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
 
         token = request.headers["Token"]
         user_id = request.json["user_id"]
@@ -50,6 +48,7 @@ def user_relate_mes():
         size = request.json["size"]
 
         phone_lists = request.json["phone_lists"]
+        tag_id = request.json.get("tag_id")
 
         code_page = ""
         code_size = ""
@@ -74,8 +73,15 @@ def user_relate_mes():
 
         group_sql = ''' group by crm_user.unionid '''
 
-        count_sql = '''select count(*) count
-        from crm_user where del_flag = 0'''
+        # count_sql = '''select count(*) count
+        # from crm_user where del_flag = 0'''
+        count_sql = '''
+        select count(*) count
+        from crm_user
+        left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+        left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+        where crm_user.del_flag = 0
+        '''
 
         if phone_lists:
             phone_lists = ",".join(phone_lists)
@@ -88,6 +94,10 @@ def user_relate_mes():
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
+            if tag_id:
+                bus_sql = ''' and crm_tag.id = %s''' % (tag_id)
+                sql = sql + bus_sql
+                count_sql = count_sql + bus_sql
 
             if bus_id:
                 bus_sql = ''' and operate_id = %s''' %(bus_id)
@@ -393,7 +403,7 @@ def update_user_ascriptions():
 
                 if bus_parent_phone in below_phone:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
-
+        all_compare = []
         #原用户数据 用户对比旧数据
         for unionid in unionid_lists:
             # 更新crm
@@ -481,6 +491,8 @@ def update_user_ascriptions():
             logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
             logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
 
+            # conn.commit()
+
             # 日志接入
             compare = []
             if operate_direct_id:
@@ -507,19 +519,25 @@ def update_user_ascriptions():
                 if int(bus_parent_phone) != int(old_bus_parent_phone):
                     compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
 
-            #日志插入
             if compare:
-                compare.insert(0,"用户的unionid为：%s" %unionid)
-                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
-                params = []
-                params.append(user_id)
-                params.append("/user/relate/update/user/ascription")
-                params.append(json.dumps(request.json))
-                params.append("修改用户数据")
-                # params.append(json.dumps(compare,ensure_ascii=False))
-                params.append("<br>".join(compare))
-                logger.info(params)
-                cursor.execute(insert_sql,params)
+                compare.insert(0,"该用户的unionid为:%s" %unionid)
+                all_compare.append(compare)
+
+
+        logger.info(all_compare)
+        if all_compare:
+            last_compare = []
+            for c in all_compare:
+                last_compare.append("<br>".join(c))
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/update/user/ascription")
+            params.append(json.dumps(request.json))
+            params.append("修改用户数据")
+            params.append("<br>".join(last_compare))
+            logger.info(params)
+            cursor.execute(insert_sql, params)
 
             conn.commit()
 
