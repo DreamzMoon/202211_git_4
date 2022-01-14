@@ -533,6 +533,7 @@ def update_user_ascriptions():
         conn.close()
         conn_crm.close()
 
+# 查看用户基础信息详情
 @userrelatebp.route("/edit/baseinfo",methods=["POST"])
 def check_base_info():
     try:
@@ -551,32 +552,38 @@ def check_base_info():
             check_token_result = check_token(token, user_id)
             if check_token_result["code"] != "0000":
                 return check_token_result
-            unionid = request.json('unionid')
+            unionid = request.json['unionid']
         except:
             # 参数名错误
             logger.info(traceback.format_exc())
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
         # 数据库连接
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        if not conn_an:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_analyze:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
         # 获取用户基础信息
         user_base_info_sql = '''
-            select unionid, nickname, phone, addtime create_time, vertify_status, huoti_status, birth, nationality, sex, name, status from lh_analyze.crm_user where unionid=%s
-        ''' % unionid
+            select unionid, nickname, phone, date_format(addtime, "%Y-%m-%d %H:%i:%S") create_time, vertify_status, huoti_status, date_format(birth, "%Y-%m-%d") birth, nationality, sex, name, status from lh_analyze.crm_user where unionid={}
+        '''.format(unionid)
         # 用户图片信息
         user_img_info_sql = '''
-            select unionid, usericon, identify_front, identify_back, face_pic, identity where unionid=%s
+            select unionid, usericon, identify_front, identify_back, face_pic, identity, address, province_code, city_code, region_code, town_code, address_detail from lh_analyze.crm_user_info where unionid=%s
         ''' % unionid
 
+        user_base_info = pd.read_sql(user_base_info_sql, conn_analyze)
+        user_img_info = pd.read_sql(user_img_info_sql, conn_analyze)
 
+        user_info = user_base_info.merge(user_img_info, how='left', on='unionid')
+        user_info.fillna('', inplace=True)
+
+        return {"code": "0000", "status": "success", "msg": user_info.to_dict("records")[0]}
     except:
         logger.info(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         try:
-            conn_an.close()
+            conn_analyze.close()
         except:
             pass
 
