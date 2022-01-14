@@ -73,15 +73,23 @@ def user_relate_mes():
 
         group_sql = ''' group by crm_user.unionid '''
 
-        # count_sql = '''select count(*) count
-        # from crm_user where del_flag = 0'''
+        # count_sql = '''
+        # select count(*) count
+        # from crm_user
+        # left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+        # left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+        # where crm_user.del_flag = 0
+        # '''
+
+        # 因为分组的关系 所以不适合上面那种
         count_sql = '''
-        select count(*) count
+        select crm_user.unionid,GROUP_CONCAT(crm_tag.tag_name) tag_name
         from crm_user
         left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
         left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-        where crm_user.del_flag = 0
+        where crm_user.del_flag = 0 
         '''
+
 
         if phone_lists:
             phone_lists = ",".join(phone_lists)
@@ -94,10 +102,6 @@ def user_relate_mes():
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
-            if tag_id:
-                bus_sql = ''' and crm_tag.id = %s''' % (tag_id)
-                sql = sql + bus_sql
-                count_sql = count_sql + bus_sql
 
             if bus_id:
                 bus_sql = ''' and operate_id = %s''' %(bus_id)
@@ -125,6 +129,19 @@ def user_relate_mes():
                 count_sql = count_sql + bus_parentid_sql
 
         sql = sql + group_sql
+        count_sql = count_sql + group_sql
+
+        if tag_id:
+            logger.info("tag_id:%s" %tag_id)
+            tag_sql = '''select tag_name from crm_tag where id = %s''' %tag_id
+            cursor.execute(tag_sql)
+            tag_name = cursor.fetchone()[0]
+            having_sql = ''' having tag_name like "%s"''' %("%"+tag_name+"%")
+            sql = sql + having_sql
+            count_sql = count_sql + having_sql
+            logger.info(sql)
+            logger.info(count_sql)
+
 
         logger.info("code_page:%s" % code_page)
         logger.info("code_size:%s" % code_size)
@@ -132,9 +149,8 @@ def user_relate_mes():
             limit_sql = ''' limit %s,%s''' %(code_page,code_size)
             sql = sql + limit_sql
 
-
-        cursor.execute(count_sql)
-        count = cursor.fetchone()[0]
+        logger.info(count_sql)
+        count = cursor.execute(count_sql)
 
         logger.info(sql)
         cursor.execute(sql)
@@ -166,6 +182,7 @@ def user_relate_mes():
 
     except Exception as e:
         logger.error(e)
+        logger.exception(traceback.format_exc())
         # 参数名错误
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
