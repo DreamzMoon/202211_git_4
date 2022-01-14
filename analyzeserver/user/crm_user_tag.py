@@ -83,6 +83,35 @@ def user_tag_uinsert():
 
         insert_sql = '''insert into crm_user_tag (unionid,tag_id) values (%s,%s)'''
         cursor_analyze.executemany(insert_sql,(params))
+
+        #日志记录
+        t_data = []
+        if params:
+            #查询标签列表
+            tag_sql = '''select tag_name from crm_tag where id in (%s)''' %(json.dumps(tag_list)[1:-1])
+            cursor_analyze.execute(tag_sql)
+            tag_data = cursor_analyze.fetchall()
+            for td in tag_data:
+                t_data.append(td[0])
+            logger.info(t_data)
+
+            compare = []
+            update_unionid = []
+            for p in params:
+                update_unionid.append(p[0])
+            compare.append("符合修改的unionid:"+",".join(update_unionid))
+            compare.append("打上标签:"+",".join(t_data))
+
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/update/user/ascription")
+            params.append(json.dumps(request.json))
+            params.append("用户打标")
+            params.append("<br>".join(compare))
+            logger.info(params)
+            cursor_analyze.execute(insert_sql, params)
+
         conn_analyze.commit()
         return {"code":"0000","msg":"更新成功","status":"success"}
     except Exception as e:

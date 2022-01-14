@@ -73,22 +73,24 @@ def user_relate_mes():
 
         group_sql = ''' group by crm_user.unionid '''
 
-        # count_sql = '''
-        # select count(*) count
-        # from crm_user
-        # left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
-        # left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-        # where crm_user.del_flag = 0
-        # '''
-
-        # 因为分组的关系 所以不适合上面那种
-        count_sql = '''
-        select crm_user.unionid,GROUP_CONCAT(crm_tag.tag_name) tag_name
-        from crm_user
-        left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
-        left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-        where crm_user.del_flag = 0 
-        '''
+        if not tag_id:
+            logger.info("走这个")
+            count_sql = '''
+            select count(*) count
+            from crm_user
+            left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+            left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+            where crm_user.del_flag = 0
+            '''
+        else:
+            # 因为分组的关系 所以不适合上面那种
+            count_sql = '''
+            select crm_user.unionid,GROUP_CONCAT(crm_tag.tag_name) tag_name
+            from crm_user
+            left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+            left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+            where crm_user.del_flag = 0 
+            '''
 
 
         if phone_lists:
