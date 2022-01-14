@@ -220,28 +220,10 @@ def daily_user_summary():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        base_sql = '''select day_time, nickname, phone, unionid, operate_id, operatename, parentid, parent_phone, buy_count, buy_pretty_count,
+        base_sql = '''select day_time,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, phone, unionid, operate_id, operatename, parentid, parent_phone, buy_count, buy_pretty_count,
                     buy_total_price, publish_pretty_count, publish_count, publish_total_price, sell_count, sell_total_price, sell_pretty_count, truth_price, sell_fee
                     from lh_analyze.user_daily_order_data'''
-        # # 查找拼接
-        # if start_time and end_time:
-        #     time_sql = ' day_time >= %s and day_time <= %s' % (start_time, end_time)
-        # elif not operateid or not search_key or not parent:
-        #     time_sql = ' day_time = date_sub(curdate(), interval 1 day)'
-        # else:
-        #     time_sql = ''
-        # if operateid: # 运营中心id
-        #     operate_sql = ' operate_id = %s' % operateid
-        # else:
-        #     operate_sql = ''
-        # if search_key: # 关键词搜索
-        #     search_sql = ' (nickname like "%s" or unionid like "%s" or phone like "%s")' % ('%' + search_key + '%', '%' + search_key + '%', '%' + search_key + '%')
-        # else:
-        #     search_sql = ''
-        # if parent:
-        #     parent_sql = ' (parent_unionid = %s or parent_phone = %s)' % (parent, parent)
-        # else:
-        #     parent_sql = ''
+
         # 数据库连接
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
@@ -595,7 +577,7 @@ def daily_ser_value():
         if start_time and end_time:
             condition.append(''' day_time>="%s" and day_time <= "%s"''' %(start_time,end_time))
 
-        sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+        sql = '''select day_time, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
                     transferred_count, transferred_price, public_count, public_price, use_total_price, 
                     use_count, hold_price, hold_count, tran_price,tran_count
                     from lh_analyze.user_storage_value'''
@@ -653,102 +635,3 @@ def daily_ser_value():
         except:
             pass
 
-
-#
-# @dailybp.route("user/value",methods=["POST"])
-# def daily_user_value():
-#     try:
-#         try:
-#             logger.info(request.json)
-#             # 参数个数错误
-#             if len(request.json) != 8:
-#                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
-#
-#             # token校验
-#             token = request.headers["Token"]
-#             user_id = request.json["user_id"]
-#
-#             if not user_id and not token:
-#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
-#
-#             check_token_result = check_token(token, user_id)
-#             if check_token_result["code"] != "0000":
-#                 return check_token_result
-#
-#             # 表单选择operateid
-#             operateid = request.json['operateid']
-#             # 出售人信息
-#             search_key = request.json['keyword'].strip()
-#             # 归属上级
-#             parent = request.json['parent'].strip()
-#             # 时间
-#             start_time = request.json['start_time']
-#             end_time = request.json['end_time']
-#
-#             page = request.json['page']
-#             size = request.json['size']
-#
-#
-#             #
-#         except Exception as e:
-#             # 参数名错误
-#             logger.error(e)
-#             return {"code": "10009", "status": "failed", "msg": message["10009"]}
-#
-#         base_sql = '''select day_time, nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
-#                     transferred_count, transferred_price, public_count, public_price, use_total_price,
-#                     use_count, hold_price, hold_count, tran_price,tran_count
-#                     from lh_analyze.user_storage_value'''
-#
-#         # 数据库连接
-#         conn_an = direct_get_conn(analyze_mysql_conf)
-#         if not conn_an:
-#             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-#         all_data = pd.read_sql(base_sql, conn_an)
-#         logger.info(all_data)
-#         # 匹配数据
-#         all_data['unionid'] = all_data['unionid'].astype(str)
-#         logger.info(all_data.shape)
-#
-#         all_data['day_time'] = pd.to_datetime(all_data['day_time'])
-#         all_data['day_time'] = all_data['day_time'].dt.strftime('%Y-%m-%d')
-#         if search_key or parent or operateid or (start_time and end_time):
-#             match_data = all_data.loc[(all_data['unionid'].str.contains(search_key)) | (
-#                 all_data['nickname'].str.contains(search_key)) | (all_data['hold_phone'].str.contains(search_key)), :]
-#             logger.info(match_data.shape)
-#             if parent:
-#                 match_data['parentid'] = match_data['parentid'].astype(str)
-#                 match_data = match_data.loc[(match_data['parentid'] == parent) | (match_data['parent_phone'] == parent), :]
-#             if operateid:
-#                 match_data = match_data.loc[match_data['operate_id'].notna(), :]
-#                 match_data['operate_id'] = match_data['operate_id'].astype(int)
-#                 match_data = match_data.loc[match_data['operate_id'] == operateid, :]
-#             if start_time and end_time:
-#                 match_data = match_data.loc[(match_data['day_time'] >= start_time) & (match_data['day_time'] <= end_time), :]
-#         else:
-#             day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
-#             match_data = all_data.loc[all_data['day_time'] == day_time, :]
-#
-#
-#         # 根据采购金额倒叙排序
-#         match_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
-#         match_data.drop(['parent_phone', 'operate_id'], axis=1, inplace=True)
-#         if page and size:
-#             start_index = (page - 1) * size
-#             end_index = page * size
-#             cut_data = match_data[start_index:end_index]
-#         else:
-#             cut_data = match_data.copy()
-#         cut_data.fillna("", inplace=True)
-#         return_data = {
-#             'data': cut_data.to_dict('records')
-#         }
-#         return {"code": "0000", "status": "success", "msg": return_data, "count": len(match_data)}
-#     except:
-#         logger.error(traceback.format_exc())
-#         return {"code": "10000", "status": "success", "msg": message["10000"]}
-#     finally:
-#         try:
-#             conn_an.close()
-#         except:
-#             pass
