@@ -147,6 +147,20 @@ def user_tag_insert():
 
         insert_sql = '''INSERT INTO `lh_analyze`.`crm_tag` (`tag_name`) VALUES (%s)'''
         cursor_analyze.execute(insert_sql,(params))
+
+        #日志记录
+        compare = []
+        compare.append("新增标签:%s" %tag_name)
+        insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+        params = []
+        params.append(user_id)
+        params.append("/user/relate/update/user/ascription")
+        params.append(json.dumps(request.json))
+        params.append("新增标签")
+        params.append("<br>".join(compare))
+        logger.info(params)
+        cursor_analyze.execute(insert_sql, params)
+
         conn_analyze.commit()
         return {"code":"0000","msg":"标签新增成功","status":"success"}
     except Exception as e:
@@ -180,12 +194,31 @@ def user_tag_delete():
         params = []
         params.append(tag_id)
 
+        tag_sql = '''select tag_name from crm_tag where id = %s'''
+        cursor_analyze.execute(tag_sql, (tag_id))
+        tag_name = cursor_analyze.fetchone()
+
         #删除标签列表
         delete_tag_sql = '''delete from crm_tag where id = %s'''
         cursor_analyze.execute(delete_tag_sql,(tag_id))
 
         delete_user_tag = '''delete from crm_user_tag where tag_id = %s'''
         cursor_analyze.execute(delete_user_tag,(tag_id))
+
+        # 日志记录
+        compare = []
+        logger.info(tag_id)
+        tag_name = tag_name[0]
+        compare.append("删除标签:%s" % tag_name)
+        insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+        params = []
+        params.append(user_id)
+        params.append("/user/relate/update/user/ascription")
+        params.append(json.dumps(request.json))
+        params.append("删除标签")
+        params.append("<br>".join(compare))
+        logger.info(params)
+        cursor_analyze.execute(insert_sql, params)
 
         conn_analyze.commit()
         return {"code":"0000","msg":"删除标签成功","status":"success"}
@@ -219,6 +252,10 @@ def user_tag_update():
         tag_id = request.json.get("tag_id")
         tag_name = request.json.get("tag_name")
 
+        tag_sql = '''select tag_name from crm_tag where id = %s'''
+        cursor_analyze.execute(tag_sql, (tag_id))
+        old_tag_name = cursor_analyze.fetchone()
+
         if not tag_id or not tag_name:
             return {"code":"10001","msg":message["10001"],"status":"failed"}
 
@@ -228,6 +265,23 @@ def user_tag_update():
 
         update_sql = '''update crm_tag set tag_name = %s where id = %s'''
         cursor_analyze.execute(update_sql,params)
+
+
+        if str(old_tag_name[0]) != str(tag_name):
+            compare = []
+            logger.info(tag_id)
+            compare.append("原标签:%s 修改为:%s" %(old_tag_name[0],tag_name))
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/update/user/ascription")
+            params.append(json.dumps(request.json))
+            params.append("编辑标签")
+            params.append("<br>".join(compare))
+            logger.info(params)
+            cursor_analyze.execute(insert_sql, params)
+
+
         conn_analyze.commit()
         return {"code":"0000","msg":"修改标签成功","status":"success"}
     except Exception as e:
