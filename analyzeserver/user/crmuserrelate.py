@@ -26,9 +26,7 @@ def user_relate_mes():
         conn = direct_get_conn(analyze_mysql_conf)
 
         logger.info(request.json)
-        # 参数个数错误
-        if len(request.json) != 10:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
 
         token = request.headers["Token"]
         user_id = request.json["user_id"]
@@ -50,6 +48,7 @@ def user_relate_mes():
         size = request.json["size"]
 
         phone_lists = request.json["phone_lists"]
+        tag_id = request.json.get("tag_id")
 
         code_page = ""
         code_size = ""
@@ -74,8 +73,15 @@ def user_relate_mes():
 
         group_sql = ''' group by crm_user.unionid '''
 
-        count_sql = '''select count(*) count
-        from crm_user where del_flag = 0'''
+        # count_sql = '''select count(*) count
+        # from crm_user where del_flag = 0'''
+        count_sql = '''
+        select count(*) count
+        from crm_user
+        left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+        left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+        where crm_user.del_flag = 0
+        '''
 
         if phone_lists:
             phone_lists = ",".join(phone_lists)
@@ -88,6 +94,10 @@ def user_relate_mes():
                 sql = sql + keyword_sql
                 count_sql = count_sql + keyword_sql
 
+            if tag_id:
+                bus_sql = ''' and crm_tag.id = %s''' % (tag_id)
+                sql = sql + bus_sql
+                count_sql = count_sql + bus_sql
 
             if bus_id:
                 bus_sql = ''' and operate_id = %s''' %(bus_id)
