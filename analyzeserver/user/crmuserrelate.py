@@ -519,3 +519,50 @@ def update_user_ascriptions():
         conn.close()
         conn_crm.close()
 
+@userrelatebp.route("/edit/baseinfo",methods=["POST"])
+def check_base_info():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 2:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+            unionid = request.json('unionid')
+        except:
+            # 参数名错误
+            logger.info(traceback.format_exc())
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        if not conn_an:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+
+        # 获取用户基础信息
+        user_base_info_sql = '''
+            select unionid, nickname, phone, addtime create_time, vertify_status, huoti_status, birth, nationality, sex, name, status from lh_analyze.crm_user where unionid=%s
+        ''' % unionid
+        # 用户图片信息
+        user_img_info_sql = '''
+            select unionid, usericon, identify_front, identify_back, face_pic, identity where unionid=%s
+        ''' % unionid
+
+
+    except:
+        logger.info(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_an.close()
+        except:
+            pass
+
