@@ -403,7 +403,7 @@ def update_user_ascriptions():
 
                 if bus_parent_phone in below_phone:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
-
+        all_compare = []
         #原用户数据 用户对比旧数据
         for unionid in unionid_lists:
             # 更新crm
@@ -491,6 +491,8 @@ def update_user_ascriptions():
             logger.info("update_store_vas_sql:%s" % update_store_vas_sql)
             logger.info("update_store_vasto_sql:%s" % update_store_vasto_sql)
 
+            # conn.commit()
+
             # 日志接入
             compare = []
             if operate_direct_id:
@@ -517,19 +519,25 @@ def update_user_ascriptions():
                 if int(bus_parent_phone) != int(old_bus_parent_phone):
                     compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
 
-            #日志插入
             if compare:
-                compare.insert(0,"用户的unionid为：%s" %unionid)
-                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
-                params = []
-                params.append(user_id)
-                params.append("/user/relate/update/user/ascription")
-                params.append(json.dumps(request.json))
-                params.append("修改用户数据")
-                # params.append(json.dumps(compare,ensure_ascii=False))
-                params.append("<br>".join(compare))
-                logger.info(params)
-                cursor.execute(insert_sql,params)
+                compare.insert(0,"该用户的unionid为:%s" %unionid)
+                all_compare.append(compare)
+
+
+        logger.info(all_compare)
+        if all_compare:
+            last_compare = []
+            for c in all_compare:
+                last_compare.append("<br>".join(c))
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/update/user/ascription")
+            params.append(json.dumps(request.json))
+            params.append("修改用户数据")
+            params.append("<br>".join(last_compare))
+            logger.info(params)
+            cursor.execute(insert_sql, params)
 
             conn.commit()
 
