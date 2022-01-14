@@ -654,6 +654,7 @@ def edit_base_info():
             request_dict = request.json
             del request_dict['unionid']
             del request_dict['user_id']
+            logger.info(request_dict)
         except:
             # 参数名错误
             logger.info(traceback.format_exc())
@@ -663,6 +664,21 @@ def edit_base_info():
         cursor = conn_analyze.cursor()
         if not conn_analyze:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
+        # 旧数据，用于日志
+        user_base_info_sql = '''
+            select unionid, nickname, phone, date_format(addtime, "%Y-%m-%d %H:%i:%S") create_time, address, vertify_status, huoti_status, date_format(birth, "%Y-%m-%d") birth, nationality, sex, name, status from lh_analyze.crm_user where unionid={}
+        '''.format(unionid)
+        # 用户图片信息
+        user_img_info_sql = '''
+            select unionid, usericon, identify_front, identify_back, face_pic, identity, province_code, city_code, region_code, town_code, address_detail from lh_analyze.crm_user_info where unionid=%s
+        ''' % unionid
+
+        user_base_info = pd.read_sql(user_base_info_sql, conn_analyze)
+        user_img_info = pd.read_sql(user_img_info_sql, conn_analyze)
+
+        user_info = user_base_info.merge(user_img_info, how='left', on='unionid')
+
+
         # 划分字段
         crm_user_info_table_columns = ['unionid', 'usericon', 'identify_front', 'identify_back', 'face_pic', 'identity', 'address', 'province_code',
                                        'city_code', 'region_code', 'town_code', 'address_detail']
@@ -688,9 +704,9 @@ def edit_base_info():
             num = 1
             for k,v in crm_user_info_table_edit.items():
                 if num == 1:
-                    update_crm_user_info_base_sql += ''' %s=%s''' % (k, v)
+                    update_crm_user_info_base_sql += ''' %s="%s"''' % (k, v)
                 else:
-                    update_crm_user_info_base_sql = update_crm_user_info_base_sql + ',' + ''' %s=%s''' % (k, v)
+                    update_crm_user_info_base_sql = update_crm_user_info_base_sql + ',' + ''' %s="%s"''' % (k, v)
                 num += 1
             update_crm_user_info_base_sql += ''' where unionid=%s''' % unionid
             execute_list.append(update_crm_user_info_base_sql)
@@ -698,11 +714,12 @@ def edit_base_info():
         if len(crm_user_table_edit) != 0:
             update_crm_user_base_sql = '''update lh_analyze.crm_user set'''
             num = 1
-            for k, v in crm_user_info_table_edit.items():
+            for k, v in crm_user_table_edit.items():
                 if num == 1:
-                    update_crm_user_base_sql += ''' %s=%s''' % (k, v)
+                    logger.info("进来了")
+                    update_crm_user_base_sql += ''' %s="%s"''' % (k, v)
                 else:
-                    update_crm_user_base_sql = update_crm_user_base_sql + ',' + ''' %s=%s''' % (k, v)
+                    update_crm_user_base_sql = update_crm_user_base_sql + ',' + ''' %s="%s"''' % (k, v)
                 num += 1
             update_crm_user_base_sql += ''' where unionid=%s''' % unionid
             execute_list.append(update_crm_user_base_sql)
@@ -728,77 +745,77 @@ def edit_base_info():
             update_today_parent_sql = '''update lh_analyze.user_storage_value_today set'''  # 上级
             update_today_bus_sql = '''update lh_analyze.user_storage_value_today set'''  # 运营中心
             num = 1
-            for k, v in crm_user_info_table_edit.items():
+            for k, v in other_table_edit.items():
                 if num == 1:
                     if k == 'name':
-                        update_crm_parent_sql += ''' parent_name=%s''' % v
-                        update_bus_parent_sql += ''' bus_parent_name=%s''' % v
-                        update_crm_operate_sql += ''' leader=%s''' % v
-                        update_bus_operate_sql += ''' direct_leader=%s''' % v
-                        update_operate_sql += ''' name=%s''' % v
-                        update_daily_user_sql += ''' name=%s''' % v
-                        update_daily_bus_sql += ''' leader=%s''' % v
-                        update_storage_user_sql += ''' name=%s''' % v
-                        update_storage_bus_sql += ''' leader=%s''' % v
-                        update_today_user_sql += ''' name=%s''' % v
-                        update_today_bus_sql += ''' leader=%s''' % v
+                        update_crm_parent_sql += ''' parent_name="%s"''' % v
+                        update_bus_parent_sql += ''' bus_parent_name="%s"''' % v
+                        update_crm_operate_sql += ''' leader="%s"''' % v
+                        update_bus_operate_sql += ''' direct_leader="%s"''' % v
+                        update_operate_sql += ''' name="%s"''' % v
+                        update_daily_user_sql += ''' name="%s"''' % v
+                        update_daily_bus_sql += ''' leader="%s"''' % v
+                        update_storage_user_sql += ''' name="%s"''' % v
+                        update_storage_bus_sql += ''' leader="%s"''' % v
+                        update_today_user_sql += ''' name="%s"''' % v
+                        update_today_bus_sql += ''' leader="%s"''' % v
                     if k == 'nickname':
-                        update_crm_parent_sql += ''' parent_nickname=%s''' % v
-                        update_bus_parent_sql += ''' bus_parent_nickname=%s''' % v
-                        update_operate_sql += ''' nickname=%s''' % v
-                        update_daily_user_sql += ''' nickname=%s''' % v
-                        update_storage_user_sql += ''' nickname=%s''' % v
-                        update_today_user_sql += ''' nickname=%s''' % v
+                        update_crm_parent_sql += ''' parent_nickname="%s"''' % v
+                        update_bus_parent_sql += ''' bus_parent_nickname="%s"''' % v
+                        update_operate_sql += ''' nickname="%s"''' % v
+                        update_daily_user_sql += ''' nickname="%s"''' % v
+                        update_storage_user_sql += ''' nickname="%s"''' % v
+                        update_today_user_sql += ''' nickname="%s"''' % v
                     if k == 'phone':
-                        update_crm_parent_sql += ''' parent_phone=%s''' % v
-                        update_bus_parent_sql += ''' bus_parent_phone=%s''' % v
-                        update_crm_operate_sql += ''' bus_phone=%s''' % v
-                        update_bus_operate_sql += ''' direct_bus_phone=%s''' % v
-                        update_operate_sql += ''' telephone=%s''' % v
-                        update_daily_user_sql += ''' phone=%s''' % v
-                        update_daily_parent_sql += ''' parent_phone=%s''' % v
-                        update_daily_bus_sql += ''' leader_phone=%s''' % v
-                        update_storage_user_sql += ''' hold_phone=%s''' % v
-                        update_storage_parent_sql += ''' parent_phone=%s''' % v
-                        update_storage_bus_sql += ''' leader_phone=%s''' % v
-                        update_today_user_sql += ''' hold_phone=%s''' % v
-                        update_today_parent_sql += ''' parent_phone=%s''' % v
-                        update_today_bus_sql += ''' leader_phone=%s''' % v
+                        update_crm_parent_sql += ''' parent_phone="%s"''' % v
+                        update_bus_parent_sql += ''' bus_parent_phone="%s"''' % v
+                        update_crm_operate_sql += ''' bus_phone="%s"''' % v
+                        update_bus_operate_sql += ''' direct_bus_phone="%s"''' % v
+                        update_operate_sql += ''' telephone="%s"''' % v
+                        update_daily_user_sql += ''' phone="%s"''' % v
+                        update_daily_parent_sql += ''' parent_phone="%s"''' % v
+                        update_daily_bus_sql += ''' leader_phone="%s"''' % v
+                        update_storage_user_sql += ''' hold_phone="%s"''' % v
+                        update_storage_parent_sql += ''' parent_phone="%s"''' % v
+                        update_storage_bus_sql += ''' leader_phone="%s"''' % v
+                        update_today_user_sql += ''' hold_phone="%s"''' % v
+                        update_today_parent_sql += ''' parent_phone="%s"''' % v
+                        update_today_bus_sql += ''' leader_phone="%s"''' % v
                 else:
                     if k == 'name':
-                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_name=%s''' % v
-                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_name=%s''' % v
-                        update_crm_operate_sql = update_crm_operate_sql + ',' + '''' leader=%s''' % v
-                        update_bus_operate_sql = update_bus_operate_sql + ',' + '''' direct_leader=%s''' % v
-                        update_operate_sql = update_operate_sql + ',' + '''' name=%s''' % v
-                        update_daily_user_sql = update_daily_user_sql + ',' + '''' name=%s''' % v
-                        update_daily_bus_sql = update_daily_bus_sql + ',' + '''' leader=%s''' % v
-                        update_storage_user_sql = update_storage_user_sql + ',' + '''' name=%s''' % v
-                        update_storage_bus_sql = update_storage_bus_sql + ',' + '''' leader=%s''' % v
-                        update_today_user_sql = update_today_user_sql + ',' + '''' name=%s''' % v
-                        update_today_bus_sql = update_today_bus_sql + ',' + '''' leader=%s''' % v
+                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_name="%s"''' % v
+                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_name="%s"''' % v
+                        update_crm_operate_sql = update_crm_operate_sql + ',' + '''' leader="%s"''' % v
+                        update_bus_operate_sql = update_bus_operate_sql + ',' + '''' direct_leader="%s"''' % v
+                        update_operate_sql = update_operate_sql + ',' + '''' name="%s"''' % v
+                        update_daily_user_sql = update_daily_user_sql + ',' + '''' name="%s"''' % v
+                        update_daily_bus_sql = update_daily_bus_sql + ',' + '''' leader="%s"''' % v
+                        update_storage_user_sql = update_storage_user_sql + ',' + '''' name="%s"''' % v
+                        update_storage_bus_sql = update_storage_bus_sql + ',' + '''' leader="%s"''' % v
+                        update_today_user_sql = update_today_user_sql + ',' + '''' name="%s"''' % v
+                        update_today_bus_sql = update_today_bus_sql + ',' + '''' leader="%s"''' % v
                     if k == 'nickname':
-                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_nickname=%s''' % v
-                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_nickname=%s''' % v
-                        update_operate_sql = update_operate_sql + ',' + '''' nickname=%s''' % v
-                        update_daily_user_sql = update_daily_user_sql + ',' + '''' nickname=%s''' % v
-                        update_storage_user_sql = update_storage_user_sql + ',' + '''' nickname=%s''' % v
-                        update_today_user_sql = update_today_user_sql + ',' + '''' nickname=%s''' % v
+                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_nickname="%s"''' % v
+                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_nickname="%s"''' % v
+                        update_operate_sql = update_operate_sql + ',' + '''' nickname="%s"''' % v
+                        update_daily_user_sql = update_daily_user_sql + ',' + '''' nickname="%s"''' % v
+                        update_storage_user_sql = update_storage_user_sql + ',' + '''' nickname="%s"''' % v
+                        update_today_user_sql = update_today_user_sql + ',' + '''' nickname="%s"''' % v
                     if k == 'phone':
-                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_phone=%s''' % v
-                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_phone=%s''' % v
-                        update_crm_operate_sql = update_crm_operate_sql + ',' + '''' bus_phone=%s''' % v
-                        update_bus_operate_sql = update_bus_operate_sql + ',' + '''' direct_bus_phone=%s''' % v
-                        update_operate_sql = update_operate_sql + ',' + '''' telephone=%s''' % v
-                        update_daily_user_sql = update_daily_user_sql + ',' + '''' phone=%s''' % v
-                        update_daily_parent_sql = update_daily_parent_sql + ',' + '''' parent_phone=%s''' % v
-                        update_daily_bus_sql = update_daily_bus_sql + ',' + '''' leader_phone=%s''' % v
-                        update_storage_user_sql = update_storage_user_sql + ',' + '''' hold_phone=%s''' % v
-                        update_storage_parent_sql = update_storage_parent_sql + ',' + '''' parent_phone=%s''' % v
-                        update_storage_bus_sql = update_storage_bus_sql + ',' + '''' leader_phone=%s''' % v
-                        update_today_user_sql = update_today_user_sql + ',' + '''' hold_phone=%s''' % v
-                        update_today_parent_sql = update_today_parent_sql + ',' + '''' parent_phone=%s''' % v
-                        update_today_bus_sql = update_today_bus_sql + ',' + '''' leader_phone=%s''' % v
+                        update_crm_parent_sql = update_crm_parent_sql + ',' + '''' parent_phone="%s"''' % v
+                        update_bus_parent_sql = update_bus_parent_sql + ',' + '''' bus_parent_phone="%s"''' % v
+                        update_crm_operate_sql = update_crm_operate_sql + ',' + '''' bus_phone="%s"''' % v
+                        update_bus_operate_sql = update_bus_operate_sql + ',' + '''' direct_bus_phone="%s"''' % v
+                        update_operate_sql = update_operate_sql + ',' + '''' telephone="%s"''' % v
+                        update_daily_user_sql = update_daily_user_sql + ',' + '''' phone="%s"''' % v
+                        update_daily_parent_sql = update_daily_parent_sql + ',' + '''' parent_phone="%s"''' % v
+                        update_daily_bus_sql = update_daily_bus_sql + ',' + '''' leader_phone="%s"''' % v
+                        update_storage_user_sql = update_storage_user_sql + ',' + '''' hold_phone="%s"''' % v
+                        update_storage_parent_sql = update_storage_parent_sql + ',' + '''' parent_phone="%s"''' % v
+                        update_storage_bus_sql = update_storage_bus_sql + ',' + '''' leader_phone="%s"''' % v
+                        update_today_user_sql = update_today_user_sql + ',' + '''' hold_phone="%s"''' % v
+                        update_today_parent_sql = update_today_parent_sql + ',' + '''' parent_phone="%s"''' % v
+                        update_today_bus_sql = update_today_bus_sql + ',' + '''' leader_phone="%s"''' % v
                 num += 1
 
             update_crm_parent_sql = ''' where parentid=%s''' % unionid  # crm上级
@@ -831,9 +848,99 @@ def edit_base_info():
             execute_list.append(update_today_bus_sql)
 
         for execute_sql in execute_list:
+            logger.info(execute_sql)
             cursor.execute(execute_sql)
+
+        ##################日志##########################
+        map_column_dict = {
+            "address": "户籍地址",
+            "address_detail": "所在地详情",
+            "birth": "生日",
+            "city_code": "城市",
+            "face_pic": "人脸照片",
+            "huoti_status": "实人状态",
+            "identify_back": "身份证反面",
+            "identify_front": "身份证正面",
+            "identity": "身份证号",
+            "name": "姓名",
+            "nationality": "民族",
+            "nickname": "昵称",
+            "phone": "手机号",
+            "province_code": "省",
+            "region_code": "区",
+            "sex": "性别",
+            "status": "账户状态",
+            "town_code": "镇",
+            "usericon": "用户头像",
+            "vertify_status": "实名状态"
+        }
+        map_vertify_huoti_dict = {
+            0: "待认证",
+            1: "待审核",
+            2: "认证中",
+            3: "失败",
+            4: "成功"
+        }
+        map_sex_dict = {
+            1: "男",
+            2: "女"
+        }
+        map_status_dict = {
+            1: "正常",
+            2: "禁用"
+        }
+        compare = []
+        for k, v in request_dict.items():
+            old_v = user_info[k].values[0]
+            if k == 'vertify_status' or k == 'huoti_status':
+                old_v = map_vertify_huoti_dict.get(old_v)
+                v = map_vertify_huoti_dict.get(v)
+            elif k == 'sex':
+                old_v = map_sex_dict.get(old_v)
+                v = map_sex_dict.get(v)
+            elif k == 'status':
+                old_v = map_status_dict.get(old_v)
+                v = map_status_dict.get(v)
+            elif k == 'province_code':
+                province_sql = '''select name in lh_analyze.province where code=%s'''
+                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
+                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
+                old_v = old_province_df['name'].values[0]
+                v = new_province_df['name'].values[0]
+            elif k == 'city_code':
+                province_sql = '''select name in lh_analyze.city where code=%s'''
+                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
+                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
+                old_v = old_province_df['name'].values[0]
+                v = new_province_df['name'].values[0]
+            elif k == 'region_code':
+                province_sql = '''select name in lh_analyze.region where code=%s'''
+                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
+                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
+                old_v = old_province_df['name'].values[0]
+                v = new_province_df['name'].values[0]
+            elif k == 'town_code':
+                province_sql = '''select name in lh_analyze.town where code=%s'''
+                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
+                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
+                old_v = old_province_df['name'].values[0]
+                v = new_province_df['name'].values[0]
+
+            compare.append("%s由 %s 变更为 %s" % (map_column_dict.get(k), old_v, v))
+
+        if compare:
+            compare.insert(0, "该用户的unionid为:%s" % unionid)
+            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+            params = []
+            params.append(user_id)
+            params.append("/user/relate/edit/baseinfo")
+            params.append(json.dumps(request.json))
+            params.append("修改用户数据")
+            params.append("<br>".join(compare))
+            logger.info(params)
+            cursor.execute(insert_sql, params)
         conn_analyze.commit()
-        # return {"code": "0000", "status": "success", "msg": user_info.to_dict("records")[0]}
+        return {"code": "0000", "status": "success", "msg": "更新成功"}
     except:
         logger.info(traceback.format_exc())
         conn_analyze.rollback()
