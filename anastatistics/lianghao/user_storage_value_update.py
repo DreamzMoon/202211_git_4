@@ -268,7 +268,7 @@ def user_mes():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         sql = '''
-        select if(`name`,`name`,nickname) nickname,phone hold_phone,unionid,operate_id, operatename,leader,bus_phone leader_phone,leader_unionid,parentid, parent_phone from crm_user where del_flag = 0 and phone != "" and phone is not null
+        select name, nickname,phone hold_phone,unionid,operate_id, operatename,leader,bus_phone leader_phone,leader_unionid,parentid, parent_phone from crm_user where del_flag = 0 and phone != "" and phone is not null
         '''
         user_data = pd.read_sql(sql,conn_analyze)
         return True,user_data
