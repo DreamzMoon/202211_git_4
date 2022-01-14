@@ -139,7 +139,7 @@ def user_tag_delete():
 
         logger.info(request.json)
         token = request.headers["Token"]
-        user_id = request.json.get("user_id")
+        user_id = request.args.get("user_id")
         if not user_id and not token:
             return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
@@ -160,6 +160,47 @@ def user_tag_delete():
 
         conn_analyze.commit()
         return {"code":"0000","msg":"删除标签成功","status":"success"}
+    except Exception as e:
+        conn_analyze.rollback()
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        # 参数名错误
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
+
+
+'''标签的修改'''
+@usertagbp.route("update",methods=["put"])
+def user_tag_update():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
+
+        logger.info(request.json)
+        token = request.headers["Token"]
+        user_id = request.json.get("user_id")
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        tag_id = request.json.get("tag_id")
+        tag_name = request.json.get("tag_name")
+
+        if not tag_id or not tag_name:
+            return {"code":"10001","msg":message["10001"],"status":"failed"}
+
+        params = []
+        params.append(tag_name)
+        params.append(tag_id)
+
+        update_sql = '''update crm_tag set tag_name = %s where id = %s'''
+        cursor_analyze.execute(update_sql,params)
+        conn_analyze.commit()
+        return {"code":"0000","msg":"修改标签成功","status":"success"}
     except Exception as e:
         conn_analyze.rollback()
         logger.error(e)
