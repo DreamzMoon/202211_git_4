@@ -170,7 +170,6 @@ CREATE TABLE `crm_user_info` (
   `region_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '区编码',
   `town_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '镇编码',
   `address_detail` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '所在地详情',
-  `del_flag` int(1) DEFAULT '0' COMMENT '1：删除',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
   PRIMARY KEY (`unionid`)

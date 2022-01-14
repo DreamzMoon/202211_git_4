@@ -308,7 +308,7 @@ def crm_new_user_info_fun():
         ''' % ','.join(str(unionid) for unionid in sub_unionid_list)
         # 用户身份证、身份证正反面
         user_info_sql_2 = '''
-            select unionid, identity, pic_just identifyfront, pic_back identifyback, issue, address from luke_crm.authentication where unionid in (%s)
+            select unionid, identity, pic_just identifyfront, pic_back identifyback, issue from luke_crm.authentication where unionid in (%s)
         ''' % ','.join(str(unionid) for unionid in sub_unionid_list)
         # 人脸照片
         user_info_sql_3 = '''

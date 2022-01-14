@@ -142,7 +142,7 @@ try:
     '''
     # 用户身份证、身份证正反面
     user_info_sql_2 = '''
-        select unionid, identity, pic_just identifyfront, pic_back identifyback, issue, address from luke_crm.authentication
+        select unionid, identity, pic_just identifyfront, pic_back identifyback, issue from luke_crm.authentication
     '''
     # 人脸照片
     user_info_sql_3 = '''
