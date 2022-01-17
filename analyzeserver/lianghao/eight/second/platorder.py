@@ -348,6 +348,7 @@ def operations_order_count():
             data = data.merge(tag_df, how='left', on='operate_leader_unionid')
         else:
             data['tag_name'] = []
+        data['tag_name'].fillna('', inplace=True)
         # 数据圆整
         data['buy_price'] = round(data['buy_price'].astype(float), 2)
         data['publish_total_price'] = round(data['publish_total_price'].astype(float), 2)
