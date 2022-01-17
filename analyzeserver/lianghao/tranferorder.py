@@ -36,6 +36,8 @@ def transfer_all():
         phone_lists = [x.strip() for x in request.json["phone_lists"]]
         bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
+        tag_id = request.json.get("tag_id")
+
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
 
@@ -84,6 +86,14 @@ def transfer_all():
 
 
                 logger.info("args:%s" %args_list)
+
+                # args_list = args_list.split(",")
+                if tag_id:
+                    phone_result = find_tag_user_phone(tag_id)
+                    if phone_result[0]:
+                        tag_phone_list = phone_result[1]
+                    else:
+                        return {"code":phone_result[1],message:message[phone_result[1]],"status":"failed"}
 
                 if args_list:
                     sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone not in (%s)''' %args_list
