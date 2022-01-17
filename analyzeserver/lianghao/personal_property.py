@@ -1226,7 +1226,7 @@ def personal_hold_total():
             phone_lists = request.json['phone_lists'] # 手机号
             bus_lists = request.json['bus_lists']
             # 用户标签
-            user_tag = request.json['user_tag']
+            tag_id = request.json['tag_id']
 
             # 每页显示条数
             size = request.json['size']
@@ -1292,8 +1292,8 @@ def personal_hold_total():
                 (fina_df['parentid'] == parent) |
                 (fina_df['parent_phone'] == parent)
             ]
-        if user_tag != "":
-            result = find_tag_user_phone(user_tag)
+        if tag_id != "":
+            result = find_tag_user_phone(tag_id)
             logger.info(result[1])
             if not result[0]:
                 return {"code": "10000", "status": "failed", "msg": message["10000"]}
