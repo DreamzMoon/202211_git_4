@@ -157,7 +157,7 @@ def daily_plat_summary():
             sell_sql = sell_sql + sell_group_sql
             public_sql = public_sql + public_group_sql
 
-        logger.info(buy_sql)
+        # logger.info(buy_sql)
 
         buy_data = pd.read_sql(buy_sql, conn_lh)
         sell_data = pd.read_sql(sell_sql, conn_lh)
