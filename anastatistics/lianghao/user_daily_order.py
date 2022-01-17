@@ -3,7 +3,7 @@
 # @Author : shihong
 # @File : .py
 # --------------------------------------
-# 用户每日订单数据统计报表
+# 用户每日订单数据统计报表---每天00:01分同步数据
 # 获取用户信息
 import sys, os, time
 father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]

@@ -3,7 +3,7 @@
 # @Author : shihong
 # @File : .py
 # --------------------------------------
-# 更新运营中心数据
+# 更新运营中心数据---每十分钟同步一次
 import os, sys, json
 father_dir = os.path.dirname(os.path.dirname(__file__)).split("/")[-1]
 sys.path.append(sys.path[0].split(father_dir)[0])
