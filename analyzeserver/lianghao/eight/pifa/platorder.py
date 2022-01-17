@@ -58,7 +58,7 @@ def transfer_all():
             conn_read = direct_get_conn(lianghao_mysql_conf)
             if not conn_read:
                 return {"code": "10008", "status": "failed", "msg": message["10008"]}
-            logger.info(type(phone_lists))
+            # logger.info(type(phone_lists))
             with conn_read.cursor() as cursor:
                 args_list = []
                 # 过滤手机号
@@ -91,7 +91,7 @@ def transfer_all():
                     logger.info(phone_lists)
                     args_list = [p[0] for p in phone_lists]
                     # args_list = ",".join(args_list)
-                logger.info("args:%s" %args_list)
+                # logger.info("args:%s" %args_list)
 
                 tag_phone_list = []
                 if tag_id:
@@ -113,8 +113,7 @@ def transfer_all():
                     lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
                     lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
                     lh_phone = lh_user_phone["phone"].to_list()
-                    logger.info(lh_phone)
-                    logger.info(args_list)
+
                     select_phone = list(set(lh_phone) - set(args_list))
 
                 select_phone = ",".join(select_phone)
@@ -443,9 +442,10 @@ def transfer_buy_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -698,10 +698,10 @@ def transfer_sell_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
 
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -951,9 +951,10 @@ def transfer_public_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -1043,11 +1044,10 @@ def transfer_public_order():
             week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from le_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)'''  %(query_range[0],query_range[1])
             group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
-            if args_phone_lists:
-                condition_sql = ''' and sell_phone not in (%s)''' %args_phone_lists
-                week_sql = week_sql + condition_sql + group_order_sql
-            else:
-                week_sql = week_sql + group_order_sql
+
+            condition_sql = ''' and sell_phone in (%s)''' %select_phone
+            week_sql = week_sql + condition_sql + group_order_sql
+
 
             logger.info(week_sql)
             cursor.execute(week_sql)

@@ -109,8 +109,6 @@ def transfer_all():
                     lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
                     lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
                     lh_phone = lh_user_phone["phone"].to_list()
-                    logger.info(lh_phone)
-                    logger.info(args_list)
                     select_phone = list(set(lh_phone) - set(args_list))
 
                 select_phone = ",".join(select_phone)
@@ -123,7 +121,7 @@ def transfer_all():
 
                 sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count
                 from le_second_hand_sell where del_flag=0  and status != 1 and DATE_FORMAT(create_time,"%%Y-%%m-%%d") = CURRENT_DATE()
-                 and sell_phone not in (%s)''' %args_list
+                 and sell_phone in (%s)''' %select_phone
                 cursor.execute(sql)
                 sell_data = cursor.fetchone()
 
@@ -135,7 +133,7 @@ def transfer_all():
                 cursor.execute(sql)
                 all_order_data = cursor.fetchone()
 
-                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1 and sell_phone not in (%s)''' % args_list
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from le_second_hand_sell where del_flag=0 and status != 1 and sell_phone in (%s)''' % select_phone
                 if start_time and end_time:
                     time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
                     sql = sql + time_condition
@@ -438,10 +436,10 @@ def transfer_buy_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
 
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -692,9 +690,10 @@ def transfer_sell_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
@@ -764,7 +763,7 @@ def transfer_sell_order():
                         union all
                         select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
                         select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from le_order where `status` = 1 and  del_flag = 0 and type = 4 and sell_phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
-
+            logger.info(circle_sql)
             cursor.execute(circle_sql)
             circle_data = cursor.fetchall()
             logger.info(circle_data)
@@ -946,9 +945,10 @@ def transfer_public_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        select_phone = ",".join(select_phone)
 
         # 如果选择今天的就按照今天的时间返回
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
