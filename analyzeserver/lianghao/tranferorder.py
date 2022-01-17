@@ -55,7 +55,7 @@ def transfer_all():
                 args_list = []
                 # 过滤手机号
                 if phone_lists:
-                    args_list = ",".join(phone_lists)
+                    args_list = phone_lists.copy()
                     logger.info(args_list)
                 #过滤用户id
                 if unioinid_lists:
@@ -68,7 +68,6 @@ def transfer_all():
                         phone_lists = cursor_analyze.fetchall()
                         for p in phone_lists:
                             args_list.append(p[0])
-                        args_list = ",".join(args_list)
                     except Exception as e:
                         logger.exception(e)
                         return {"code": "10006", "status": "failed", "msg": message["10006"]}
@@ -82,72 +81,62 @@ def transfer_all():
                     phone_lists = cursor_analyze.fetchall()
                     logger.info(phone_lists)
                     args_list = [p[0] for p in phone_lists]
-                    args_list = ",".join(args_list)
-
 
                 logger.info("args:%s" %args_list)
 
-                # args_list = args_list.split(",")
+                tag_phone_list = []
                 if tag_id:
                     phone_result = find_tag_user_phone(tag_id)
                     if phone_result[0]:
-                        tag_phone_list = phone_result[1]
+                        tag_phone_list = phone_lists[1]
                     else:
                         return {"code":phone_result[1],message:message[phone_result[1]],"status":"failed"}
 
-                if args_list:
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone not in (%s)''' %args_list
-                    cursor.execute(sql)
-                    order_data = cursor.fetchone()
-
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
-                                                        and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone not in (%s)''' %args_list
-                    cursor.execute(sql)
-                    sell_data = cursor.fetchone()
-                    logger.info(sell_data)
-
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone not in (%s)''' % args_list
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
-                        sql = sql + time_condition
-                    cursor.execute(sql)
-                    all_order_data = cursor.fetchone()
-
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone not in (%s)''' % args_list
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
-                        sql = sql + time_condition
-                    cursor.execute(sql)
-
-                    all_sell_data = cursor.fetchone()
-
+                #查tag_phone_list
+                select_phone = []
+                if tag_phone_list:
+                    for tp in tag_phone_list:
+                        if tp in args_list:
+                            continue
+                        else:
+                            select_phone.append(tp)
                 else:
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
-                    cursor.execute(sql)
-                    order_data = cursor.fetchone()
-                    logger.info(order_data)
+                    lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+                    lh_user_phone = pd.read_sql(lh_user_sql,conn_read)
+                    lh_phone = lh_user_phone["phone"].to_list()
+                    logger.info(lh_phone)
+                    logger.info(args_list)
+                    select_phone = list(set(lh_phone)-set(args_list))
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0
-                    and status != 1
-                    and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
-                    cursor.execute(sql)
-                    sell_data = cursor.fetchone()
-                    logger.info(sell_data)
+                select_phone = ",".join(select_phone)
 
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
-                        sql = sql + time_condition
-                    logger.info(sql)
-                    cursor.execute(sql)
-                    all_order_data = cursor.fetchone()
+                sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
+                cursor.execute(sql)
+                order_data = cursor.fetchone()
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1'''
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
-                        sql = sql + time_condition
-                    cursor.execute(sql)
-                    all_sell_data = cursor.fetchone()
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
+                                                    and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' %select_phone
+                cursor.execute(sql)
+                sell_data = cursor.fetchone()
+                logger.info(sell_data)
+
+                sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
+                if start_time and end_time:
+                    time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
+                    sql = sql + time_condition
+
+                cursor.execute(sql)
+                all_order_data = cursor.fetchone()
+
+                sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone in (%s)''' % select_phone
+                if start_time and end_time:
+                    time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
+                    sql = sql + time_condition
+                cursor.execute(sql)
+
+                all_sell_data = cursor.fetchone()
+
+
 
             today_data={
                 "buy_order_count":order_data[0],
@@ -236,7 +225,6 @@ def transfer_buy_order():
         if phone_lists:
             args_phone_lists = ",".join(phone_lists)
         elif unioinid_lists:
-
             try:
                 sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
                 ags_list = ",".join(unioinid_lists)
