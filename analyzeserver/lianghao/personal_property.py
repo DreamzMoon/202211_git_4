@@ -1199,7 +1199,7 @@ def personal_hold_total():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 9:
+            if len(request.json) != 10:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -1225,9 +1225,8 @@ def personal_hold_total():
             unionid_lists = request.json['unionid_lists'] # unionid
             phone_lists = request.json['phone_lists'] # 手机号
             bus_lists = request.json['bus_lists']
-            '''TODO'''
             # 用户标签
-            # user_tag = request.json['user_tag']
+            user_tag = request.json['user_tag']
 
             # 每页显示条数
             size = request.json['size']
@@ -1293,6 +1292,13 @@ def personal_hold_total():
                 (fina_df['parentid'] == parent) |
                 (fina_df['parent_phone'] == parent)
             ]
+        if user_tag != "":
+            result = find_tag_user_phone(user_tag)
+            logger.info(result[1])
+            if not result[0]:
+                return {"code": "10000", "status": "failed", "msg": message["10000"]}
+            fina_df = fina_df[fina_df['hold_phone'].isin(result[1])]
+
         # 过滤条件
         fina_df = fina_df[
             ~((fina_df['unionid'].isin(unionid_lists)) |
@@ -1318,6 +1324,27 @@ def personal_hold_total():
         else:
             cut_data = fina_df
 
+        # 查找用户标签
+        tag_phone_list  = cut_data['hold_phone'].tolist()
+        if tag_phone_list:
+            tag_sql = '''
+                select t1.unionid, group_concat(t2.tag_name) tag_name from
+                (select unionid, tag_id from lh_analyze.crm_user_tag where unionid in (
+                    select unionid from lh_analyze.crm_user where phone in (%s)
+                )) t1
+                left join
+                crm_tag t2
+                on t1.tag_id = t2.id
+                group by t1.unionid
+            ''' % ','.join(tag_phone_list)
+            tag_df = pd.read_sql(tag_sql, conn_analyze)
+            tag_df['tag_name'] = tag_df['tag_name'].apply(lambda x: x.split(','))
+            tag_df['unionid'] = tag_df['unionid'].astype(str)
+            cut_data = cut_data.merge(tag_df, how='left', on='unionid')
+        else:
+            cut_data['tag_name'] = []
+
+        cut_data['tag_name'] = cut_data['tag_name'].apply(lambda x: x if x is None else [])
         cut_data.drop(['operate_id', 'parent_phone'], axis=1, inplace=True)
         # 填补空值
         cut_data.fillna('', inplace=True)
