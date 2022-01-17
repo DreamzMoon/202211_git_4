@@ -618,6 +618,10 @@ def check_base_info():
 
         user_base_info = pd.read_sql(user_base_info_sql, conn_analyze)
         user_img_info = pd.read_sql(user_img_info_sql, conn_analyze)
+        # 判断省市区是否有空，如果有空，所有都置为空
+        for index, user_img in user_img_info.iterrows():
+            if not user_img['province_code'] or not user_img['city_code'] or not user_img['region_code']:
+                user_img_info.loc[index, ['province_code', 'city_code', 'region_code', 'town_code']] = None
 
         user_info = user_base_info.merge(user_img_info, how='left', on='unionid')
         user_info.fillna('', inplace=True)
