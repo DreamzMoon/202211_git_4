@@ -578,7 +578,6 @@ def personal_publish_order_flow():
 @pmbp.route("total",methods=["POST"])
 def personal_total():
     try:
-
         conn_read = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         logger.info(request.json)
@@ -603,6 +602,7 @@ def personal_total():
         parent = request.json["parent"]
         # bus = request.json["bus"]
         bus_id = request.json["bus_id"]
+        tag_id = request.json['tag_id']
 
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
@@ -612,6 +612,7 @@ def personal_total():
         keyword_phone = []
         parent_id = ""
         bus_phone = []
+        tag_phone = []
 
         # 模糊查询
         if keyword:
@@ -639,10 +640,16 @@ def personal_total():
             bus_phone = phone_data['phone'].tolist()
             if not bus_phone:
                 return {"code": "11015", "status": "failed", "msg": message["11015"]}
+        if tag_id:
+            result = find_tag_user_phone(tag_id)
+            if not result:
+                return {"code": "10000", "status": "failed", "msg": message["10000"]}
+            tag_phone = result[1]
 
 
         logger.info(len(bus_phone))
-
+        bus_phone.extend(tag_phone)
+        bus_phone = list(set(bus_phone))
         # 对手机号码差交集
         if keyword_phone and bus_phone:
             query_phone = list(set(keyword_phone).intersection(set(bus_phone)))
@@ -764,6 +771,24 @@ def personal_total():
         all_data["sell_real_money"] = round(float(df_merged["sell_real_money"].sum()), 2)
         all_data["sell_total_count"] = int(df_merged["sell_total_count"].sum())
         all_data["sell_total_price"] = round(float(df_merged["sell_total_price"].sum()), 2)
+        # 查找用户标签
+        tag_phone_list = need_data['phone'].tolist()
+        if tag_phone_list:
+            tag_sql = '''
+                select t1.unionid, group_concat(t2.tag_name) tag_name from
+                (select unionid, tag_id from lh_analyze.crm_user_tag where unionid in (
+                    select unionid from lh_analyze.crm_user where phone in (%s)
+                )) t1
+                left join
+                crm_tag t2
+                on t1.tag_id = t2.id
+                group by t1.unionid
+            ''' % ','.join(tag_phone_list)
+            tag_df = pd.read_sql(tag_sql, conn_analyze)
+            tag_df['unionid'] = tag_df['unionid'].astype(str)
+            need_data = need_data.merge(tag_df, how='left', on='unionid')
+        else:
+            need_data['tag_name'] = []
 
         # need_data = need_data.fillna("",inplace=True)
         need_data.fillna("",inplace=True)
