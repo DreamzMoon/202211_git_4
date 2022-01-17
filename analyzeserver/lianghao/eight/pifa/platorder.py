@@ -97,7 +97,7 @@ def transfer_all():
                 if tag_id:
                     phone_result = find_tag_user_phone(tag_id)
                     if phone_result[0]:
-                        tag_phone_list = phone_lists[1]
+                        tag_phone_list = phone_result[1]
                     else:
                         return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
@@ -427,7 +427,7 @@ def transfer_buy_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
@@ -682,7 +682,7 @@ def transfer_sell_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
@@ -935,7 +935,7 @@ def transfer_public_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
