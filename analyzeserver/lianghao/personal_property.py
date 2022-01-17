@@ -1338,13 +1338,11 @@ def personal_hold_total():
                 group by t1.unionid
             ''' % ','.join(tag_phone_list)
             tag_df = pd.read_sql(tag_sql, conn_analyze)
-            tag_df['tag_name'] = tag_df['tag_name'].apply(lambda x: x.split(','))
             tag_df['unionid'] = tag_df['unionid'].astype(str)
             cut_data = cut_data.merge(tag_df, how='left', on='unionid')
         else:
             cut_data['tag_name'] = []
 
-        cut_data['tag_name'] = cut_data['tag_name'].apply(lambda x: x if x is None else [])
         cut_data.drop(['operate_id', 'parent_phone'], axis=1, inplace=True)
         # 填补空值
         cut_data.fillna('', inplace=True)
