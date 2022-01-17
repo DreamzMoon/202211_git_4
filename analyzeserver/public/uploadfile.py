@@ -44,23 +44,21 @@ def upload_img():
         if check_token_result["code"] != "0000":
             return check_token_result
 
-        # 1 头像 2：身份证正面 3：身份证反面 4：人脸
+        # 1 头像 2：身份证正面 3：身份证反面 4：人脸 5：营业执照正面 6：营业制造反面 7:其他资质
         type = request.json.get("type")
         unionid = request.json.get("unionid")
         img = request.json.get("img")
         img_data = base64.b64decode(img)
 
-        # 1 身份证前面  2身份证反面
+        #多张走img_list  img为空
+        img_list = request.json.get("img_list")
+
+        # 1 身份证前面/营业执照正面  2身份证反面/营业执照反面
         front_back = request.json.get("front_back")
-
-
-        # if not front_back or not type or not unionid or not img:
-        #     return {"code":"10001","msg":message["10001"],"status":"failed"}
 
         t = int(time.time()*1000)
 
-
-        if type == 2 or type ==3:
+        if type == 2 or type == 3:
             front_back = "front" if int(front_back) == 1 else "back"
         file_name = ""
         if type == 1:
@@ -69,16 +67,35 @@ def upload_img():
             file_name = "identify" + str(front_back) + str(t)
         elif type == 4:
             file_name = "userface" + str(t)
+        elif type == 5 or type == 6:
+            file_name = "license" + str(front_back) + str(t)
+        elif type == 7:
+            pass
         else:
             return {"code":"11030","message":message["11030"],"status":"failed"}
         #如果是身份证正反面
 
-        try:
-            bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
-            return_url = "https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name)
-            return {"code":"0000","msg":"上传成功","data":return_url,"status":"success"}
-        except:
-            return {"code": "11031", "msg": message["11031"], "status": "failed"}
+
+        if type == 7:
+            return_url = []
+            for il in img_list:
+                img_data = img_data = base64.b64decode(il)
+                file_name = "otheridentify" + str(t)
+                try:
+                    bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
+                    return_url.append("https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name))
+
+                except:
+                    return {"code": "11031", "msg": message["11031"], "status": "failed"}
+            return {"code": "0000", "msg": "上传成功", "data": return_url, "status": "success"}
+
+        else:
+            try:
+                bucket.put_object('userinfo/%s/%s.jpg' %(unionid,file_name), img_data)
+                return_url = "https://luke-analyze.oss-cn-beijing.aliyuncs.com/userinfo/%s/%s.jpg" %(unionid,file_name)
+                return {"code":"0000","msg":"上传成功","data":return_url,"status":"success"}
+            except:
+                return {"code": "11031", "msg": message["11031"], "status": "failed"}
 
     except Exception as e:
         logger.error(e)
