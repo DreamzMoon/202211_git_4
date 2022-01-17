@@ -37,6 +37,7 @@ def transfer_all():
         bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
         tag_id = request.json.get("tag_id")
+        logger.info(tag_id)
 
         start_time = request.json["start_time"]
         end_time = request.json["end_time"]
@@ -87,8 +88,9 @@ def transfer_all():
                 tag_phone_list = []
                 if tag_id:
                     phone_result = find_tag_user_phone(tag_id)
+                    logger.info(phone_result)
                     if phone_result[0]:
-                        tag_phone_list = phone_lists[1]
+                        tag_phone_list = phone_result[1]
                     else:
                         return {"code":phone_result[1],message:message[phone_result[1]],"status":"failed"}
 
@@ -252,7 +254,7 @@ def transfer_buy_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
@@ -509,7 +511,7 @@ def transfer_sell_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
@@ -762,7 +764,7 @@ def transfer_public_order():
         if tag_id:
             phone_result = find_tag_user_phone(tag_id)
             if phone_result[0]:
-                tag_phone_list = phone_lists[1]
+                tag_phone_list = phone_result[1]
             else:
                 return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
 
