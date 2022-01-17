@@ -63,11 +63,13 @@ def daily_plat_summary():
 
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
+        tag_id = request.json.get("tag_id")
 
         args_list = []
         # 过滤手机号
         if phone_lists:
-            args_list = ",".join(phone_lists)
+            # args_list = ",".join(phone_lists)
+            args_list = phone_lists.copy()
             logger.info(args_list)
         # 过滤用户id
         if unioinid_lists:
@@ -80,7 +82,7 @@ def daily_plat_summary():
                 phone_lists = cursor_analyze.fetchall()
                 for p in phone_lists:
                     args_list.append(p[0])
-                args_list = ",".join(args_list)
+                # args_list = ",".join(args_list)
             except Exception as e:
                 logger.exception(e)
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
@@ -95,11 +97,36 @@ def daily_plat_summary():
             phone_lists = cursor_analyze.fetchall()
             logger.info(phone_lists)
             args_list = [p[0] for p in phone_lists]
-            args_list = ",".join(args_list)
+            # args_list = ",".join(args_list)
 
+        tag_phone_list = []
+        if tag_id:
+            phone_result = find_tag_user_phone(tag_id)
+            if phone_result[0]:
+                tag_phone_list = phone_result[1]
+            else:
+                return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
+
+        # 查tag_phone_list
+        select_phone = []
+        if tag_phone_list:
+            for tp in tag_phone_list:
+                if tp in args_list:
+                    continue
+                else:
+                    select_phone.append(tp)
+        else:
+            lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_phone = pd.read_sql(lh_user_sql, conn_lh)
+            lh_phone = lh_user_phone["phone"].to_list()
+            select_phone = list(set(lh_phone) - set(args_list))
+
+        select_phone = ",".join(select_phone)
+
+        # logger.info(select_phone)
 
         #过滤手机号码
-        logger.info("args:%s" % args_list)
+
 
         code_page = ""
         code_size = ""
@@ -117,10 +144,10 @@ def daily_plat_summary():
         sell_group_sql = ''' group by statistic_time having statistic_time != CURRENT_DATE'''
         public_group_sql = ''' group by statistic_time  having statistic_time != CURRENT_DATE'''
 
-        if args_list:
-            buy_condition = " and phone not in (%s)" % args_list
-            sell_condition = " and sell_phone not in (%s)" % args_list
-            public_condition = " and sell_phone not in (%s)" % args_list
+        if select_phone:
+            buy_condition = " and phone in (%s)" % select_phone
+            sell_condition = " and sell_phone in (%s)" % select_phone
+            public_condition = " and sell_phone in (%s)" % select_phone
 
             buy_sql = buy_sql + buy_condition + buy_group_sql
             sell_sql = sell_sql + sell_condition + sell_group_sql
@@ -131,8 +158,6 @@ def daily_plat_summary():
             public_sql = public_sql + public_group_sql
 
         logger.info(buy_sql)
-        logger.info(sell_sql)
-        logger.info(public_sql)
 
         buy_data = pd.read_sql(buy_sql, conn_lh)
         sell_data = pd.read_sql(sell_sql, conn_lh)
@@ -394,6 +419,8 @@ def daily_plat_value():
         phone_lists = [x.strip() for x in request.json["phone_lists"]]
         bus_lists = [x.strip() for x in request.json["bus_lists"]]
 
+        tag_id = request.json.get("tag_id")
+
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
 
@@ -405,7 +432,7 @@ def daily_plat_value():
         args_list = []
         # 过滤手机号
         if phone_lists:
-            args_list = ",".join(phone_lists)
+            args_list = phone_lists.copy()
             logger.info(args_list)
         # 过滤用户id
         if unioinid_lists:
@@ -418,7 +445,7 @@ def daily_plat_value():
                 phone_lists = cursor_analyze.fetchall()
                 for p in phone_lists:
                     args_list.append(p[0])
-                args_list = ",".join(args_list)
+                # args_list = ",".join(args_list)
             except Exception as e:
                 logger.exception(e)
                 return {"code": "10006", "status": "failed", "msg": message["10006"]}
@@ -431,10 +458,31 @@ def daily_plat_value():
             phone_lists = cursor_analyze.fetchall()
             logger.info(phone_lists)
             args_list = [p[0] for p in phone_lists]
-            args_list = ",".join(args_list)
+            # args_list = ",".join(args_list)
 
-        # 过滤手机号码
-        logger.info("args:%s" % args_list)
+        tag_phone_list = []
+        if tag_id:
+            phone_result = find_tag_user_phone(tag_id)
+            if phone_result[0]:
+                tag_phone_list = phone_result[1]
+            else:
+                return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
+
+        # 查tag_phone_list
+        select_phone = []
+        if tag_phone_list:
+            for tp in tag_phone_list:
+                if tp in args_list:
+                    continue
+                else:
+                    select_phone.append(tp)
+        else:
+            lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_phone = pd.read_sql(lh_user_sql, conn_lh)
+            lh_phone = lh_user_phone["phone"].to_list()
+            select_phone = list(set(lh_phone) - set(args_list))
+
+        select_phone = ",".join(select_phone)
 
         code_page = ""
         code_size = ""
@@ -445,8 +493,8 @@ def daily_plat_value():
 
         sql = '''select day_time,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count) public_count,sum(public_price) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count from user_storage_value'''
         group_sql = '''  group by day_time order by day_time desc'''
-        if args_list:
-            condition_sql = " where hold_phone not in (%s)" % args_list
+        if select_phone:
+            condition_sql = " where hold_phone in (%s)" % select_phone
             sql = sql + condition_sql +group_sql
         else:
             sql = sql + group_sql
