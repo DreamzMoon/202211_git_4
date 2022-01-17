@@ -65,12 +65,12 @@ left join province p on o.province_code = p.`code`
 left join city c on c.`code` = o.city_code 
 left join region r on r.`code` = o.region_code
 left join town t on t.`code` = o.town_code
-left join crm_user_info on o.unionid = crm_user_info.unionid
+left join crm_user_info on o.unionid = crm_user_info.unionid 
         '''
         # sql 拼接
         condition_sql_list = []
         if keyword:
-            keyword_sql = ''' (operatename like "%{keyword}%" or name like "%{keyword}%" or telephone like "%{keyword}%" or unionid like "%{keyword}%")'''.format(keyword=keyword)
+            keyword_sql = ''' (operatename like "%{keyword}%" or o.name like "%{keyword}%" or telephone like "%{keyword}%" or o.unionid like "%{keyword}%")'''.format(keyword=keyword)
             condition_sql_list.append(keyword_sql)
         if status:
             status_sql = ''' status=%s''' % status
