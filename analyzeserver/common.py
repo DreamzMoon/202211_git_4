@@ -717,9 +717,32 @@ def get_all_user_operationcenter(crm_user_data=""):
         logger.exception(traceback.format_exc())
         return False, "10000"
 
+# 根据标签id查找手机号
+def find_tag_user_phone(tag_id):
+    try:
+        find_phone_sql = '''
+            select phone from lh_analyze.crm_user where unionid in (
+            select unionid from lh_analyze.crm_user_tag where tag_id=%s)
+        ''' % tag_id
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_analyze:
+            return False, "10012"
+        data = pd.read_sql(find_phone_sql, conn_analyze)
+        phone_list = data['phone'].tolist()
+        return True, phone_list
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return False, e
+    finally:
+        try:
+            conn_analyze.close()
+        except:
+            pass
+
+
 
 if __name__ == "__main__":
     # result = get_all_user_operationcenter()
     # result[1].to_csv("e:/20211230.csv")
-    result = get_phone_by_keyword("13559436425")
+    result = find_tag_user_phone(3)
     logger.info(result)
