@@ -150,3 +150,59 @@ def get_town():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_analyze.close()
+
+
+@chaddrbp.route("list",methods=["GET"])
+def get_list():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
+        logger.info(request.json)
+        token = request.headers["Token"]
+        user_id = request.args.get("user_id")
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        pro_sql = '''select province.code pro_code,province.name pro_name,"" children from province'''
+        pro_datas = pd.read_sql(pro_sql,conn_analyze)
+        pro_datas = pro_datas.to_dict("records")
+
+        for p in pro_datas:
+            city_dict = {}
+            city_sql = '''select city.code city_code,city.name city_name from city where province_code = %s'''
+            logger.info(city_sql)
+            cursor_analyze.execute(city_sql,(p["pro_code"]))
+            city_data = cursor_analyze.fetchall()
+            city_dict["city_code"] = city_data[0]
+            city_dict["city_name"] = city_data[1]
+            city_dict["children"] = ""
+            p["children"] = city_dict
+
+            for c in city_data:
+                region_dict = {}
+                region_sql = '''select region.code region_code,region.name region_name from region where city_code = %s'''
+                logger.info(region_dict)
+                cursor_analyze.execute(region_sql, (c["city_code"]))
+                region_data = cursor_analyze.fetchone()
+                region_dict["city_code"] = region_data[0]
+                region_dict["city_name"] = region_data[1]
+                region_dict["children"] = ""
+                c["children"] = region_dict
+
+        # region_sql = '''select region.city_code city_code,region.code region_code,region.name region_name from region'''
+        # town_sql = '''select town.region_code region_code,town.code town_code,town.name town_name from town'''
+
+
+        return {"code":"0000","status":"success","msg":pro_datas}
+
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        # 参数名错误
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
