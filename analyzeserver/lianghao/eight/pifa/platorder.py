@@ -191,7 +191,7 @@ def operations_order_count():
         try:
             logger.info(request.json)
             # 参数个数错误
-            if len(request.json) != 7:
+            if len(request.json) != 8:
                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
             token = request.headers["Token"]
@@ -206,6 +206,7 @@ def operations_order_count():
 
             search_key = request.json['key']
             operateid = request.json['operateid']
+            tag_id = request.json['tag_id']
             start_time = request.json['start_time']
             end_time = request.json['end_time']
             size = request.json['size']
@@ -249,8 +250,8 @@ def operations_order_count():
 
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        conn_an =direct_get_conn(analyze_mysql_conf)
-        if not conn_lh or not conn_an:
+        conn_analyze =direct_get_conn(analyze_mysql_conf)
+        if not conn_lh or not conn_analyze:
             return {"code": "10008", "status": "failed", "msg": message["10008"]}
 
         user_order_df_list = []
@@ -268,7 +269,7 @@ def operations_order_count():
 
         # 用户数据查询
         user_info_sql = 'select unionid, phone, operate_id operateid, operatename, leader operate_leader_name, bus_phone operate_leader_phone, leader_unionid  operate_leader_unionid from lh_analyze.crm_user where operatename is not null'
-        user_info_df = pd.read_sql(user_info_sql, conn_an)
+        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         # 合并得到运营中心负责人unionid
         # operate_unionid_df = user_info_df.loc[:, ['unionid', 'phone']].rename(columns={"unionid": "operate_leader_unionid", "phone": "operate_leader_phone"})
         # user_info_df = user_info_df.merge(operate_unionid_df, how='left', on='operate_leader_phone')
@@ -302,6 +303,12 @@ def operations_order_count():
                                                     | (operate_data_df['operate_leader_unionid'].str.contains(search_key))]
         if operateid:
             operate_data_df = operate_data_df.loc[operate_data_df['operateid'] == operateid, :]
+        if tag_id != "":
+            result = find_tag_user_phone(tag_id)
+            logger.info(result[1])
+            if not result[0]:
+                return {"code": "10000", "status": "failed", "msg": message["10000"]}
+            operate_data_df = operate_data_df[operate_data_df['operate_leader_phone'].isin(result[1])]
         title_data = {
             'buy_order': operate_data_df['buy_order'].sum(),  # 采购订单数量
             'buy_count': operate_data_df['buy_count'].sum(),  # 采购靓号数量
@@ -325,6 +332,25 @@ def operations_order_count():
             logger.info(data.shape)
         else:
             data = operate_data_df
+
+        # 匹配标签
+        tag_phone_list = data['operate_leader_phone'].tolist()
+        if tag_phone_list:
+            tag_sql = '''
+                select t1.unionid operate_leader_unionid, group_concat(t2.tag_name) tag_name from
+                (select unionid, tag_id from lh_analyze.crm_user_tag where unionid in (
+                    select unionid from lh_analyze.crm_user where phone in (%s)
+                )) t1
+                left join
+                crm_tag t2
+                on t1.tag_id = t2.id
+                group by t1.unionid
+            ''' % ','.join(tag_phone_list)
+            tag_df = pd.read_sql(tag_sql, conn_analyze)
+            # tag_df['operate_leader_unionid'] = tag_df['operate_leader_unionid'].astype(str)
+            data = data.merge(tag_df, how='left', on='operate_leader_unionid')
+        else:
+            data['tag_name'] = []
         # 数据圆整
         data['buy_price'] = round(data['buy_price'].astype(float), 2)
         data['publish_total_price'] = round(data['publish_total_price'].astype(float), 2)
@@ -345,7 +371,7 @@ def operations_order_count():
     finally:
         try:
             conn_lh.close()
-            conn_an.close()
+            conn_analyze.close()
         except:
             pass
 
