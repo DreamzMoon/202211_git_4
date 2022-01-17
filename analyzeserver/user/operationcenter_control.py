@@ -58,7 +58,14 @@ def check_operate_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        base_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter'''
+        # base_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter'''
+        base_sql = '''select o.id, telephone phone, unionid, o.`name`, operatename,p.`name` pro_name,c.`name` city_name,r.`name` region_Name,t.`name` town_name,address, authnumber, unifiedsocial, create_time, crm, `status`,bus_license_front,bus_license_back,other_identify from lh_analyze.operationcenter o
+        left join province p on o.province_code = p.`code`
+        left join city c on c.`code` = o.city_code 
+        left join region r on r.`code` = o.region_code
+        left join town t on t.`code` = o.town_code
+        
+        '''
         # sql 拼接
         condition_sql_list = []
         if keyword:
@@ -133,7 +140,7 @@ def check_operate_detail_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        detail_data_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter where id=%s''' % operate_id
+        detail_data_sql = '''select id, telephone phone, unionid, name, operatename, province_code,city_code,region_code,town_code,address, authnumber, unifiedsocial, create_time, crm, `status`,bus_license_front,bus_license_back,other_identify from lh_analyze.operationcenter where id=%s''' % operate_id
         detail_data = pd.read_sql(detail_data_sql, conn_an)
         detail_data['create_time'] = detail_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         detail_data.fillna('', inplace=True)
@@ -147,122 +154,126 @@ def check_operate_detail_data():
         except:
             pass
 
-# 修改数据
-@operateconbp.route("/update", methods=["POST"])
-def update_operate_detail_data():
-    try:
-        try:
-            logger.info(request.json)
-            # 参数个数错误
-            if len(request.json) != 12:
-                return {"code": "10004", "status": "failed", "msg": message["10004"]}
-            token = request.headers["Token"]
-            user_id = request.json["user_id"]
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-            operate_id = request.json['id']
-            # 地址
-            address = request.json['address']
-            # 授权编码
-            authnumber = request.json['authnumber']
-            create_time = request.json['create_time']
-            # crm状态
-            crm = request.json['crm']
-            # name = request.json['name']
-            # 运营中心名称
-            operatename = request.json['operatename']
-            # 手机号
-            phone = request.json['phone']
-            # 状态
-            status = request.json['status']
-            # 统一信用编码
-            unifiedsocial = request.json['unifiedsocial']
-            # unionid = request.json['unionid']
-        except:
-            # 参数名错误
-            logger.info(traceback.format_exc())
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        # 数据库连接
-        conn_an = direct_get_conn(analyze_mysql_conf)
-        if not conn_an:
-            return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        # 数据对比
-        oringinal_data_sql = '''select telephone phone, operatename, address, authnumber, unifiedsocial, crm, status from lh_analyze.operationcenter where id=%s''' % operate_id
-        oringinal_data = pd.read_sql(oringinal_data_sql, conn_an)
-        # 进行数据判断
-        # 修改手机号，其余unionid与姓名从crm_user表拿。如果用户不存在，则不让修改，统一信用编码为唯一，不能重复
-        crm_data_sql = '''select unionid, if(`name` != "",`name`,if(nickname is not null,nickname,"")) name from lh_analyze.crm_user where phone=%s''' % phone
-        crm_data = pd.read_sql(crm_data_sql, conn_an)
-        # 判断用户是否存在
-        if crm_data.shape[0] == 0:
-            return {"code": "11029", "status": "failed", "msg": message["11029"]}
-        new_unionid = crm_data['unionid'].values[0]
-        new_name = crm_data['name'].values[0]
-        update_data_sql = '''update lh_analyze.operationcenter set telephone=%s, unionid=%s, name=%s, operatename=%s, address=%s, authnumber=%s, unifiedsocial=%s, create_time=%s, crm=%s, status=%s where id=%s'''
-        update_list = [phone, new_unionid, new_name, operatename, address, authnumber, unifiedsocial, create_time, crm, status, operate_id]
-        logger.info(update_list)
-        cursor = conn_an.cursor()
-        cursor.execute(update_data_sql, update_list)
-        conn_an.commit()
 
-        # 日志功能
-        #日志列表
-        log_list = []
-        if phone != oringinal_data['phone'].values[0]:
-            msg = '手机号由 %s 改 %s' % (oringinal_data['phone'].values[0], phone)
-            log_list.append(msg)
-        if operatename != oringinal_data['operatename'].values[0]:
-            msg = '公司名称由 %s 改 %s' % (oringinal_data['operatename'].values[0], operatename)
-            log_list.append(msg)
-        if address != oringinal_data['address'].values[0]:
-            msg = '公司地址由 %s 改 %s' % (oringinal_data['address'].values[0], address)
-            log_list.append(msg)
-        if authnumber != oringinal_data['authnumber'].values[0]:
-            msg = '授权编码由 %s 改 %s' % (oringinal_data['authnumber'].values[0], authnumber)
-            log_list.append(msg)
-        if unifiedsocial != oringinal_data['unifiedsocial'].values[0]:
-            msg = '信用代码由 %s 改 %s' % (oringinal_data['unifiedsocial'].values[0], unifiedsocial)
-            log_list.append(msg)
-        if crm != oringinal_data['crm'].values[0]:
-            crm_status_type = {
-                1: "支持",
-                0: "不支持"
-            }
-            msg = 'crm状态由 %s 改 %s' % (crm_status_type.get(oringinal_data['crm'].values[0]), crm_status_type.get(crm))
-            log_list.append(msg)
-        if status != oringinal_data['status'].values[0]:
-            status_type = {
-                1: "正常",
-                2: "关闭"
-            }
-            msg = '账户状态由 %s 改 %s' % (status_type.get(oringinal_data['status'].values[0]), status_type.get(status))
-            log_list.append(msg)
-        if log_list:
-            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
-            params = []
-            params.append(user_id)
-            params.append("/operatecon/update")
-            params.append(json.dumps(request.json))
-            params.append("修改运营中心数据数据")
-            # params.append(json.dumps(compare,ensure_ascii=False))
-            params.append("<br>".join(log_list))
-            logger.info(params)
-            cursor.execute(insert_sql,params)
-            conn_an.commit()
 
-        return {"code": "0000", "status": "success", "msg": "更新成功"}
-    except:
-        # 回滚
-        conn_an.rollback()
-        logger.exception(traceback.format_exc())
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-    finally:
-        try:
-            conn_an.close()
-        except:
-            pass
+# # 修改数据
+# @operateconbp.route("/update", methods=["POST"])
+# def update_operate_detail_data():
+#     try:
+#         try:
+#             logger.info(request.json)
+#             # 参数个数错误
+#             if len(request.json) != 12:
+#                 return {"code": "10004", "status": "failed", "msg": message["10004"]}
+#             token = request.headers["Token"]
+#             user_id = request.json["user_id"]
+#
+#             if not user_id and not token:
+#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#             check_token_result = check_token(token, user_id)
+#             if check_token_result["code"] != "0000":
+#                 return check_token_result
+#             operate_id = request.json['id']
+#             # 地址
+#             address = request.json['address']
+#             # 授权编码
+#             authnumber = request.json['authnumber']
+#             create_time = request.json['create_time']
+#             # crm状态
+#             crm = request.json['crm']
+#             # name = request.json['name']
+#             # 运营中心名称
+#             operatename = request.json['operatename']
+#             # 手机号
+#             phone = request.json['phone']
+#             # 状态
+#             status = request.json['status']
+#             # 统一信用编码
+#             unifiedsocial = request.json['unifiedsocial']
+#             # unionid = request.json['unionid']
+#         except:
+#             # 参数名错误
+#             logger.info(traceback.format_exc())
+#             return {"code": "10009", "status": "failed", "msg": message["10009"]}
+#         # 数据库连接
+#         conn_an = direct_get_conn(analyze_mysql_conf)
+#         if not conn_an:
+#             return {"code": "10002", "status": "failed", "msg": message["10002"]}
+#         # 数据对比
+#         oringinal_data_sql = '''select telephone phone, operatename, address, authnumber, unifiedsocial, crm, status from lh_analyze.operationcenter where id=%s''' % operate_id
+#         oringinal_data = pd.read_sql(oringinal_data_sql, conn_an)
+#         # 进行数据判断
+#         # 修改手机号，其余unionid与姓名从crm_user表拿。如果用户不存在，则不让修改，统一信用编码为唯一，不能重复
+#         crm_data_sql = '''select unionid, if(`name` != "",`name`,if(nickname is not null,nickname,"")) name from lh_analyze.crm_user where phone=%s''' % phone
+#         crm_data = pd.read_sql(crm_data_sql, conn_an)
+#         # 判断用户是否存在
+#         if crm_data.shape[0] == 0:
+#             return {"code": "11029", "status": "failed", "msg": message["11029"]}
+#         new_unionid = crm_data['unionid'].values[0]
+#         new_name = crm_data['name'].values[0]
+#         update_data_sql = '''update lh_analyze.operationcenter set telephone=%s, unionid=%s, name=%s, operatename=%s, address=%s, authnumber=%s, unifiedsocial=%s, create_time=%s, crm=%s, status=%s where id=%s'''
+#         update_list = [phone, new_unionid, new_name, operatename, address, authnumber, unifiedsocial, create_time, crm, status, operate_id]
+#         logger.info(update_list)
+#         cursor = conn_an.cursor()
+#         cursor.execute(update_data_sql, update_list)
+#         conn_an.commit()
+#
+#         # 日志功能
+#         #日志列表
+#         log_list = []
+#         if phone != oringinal_data['phone'].values[0]:
+#             msg = '手机号由 %s 改 %s' % (oringinal_data['phone'].values[0], phone)
+#             log_list.append(msg)
+#         if operatename != oringinal_data['operatename'].values[0]:
+#             msg = '公司名称由 %s 改 %s' % (oringinal_data['operatename'].values[0], operatename)
+#             log_list.append(msg)
+#         if address != oringinal_data['address'].values[0]:
+#             msg = '公司地址由 %s 改 %s' % (oringinal_data['address'].values[0], address)
+#             log_list.append(msg)
+#         if authnumber != oringinal_data['authnumber'].values[0]:
+#             msg = '授权编码由 %s 改 %s' % (oringinal_data['authnumber'].values[0], authnumber)
+#             log_list.append(msg)
+#         if unifiedsocial != oringinal_data['unifiedsocial'].values[0]:
+#             msg = '信用代码由 %s 改 %s' % (oringinal_data['unifiedsocial'].values[0], unifiedsocial)
+#             log_list.append(msg)
+#         if crm != oringinal_data['crm'].values[0]:
+#             crm_status_type = {
+#                 1: "支持",
+#                 0: "不支持"
+#             }
+#             msg = 'crm状态由 %s 改 %s' % (crm_status_type.get(oringinal_data['crm'].values[0]), crm_status_type.get(crm))
+#             log_list.append(msg)
+#         if status != oringinal_data['status'].values[0]:
+#             status_type = {
+#                 1: "正常",
+#                 2: "关闭"
+#             }
+#             msg = '账户状态由 %s 改 %s' % (status_type.get(oringinal_data['status'].values[0]), status_type.get(status))
+#             log_list.append(msg)
+#         if log_list:
+#             insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+#             params = []
+#             params.append(user_id)
+#             params.append("/operatecon/update")
+#             params.append(json.dumps(request.json))
+#             params.append("修改运营中心数据数据")
+#             # params.append(json.dumps(compare,ensure_ascii=False))
+#             params.append("<br>".join(log_list))
+#             logger.info(params)
+#             cursor.execute(insert_sql,params)
+#             conn_an.commit()
+#
+#         return {"code": "0000", "status": "success", "msg": "更新成功"}
+#     except:
+#         # 回滚
+#         conn_an.rollback()
+#         logger.exception(traceback.format_exc())
+#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+#     finally:
+#         try:
+#             conn_an.close()
+#         except:
+#             pass
