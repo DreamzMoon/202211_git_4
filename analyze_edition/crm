@@ -187,3 +187,9 @@ ADD COLUMN `town` varchar(100) NULL COMMENT '乡镇街道等' AFTER `region`,
 ADD COLUMN `bus_license_front` text NULL COMMENT '营业执照正面' AFTER `address`,
 ADD COLUMN `bus_license_back` text NULL COMMENT '营业执照反面' AFTER `bus_license_front`,
 ADD COLUMN `other_identify` text NULL COMMENT '其他资质' AFTER `bus_license_back`;
+
+ALTER TABLE `lh_analyze`.`operationcenter`
+CHANGE COLUMN `province` `province_code` varchar(30) NULL DEFAULT NULL COMMENT '省' AFTER `is_factory`,
+CHANGE COLUMN `city` `city_code` varchar(30) NULL DEFAULT NULL COMMENT '市' AFTER `province_code`,
+CHANGE COLUMN `region` `region_code` varchar(30) NULL DEFAULT NULL COMMENT '区' AFTER `city_code`,
+CHANGE COLUMN `town` `town_code` varchar(30) NULL DEFAULT NULL COMMENT '乡镇街道等' AFTER `region_code`;
