@@ -316,7 +316,7 @@ def user_tag_distribute():
 
         sql = '''select tag_id,unionid from crm_user_tag'''
         user_tag_data = pd.read_sql(sql, conn_analyze)
-        tag_data["tag_id"] = tag_data["tag_id"].astype(str)
+        # tag_data["tag_id"] = tag_data["tag_id"].astype(str)
 
         data = pd.merge(tag_data, user_tag_data, how="left", on="tag_id")
         if tag_name:
