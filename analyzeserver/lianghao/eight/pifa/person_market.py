@@ -94,9 +94,17 @@ def personal_total():
             # else:
             #     return {"code":"11015","status":"failed","msg":message["11015"]}
 
+        if tag_id:
+            result = find_tag_user_phone(tag_id)
+            if not result:
+                return {"code": "10000", "status": "failed", "msg": message["10000"]}
+            tag_phone = result[1]
+
         logger.info(len(bus_phone))
         bus_phone.extend(tag_phone)
         bus_phone = list(set(bus_phone))
+
+        logger.info(bus_phone)
 
         # 对手机号码差交集
         if keyword_phone and bus_phone:
