@@ -59,12 +59,13 @@ def check_operate_data():
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         # base_sql = '''select id, telephone phone, unionid, name, operatename, address, authnumber, unifiedsocial, create_time, crm, status from lh_analyze.operationcenter'''
-        base_sql = '''select o.id, telephone phone, unionid, o.`name`, operatename,p.`name` pro_name,c.`name` city_name,r.`name` region_Name,t.`name` town_name,address, authnumber, unifiedsocial, create_time, crm, `status`,bus_license_front,bus_license_back,other_identify from lh_analyze.operationcenter o
-        left join province p on o.province_code = p.`code`
-        left join city c on c.`code` = o.city_code 
-        left join region r on r.`code` = o.region_code
-        left join town t on t.`code` = o.town_code
-        
+        base_sql = '''select o.id, telephone phone, o.unionid, o.`name`, operatename,p.`name` pro_name,c.`name` city_name,r.`name` region_Name,t.`name` town_name,address, authnumber, unifiedsocial, create_time, crm, `status`,
+crm_user_info.identify_front,crm_user_info.identify_back from lh_analyze.operationcenter o
+left join province p on o.province_code = p.`code`
+left join city c on c.`code` = o.city_code 
+left join region r on r.`code` = o.region_code
+left join town t on t.`code` = o.town_code
+left join crm_user_info on o.unionid = crm_user_info.unionid
         '''
         # sql 拼接
         condition_sql_list = []
@@ -140,7 +141,8 @@ def check_operate_detail_data():
         conn_an = direct_get_conn(analyze_mysql_conf)
         if not conn_an:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        detail_data_sql = '''select id, telephone phone, unionid, name, operatename, province_code,city_code,region_code,town_code,address, authnumber, unifiedsocial, create_time, crm, `status`,bus_license_front,bus_license_back,other_identify from lh_analyze.operationcenter where id=%s''' % operate_id
+        detail_data_sql = '''select o.id, telephone phone, o.unionid, o.`name`, operatename, o.province_code,o.city_code,o.region_code,o.town_code,o.address, authnumber, unifiedsocial, create_time, crm, `status`,bus_license_front,bus_license_back,other_identify,crm_user_info.identify_front,crm_user_info.identify_back from lh_analyze.operationcenter o
+        left join crm_user_info on o.unionid = crm_user_info.unionid where id=%s''' % operate_id
         detail_data = pd.read_sql(detail_data_sql, conn_an)
         detail_data['create_time'] = detail_data['create_time'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
         detail_data.fillna('', inplace=True)
