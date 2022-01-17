@@ -3,6 +3,7 @@
 # @Author : shihong
 # @File : .py
 # --------------------------------------
+# 同步crm运营中心关系---每十分钟同步一次
 import datetime
 import sys, os, json
 import traceback

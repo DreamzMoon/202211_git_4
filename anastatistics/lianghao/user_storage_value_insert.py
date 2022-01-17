@@ -5,7 +5,7 @@
 # @Author : xiaowangwang
 # @Email : www@qq.com
 # @File : user_storage_value_insert.py
-'''用户今日订单数据统计报表today'''
+'''用户今日订单数据统计报表today---每十分钟同步一次'''
 import os
 import sys
 

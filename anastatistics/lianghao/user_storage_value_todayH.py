@@ -5,7 +5,7 @@
 # @Author : xiaowangwang
 # @Email : www@qq.com
 # @File : user_storage_value_todayH.py
-'''用户个人已转让、已使用、转让中按小时统计'''
+'''用户个人已转让、已使用、转让中按小时统计---每整点10分同步数据'''
 import os
 import sys
 

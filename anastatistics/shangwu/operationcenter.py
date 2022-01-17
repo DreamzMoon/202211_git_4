@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-禄可商务运营中心
+禄可商务运营中心（此脚本暂时不用）
 '''
 import datetime
 import sys, os, json
