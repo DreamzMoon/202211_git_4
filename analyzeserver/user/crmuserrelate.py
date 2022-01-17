@@ -89,7 +89,7 @@ def user_relate_mes():
             from crm_user
             left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
             left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-            where crm_user.del_flag = 0 
+            where crm_user.del_flag = 0
             '''
 
 
@@ -189,6 +189,7 @@ def user_relate_mes():
         logger.exception(traceback.format_exc())
         # 参数名错误
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
 
 
 @userrelatebp.route("basicmes",methods=["POST"])
