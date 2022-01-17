@@ -963,31 +963,21 @@ def edit_base_info():
             elif k == 'status':
                 old_v = map_status_dict.get(old_v, '')
                 v = map_status_dict.get(v, '')
-            elif k == 'province_code':
-                province_sql = '''select name from lh_analyze.province where code=%s'''
-                logger.info(province_sql)
-                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
-                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
-                old_v = old_province_df['name'].values[0] if old_province_df.shape[0] !=0 else ''
-                v = new_province_df['name'].values[0]
-            elif k == 'city_code':
-                city_sql = '''select name from lh_analyze.city where code=%s'''
-                old_city_df = pd.read_sql(city_sql % old_v, conn_analyze)
-                new_city_df = pd.read_sql(city_sql % v, conn_analyze)
-                old_v = old_city_df['name'].values[0] if old_city_df.shape[0] !=0 else ''
-                v = new_city_df['name'].values[0]
-            elif k == 'region_code':
-                region_sql = '''select name from lh_analyze.region where code=%s'''
-                old_region_df = pd.read_sql(region_sql % old_v, conn_analyze)
-                new_region_df = pd.read_sql(region_sql % v, conn_analyze)
-                old_v = old_region_df['name'].values[0] if old_region_df.shape[0] !=0 else ''
-                v = new_region_df['name'].values[0]
-            elif k == 'town_code':
-                town_sql = '''select name from lh_analyze.town where code=%s'''
-                old_town_df = pd.read_sql(town_sql % old_v, conn_analyze)
-                new_towne_df = pd.read_sql(town_sql % v, conn_analyze)
-                old_v = old_town_df['name'].values[0] if old_town_df.shape[0] !=0 else ''
-                v = new_towne_df['name'].values[0]
+            elif k in ['province_code', 'city_code', 'region_code', 'town_code']:
+                area_sql = '''select name from lh_analyze.{area_name} where code=%s'''.format(area_name=k.split('_')[0])
+                # 原本存在code
+                if len(old_v) != 0:
+                    logger.info(area_sql % old_v)
+                    old_area_df = pd.read_sql(area_sql % old_v, conn_analyze)
+                    old_v = old_area_df['name'].values[0] if old_area_df.shape[0] != 0 else ''
+                    logger.info(area_sql % v)
+                    new_area_df = pd.read_sql(area_sql % v, conn_analyze)
+                    v = new_area_df['name'].values[0] if new_area_df.shape[0] != 0 else ''
+                # 原本不存在code
+                else:
+                    logger.info(area_sql % v)
+                    new_area_df = pd.read_sql(area_sql % v, conn_analyze)
+                    v = new_area_df['name'].values[0] if new_area_df.shape[0] != 0 else ''
             # 图片
             if k in ['identify_front', 'identify_back', 'face_pic', 'usericon']:
                 compare.append("%s修改了" % map_column_dict.get(k))
