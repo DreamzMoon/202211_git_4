@@ -695,7 +695,7 @@ def edit_base_info():
         not_edit_columns = []
         # 判断字段是否修改，有修改字段按对应表分类，未修改字段添加到not_edit_columns，后续进行剔除
         for k,v in request_dict.items():
-            if user_info[k].values[0] != v and len(user_info[k].values[0]) != len(v):
+            if user_info[k].values[0] != v:
                 # 修改crm_user_info_表
                 if k in crm_user_info_table_columns:
                     crm_user_info_table_edit[k] = v
@@ -708,19 +708,21 @@ def edit_base_info():
             else:
                 not_edit_columns.append(k)
                 continue
-
+        logger.info(crm_user_info_table_edit)
+        logger.info(crm_user_table_edit)
+        logger.info(other_table_edit)
         execute_list = []
         if len(crm_user_info_table_edit) != 0:
             update_crm_user_info_base_sql = '''update lh_analyze.crm_user_info set'''
             num = 1
             for k,v in crm_user_info_table_edit.items():
                 if num == 1:
-                    if not v:
+                    if v == '':
                         update_crm_user_info_base_sql += ''' %s=NULL''' % k
                     else:
                         update_crm_user_info_base_sql += ''' %s="%s"''' % (k, v)
                 else:
-                    if not v:
+                    if v == '':
                         update_crm_user_info_base_sql = update_crm_user_info_base_sql + ',' + ''' %s=NULL''' % k
                     else:
                         update_crm_user_info_base_sql = update_crm_user_info_base_sql + ',' + ''' %s="%s"''' % (k, v)
@@ -733,12 +735,12 @@ def edit_base_info():
             num = 1
             for k, v in crm_user_table_edit.items():
                 if num == 1:
-                    if not v:
+                    if v == '':
                         update_crm_user_base_sql += ''' %s=NULL''' % k
                     else:
                         update_crm_user_base_sql += ''' %s="%s"''' % (k, v)
                 else:
-                    if not v == 0:
+                    if v == '':
                         update_crm_user_base_sql = update_crm_user_base_sql + ',' + ''' %s=NULL''' % k
                     else:
                         update_crm_user_base_sql = update_crm_user_base_sql + ',' + ''' %s="%s"''' % (k, v)
@@ -953,41 +955,44 @@ def edit_base_info():
         for k, v in request_dict.items():
             old_v = user_info[k].values[0]
             if k == 'vertify_status' or k == 'huoti_status':
-                old_v = map_vertify_huoti_dict.get(old_v)
-                v = map_vertify_huoti_dict.get(v)
+                old_v = map_vertify_huoti_dict.get(old_v, '')
+                v = map_vertify_huoti_dict.get(v, '')
             elif k == 'sex':
-                old_v = map_sex_dict.get(old_v)
-                v = map_sex_dict.get(v)
+                old_v = map_sex_dict.get(old_v, '')
+                v = map_sex_dict.get(v, '')
             elif k == 'status':
-                old_v = map_status_dict.get(old_v)
-                v = map_status_dict.get(v)
+                old_v = map_status_dict.get(old_v, '')
+                v = map_status_dict.get(v, '')
             elif k == 'province_code':
                 province_sql = '''select name from lh_analyze.province where code=%s'''
                 logger.info(province_sql)
                 old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
                 new_province_df = pd.read_sql(province_sql % v, conn_analyze)
-                old_v = old_province_df['name'].values[0]
+                old_v = old_province_df['name'].values[0] if old_province_df.shape[0] !=0 else ''
                 v = new_province_df['name'].values[0]
             elif k == 'city_code':
-                province_sql = '''select name from lh_analyze.city where code=%s'''
-                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
-                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
-                old_v = old_province_df['name'].values[0]
-                v = new_province_df['name'].values[0]
+                city_sql = '''select name from lh_analyze.city where code=%s'''
+                old_city_df = pd.read_sql(city_sql % old_v, conn_analyze)
+                new_city_df = pd.read_sql(city_sql % v, conn_analyze)
+                old_v = old_city_df['name'].values[0] if old_city_df.shape[0] !=0 else ''
+                v = new_city_df['name'].values[0]
             elif k == 'region_code':
-                province_sql = '''select name from lh_analyze.region where code=%s'''
-                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
-                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
-                old_v = old_province_df['name'].values[0]
-                v = new_province_df['name'].values[0]
+                region_sql = '''select name from lh_analyze.region where code=%s'''
+                old_region_df = pd.read_sql(region_sql % old_v, conn_analyze)
+                new_region_df = pd.read_sql(region_sql % v, conn_analyze)
+                old_v = old_region_df['name'].values[0] if old_region_df.shape[0] !=0 else ''
+                v = new_region_df['name'].values[0]
             elif k == 'town_code':
-                province_sql = '''select name from lh_analyze.town where code=%s'''
-                old_province_df = pd.read_sql(province_sql % old_v, conn_analyze)
-                new_province_df = pd.read_sql(province_sql % v, conn_analyze)
-                old_v = old_province_df['name'].values[0]
-                v = new_province_df['name'].values[0]
-
-            compare.append("%s由 %s 变更为 %s" % (map_column_dict.get(k), old_v, v))
+                town_sql = '''select name from lh_analyze.town where code=%s'''
+                old_town_df = pd.read_sql(town_sql % old_v, conn_analyze)
+                new_towne_df = pd.read_sql(town_sql % v, conn_analyze)
+                old_v = old_town_df['name'].values[0] if old_town_df.shape[0] !=0 else ''
+                v = new_towne_df['name'].values[0]
+            # 图片
+            if k in ['identify_front', 'identify_back', 'face_pic', 'usericon']:
+                compare.append("%s修改了" % map_column_dict.get(k))
+            else:
+                compare.append("%s由 %s 变更为 %s" % (map_column_dict.get(k), old_v, v))
 
         if compare:
             compare.insert(0, "该用户的unionid为:%s" % unionid)
