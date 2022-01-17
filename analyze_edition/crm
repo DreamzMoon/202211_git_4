@@ -141,19 +141,22 @@ CREATE TABLE `town` (
 
 
 CREATE TABLE `crm_tag` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `tag_name` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '标签名字',
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '新增时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户标签';
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_index` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户标签';
 
 
 CREATE TABLE `crm_user_tag` (
   `unionid` bigint(20) DEFAULT NULL COMMENT '用户unionid',
-  `tag_id` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '用户标签id',
+  `tag_id` bigint(20) DEFAULT NULL COMMENT '用户标签id',
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  KEY `unionid` (`unionid`) USING BTREE,
+  KEY `tag_id` (`tag_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户打标签';
 
 CREATE TABLE `crm_user_info` (
@@ -163,7 +166,6 @@ CREATE TABLE `crm_user_info` (
   `identify_back` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '身份证反面',
   `face_pic` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '人脸照片',
   `usericon` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '头像',
-  `address` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '身份证地址',
   `issue` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '发证机关',
   `province_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '省编码',
   `city_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '市编码',
