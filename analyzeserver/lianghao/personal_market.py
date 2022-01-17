@@ -639,11 +639,7 @@ def personal_total():
             bus_phone = phone_data['phone'].tolist()
             if not bus_phone:
                 return {"code": "11015", "status": "failed", "msg": message["11015"]}
-            # result = get_busphne_by_id(bus_id)
-            # if result[0] == 1:
-            #     bus_phone = result[1].split(",")
-            # else:
-            #     return {"code":"11015","status":"failed","msg":message["11015"]}
+
 
         logger.info(len(bus_phone))
 
