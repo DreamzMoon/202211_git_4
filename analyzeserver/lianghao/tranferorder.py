@@ -106,8 +106,7 @@ def transfer_all():
                     lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
                     lh_user_phone = pd.read_sql(lh_user_sql,conn_read)
                     lh_phone = lh_user_phone["phone"].to_list()
-                    logger.info(lh_phone)
-                    logger.info(args_list)
+
                     select_phone = list(set(lh_phone)-set(args_list))
 
                 select_phone = ",".join(select_phone)
@@ -270,8 +269,7 @@ def transfer_buy_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
 
         select_phone = ",".join(select_phone)
@@ -527,8 +525,7 @@ def transfer_sell_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
 
         select_phone = ",".join(select_phone)
@@ -780,8 +777,7 @@ def transfer_public_order():
             lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
-            logger.info(lh_phone)
-            logger.info(args_phone_lists)
+
             select_phone = list(set(lh_phone) - set(args_phone_lists))
 
         select_phone = ",".join(select_phone)
