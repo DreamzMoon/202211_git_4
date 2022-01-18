@@ -142,7 +142,7 @@ def transfer_all():
                     all_order_data = cursor.fetchone()
 
                     # chushou
-                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
+                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s)''' % select_phone
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
                         start_time, end_time)
