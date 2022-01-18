@@ -105,6 +105,7 @@ def user_tag_uinsert():
             update_unionid = []
             for p in params:
                 update_unionid.append(p[0])
+            update_unionid = list(set(update_unionid))
             compare.append("符合修改的unionid:"+",".join(update_unionid))
             compare.append("打上标签:"+",".join(t_data))
 
