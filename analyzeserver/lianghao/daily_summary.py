@@ -152,49 +152,64 @@ def daily_plat_summary():
             buy_sql = buy_sql + buy_condition + buy_group_sql
             sell_sql = sell_sql + sell_condition + sell_group_sql
             public_sql = public_sql + public_condition + public_group_sql
-        else:
-            buy_sql = buy_sql + buy_group_sql
-            sell_sql = sell_sql + sell_group_sql
-            public_sql = public_sql + public_group_sql
+        # else:
+        #     buy_sql = buy_sql + buy_group_sql
+        #     sell_sql = sell_sql + sell_group_sql
+        #     public_sql = public_sql + public_group_sql
 
         # logger.info(buy_sql)
 
-        buy_data = pd.read_sql(buy_sql, conn_lh)
-        sell_data = pd.read_sql(sell_sql, conn_lh)
-        public_data = pd.read_sql(public_sql, conn_lh)
+            buy_data = pd.read_sql(buy_sql, conn_lh)
+            sell_data = pd.read_sql(sell_sql, conn_lh)
+            public_data = pd.read_sql(public_sql, conn_lh)
 
-        df_list = []
-        df_list.append(buy_data)
-        df_list.append(sell_data)
-        df_list.append(public_data)
-        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['statistic_time'], how='outer'), df_list)
-        df_merged.sort_values(by=["statistic_time"],ascending=[False],inplace=True)
+            df_list = []
+            df_list.append(buy_data)
+            df_list.append(sell_data)
+            df_list.append(public_data)
+            df_merged = reduce(lambda left, right: pd.merge(left, right, on=['statistic_time'], how='outer'), df_list)
+            df_merged.sort_values(by=["statistic_time"],ascending=[False],inplace=True)
 
-        if start_time and end_time:
-            df_merged = df_merged[(df_merged["statistic_time"] >= start_time) & (df_merged["statistic_time"] <= end_time)]
+            if start_time and end_time:
+                df_merged = df_merged[(df_merged["statistic_time"] >= start_time) & (df_merged["statistic_time"] <= end_time)]
 
-        all_data = {}
-        #准备算钱
-        all_data["buy_order_count"] = int(df_merged["buy_order_count"].sum())
-        all_data["buy_lh_count"] = int(df_merged["buy_lh_count"].sum())
-        all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(),2)
-        all_data["public_lh_count"] = int(df_merged["public_lh_count"].sum())
-        all_data["public_order_count"] = int(df_merged["public_order_count"].sum())
-        all_data["public_total_price"] = round(df_merged["public_total_price"].sum(),2)
-        all_data["sell_lh_count"] = int(df_merged["sell_lh_count"].sum())
-        all_data["sell_order_count"] = int(df_merged["sell_order_count"].sum())
-        all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(),2)
-        all_data["total_real_money"] = round(df_merged["total_real_money"].sum(),2)
-        all_data["total_sell_fee"] = round(df_merged["total_sell_fee"].sum(),2)
-        logger.info(all_data)
+            all_data = {}
+            #准备算钱
+            all_data["buy_order_count"] = int(df_merged["buy_order_count"].sum())
+            all_data["buy_lh_count"] = int(df_merged["buy_lh_count"].sum())
+            all_data["buy_total_price"] = round(df_merged["buy_total_price"].sum(),2)
+            all_data["public_lh_count"] = int(df_merged["public_lh_count"].sum())
+            all_data["public_order_count"] = int(df_merged["public_order_count"].sum())
+            all_data["public_total_price"] = round(df_merged["public_total_price"].sum(),2)
+            all_data["sell_lh_count"] = int(df_merged["sell_lh_count"].sum())
+            all_data["sell_order_count"] = int(df_merged["sell_order_count"].sum())
+            all_data["sell_total_price"] = round(df_merged["sell_total_price"].sum(),2)
+            all_data["total_real_money"] = round(df_merged["total_real_money"].sum(),2)
+            all_data["total_sell_fee"] = round(df_merged["total_sell_fee"].sum(),2)
+            logger.info(all_data)
 
-        df_merged.fillna("",inplace=True)
-        count = len(df_merged)
-        return_data = df_merged[code_page:code_size] if page and size else df_merged.copy()
+            df_merged.fillna("",inplace=True)
+            count = len(df_merged)
+            return_data = df_merged[code_page:code_size] if page and size else df_merged.copy()
 
-        msg_data = {"all_data":all_data,"data":return_data.to_dict("records")}
-        return {"code":"0000","status":"success","msg":msg_data,"count":count}
-
+            msg_data = {"all_data":all_data,"data":return_data.to_dict("records")}
+            return {"code":"0000","status":"success","msg":msg_data,"count":count}
+        else:
+            all_data = {}
+            # 准备算钱
+            all_data["buy_order_count"] = 0
+            all_data["buy_lh_count"] = 0
+            all_data["buy_total_price"] = 0
+            all_data["public_lh_count"] = 0
+            all_data["public_order_count"] = 0
+            all_data["public_total_price"] = 0
+            all_data["sell_lh_count"] = 0
+            all_data["sell_order_count"] = 0
+            all_data["sell_total_price"] = 0
+            all_data["total_real_money"] = 0
+            all_data["total_sell_fee"] = 0
+            msg_data = {"all_data": all_data, "data": []}
+            return {"code": "0000", "status": "success", "msg": msg_data, "count": 0}
     except:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
@@ -496,25 +511,28 @@ def daily_plat_value():
         if select_phone:
             condition_sql = " where hold_phone in (%s)" % select_phone
             sql = sql + condition_sql +group_sql
+
+            logger.info(sql)
+            data = pd.read_sql(sql,conn_analyze)
+            # logger.info(data)
+
+
+            if start_time and end_time:
+                data = data[(data["day_time"] >= start_time) & (data["day_time"] <= end_time)]
+
+            data = data.to_dict("records")
+            for d in data:
+                d["day_time"] = datetime.datetime.strftime(d["day_time"], "%Y-%m-%d")
+            count = len(data)
+
+            return_data = data[code_page:code_size] if page and size else data.copy()
+            msg = {"data": return_data}
+
+            return {"code":"0000","status":"success","msg":msg,"count":count}
         else:
-            sql = sql + group_sql
-        logger.info(sql)
-        data = pd.read_sql(sql,conn_analyze)
-        # logger.info(data)
+            msg = {"data": []}
 
-
-        if start_time and end_time:
-            data = data[(data["day_time"] >= start_time) & (data["day_time"] <= end_time)]
-
-        data = data.to_dict("records")
-        for d in data:
-            d["day_time"] = datetime.datetime.strftime(d["day_time"], "%Y-%m-%d")
-        count = len(data)
-
-        return_data = data[code_page:code_size] if page and size else data.copy()
-        msg = {"data": return_data}
-
-        return {"code":"0000","status":"success","msg":msg,"count":count}
+            return {"code": "0000", "status": "success", "msg": msg, "count": 0}
 
     except:
         logger.exception(traceback.format_exc())
