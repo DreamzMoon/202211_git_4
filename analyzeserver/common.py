@@ -295,8 +295,8 @@ def match_attribute(data_df, request, mode):
             if request.json['start_sell_time']:
                 match_df = match_df.loc[(match_df['sell_time'] >= request.json['start_sell_time']) & (match_df['sell_time'] <= request.json['end_sell_time']), :]
         else:
-            match_df = data_df.loc[((data_df['publish_name'].str.contains(request.json['keyword'], regex=False)) | (
-                data_df['publish_unionid'].str.contains(request.json['keyword'], regex=False)) | (data_df['publish_phone'].str.contains(request.json['keyword'], regex=False)))]
+            # match_df = data_df.loc[((data_df['publish_name'].str.contains(request.json['keyword'], regex=False)) | (data_df['publish_unionid'].str.contains(request.json['keyword'], regex=False)) | (data_df['publish_phone'].str.contains(request.json['keyword'], regex=False))), :]
+            match_df = data_df.copy()
             if request.json['parent']:
                 match_df = match_df.loc[(match_df['parentid'] == request.json['parent']) | (
                         match_df['parent_phone'] == request.json['parent']), :]  # 归属上级

@@ -46,7 +46,7 @@ def personal_publish():
             # 表单选择operateid
             operateid = request.json['operateid']
             # 出售人信息
-            search_key = request.json['keyword'].strip()
+            keyword = request.json['keyword'].strip()
             # 归属上级
             parent = request.json['parent'].strip()
             # 首次发布时间
@@ -110,12 +110,25 @@ def personal_publish():
 
         # 用户数据
         # crm_user_sql = '''select id publish_unionid, pid parentid, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name from luke_sincerechat.user where phone is not null or phone != ""'''
-        crm_user_sql = '''
-            select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name, operate_id, operatename
-            from lh_analyze.crm_user
-            where phone is not null and del_flag=0
-        '''
+        if not keyword:
+            crm_user_sql = '''
+                select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name, operate_id, operatename
+                from lh_analyze.crm_user
+                where phone is not null and del_flag=0
+            '''
+        else:
+            crm_user_sql = '''
+                select * from (
+                select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name
+                ,operate_id, operatename from lh_analyze.crm_user where phone like "%s" or unionid like "%s" or `name` like "%s" or nickname like "%s") t 
+                where t.publish_phone is not null and (t.publish_name like "%s" or t.publish_phone like "%s" or t.publish_unionid like "%s")
+            ''' % ("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+            logger.info(crm_user_sql)
         crm_user_df = pd.read_sql(crm_user_sql, conn_an)
+        if crm_user_df.shape[0] == 0:
+            logger.info('return data')
+            return {"code": "0000", "status": "success", "count":0, "msg": {"data": []}}
+        phone_list = crm_user_df['publish_phone'].tolist()
         # crm_user_df = crm_user_df.merge(crm_user_df.loc[:, ["publish_unionid", "publish_phone"]].rename(columns={"publish_unionid":"parentid", "publish_phone":"parent_phone"}), how='left', on='parentid')
         crm_user_df['publish_unionid'] = crm_user_df['publish_unionid'].astype(str)
         crm_user_df['parentid'] = crm_user_df['parentid'].astype(str)
@@ -125,6 +138,7 @@ def personal_publish():
         fina_df['publish_unionid'].fillna('', inplace=True)
         fina_df['parentid'].fillna('', inplace=True)
         fina_df.sort_values('near_time', ascending=False, inplace=True)
+        fina_df = fina_df[fina_df['publish_phone'].isin(phone_list)]
         # fina_df.fillna("", inplace=True)
         if operateid:
             match_result = if_exist_operate_match_data(fina_df, operateid, request, 'publish_phone', 'publish_data')
