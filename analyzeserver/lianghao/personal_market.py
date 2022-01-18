@@ -1403,7 +1403,8 @@ def personal_sell_all():
 
         last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
         last_data.rename(columns={"phone": "phone", "create_time": "last_time", "total_price": "last_total_price"},inplace=True)
-        last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        # last_data["last_time"] = last_data['last_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
 
         sum_data = order_data.sort_values("create_time", ascending=True).groupby("phone").sum("total_price").reset_index()
         count_data = order_data.sort_values("create_time", ascending=True).groupby("phone").count().reset_index().drop("create_time", axis=1)
