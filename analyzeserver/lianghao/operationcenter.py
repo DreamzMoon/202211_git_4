@@ -180,7 +180,8 @@ def operations_order_count():
                 group by t1.unionid
             ''' % ','.join(tag_phone_list)
             tag_df = pd.read_sql(tag_sql, conn_analyze)
-            # tag_df['operate_leader_unionid'] = tag_df['operate_leader_unionid'].astype(str)
+            tag_df['operate_leader_unionid'] = tag_df['operate_leader_unionid'].astype(str)
+            data['operate_leader_unionid'] = data['operate_leader_unionid'].astype(str)
             data = data.merge(tag_df, how='left', on='operate_leader_unionid')
         else:
             data['tag_name'] = []
