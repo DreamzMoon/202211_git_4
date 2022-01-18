@@ -872,6 +872,11 @@ def edit_base_info():
                         update_bus_parent_sql += ''' bus_parent_nickname="%s"''' % v
                         update_operate_sql += ''' nickname="%s"''' % v
                     if k == 'phone':
+                        #这里查询一下 如果当前系统存在这个手机号 就不插入
+                        check_sql = '''select * from crm_user where phone = %s'''
+                        if cursor.execute(check_sql,(v)):
+                            return {"code":"11032","msg":message["11032"],"status":"failed"}
+
                         update_crm_parent_sql += ''' parent_phone="%s"''' % v
                         update_bus_parent_sql += ''' bus_parent_phone="%s"''' % v
                         update_crm_operate_sql += ''' bus_phone="%s"''' % v
@@ -889,6 +894,10 @@ def edit_base_info():
                         update_bus_parent_sql = update_bus_parent_sql + ',' + ''' bus_parent_nickname="%s"''' % v
                         update_operate_sql = update_operate_sql + ',' + ''' nickname="%s"''' % v
                     if k == 'phone':
+                        check_sql = '''select * from crm_user where phone = %s'''
+                        if cursor.execute(check_sql, (v)):
+                            return {"code": "11032", "msg": message["11032"], "status": "failed"}
+
                         update_crm_parent_sql = update_crm_parent_sql + ',' + ''' parent_phone="%s"''' % v
                         update_bus_parent_sql = update_bus_parent_sql + ',' + ''' bus_parent_phone="%s"''' % v
                         update_crm_operate_sql = update_crm_operate_sql + ',' + ''' bus_phone="%s"''' % v
