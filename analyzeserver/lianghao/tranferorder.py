@@ -114,23 +114,42 @@ def transfer_all():
                 logger.info(select_phone)
 
                 if select_phone:
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
+                    # 采购
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
                     cursor.execute(sql)
                     order_data = cursor.fetchone()
 
+                    #出售
+                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' % select_phone
+                    cursor.execute(sql)
+                    sellout_data = cursor.fetchone()
+
+
+                    # 发布
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
                                                         and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' %select_phone
                     cursor.execute(sql)
                     sell_data = cursor.fetchone()
                     logger.info(sell_data)
 
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price, count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
+                    # 采购
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
                     if start_time and end_time:
                         time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
                         sql = sql + time_condition
 
                     cursor.execute(sql)
                     all_order_data = cursor.fetchone()
+
+                    # chushou
+                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
+                    if start_time and end_time:
+                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
+                        start_time, end_time)
+                        sql = sql + time_condition
+
+                    cursor.execute(sql)
+                    all_sellout_data = cursor.fetchone()
 
                     sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone in (%s)''' % select_phone
                     if start_time and end_time:
@@ -143,9 +162,9 @@ def transfer_all():
                     today_data = {
                         "buy_order_count": order_data[0],
                         "buy_total_count": order_data[1], "buy_total_price": order_data[2],
-                        "sell_order_count": order_data[3], "sell_total_count": order_data[4],
-                        "sell_total_price": order_data[5], "sell_real_price": order_data[6],
-                        "sell_fee": order_data[7], "fee": order_data[8],
+                        "sell_order_count": sellout_data[0], "sell_total_count": sellout_data[1],
+                        "sell_total_price": sellout_data[2], "sell_real_price": sellout_data[3],
+                        "sell_fee": sellout_data[4], "fee": sellout_data[5],
                         "publish_total_price": sell_data[0], "publish_total_count": sell_data[1],
                         "publish_sell_count": sell_data[2]
                     }
@@ -154,9 +173,9 @@ def transfer_all():
                     all_data = {
                         "buy_order_count": all_order_data[0],
                         "buy_total_count": all_order_data[1], "buy_total_price": all_order_data[2],
-                        "sell_order_count": all_order_data[3], "sell_total_count": all_order_data[4],
-                        "sell_total_price": all_order_data[5], "sell_real_price": all_order_data[6],
-                        "sell_fee": all_order_data[7], "fee": all_order_data[8],
+                        "sell_order_count": all_sellout_data[0], "sell_total_count": all_sellout_data[1],
+                        "sell_total_price": all_sellout_data[2], "sell_real_price": all_sellout_data[3],
+                        "sell_fee": all_sellout_data[4], "fee": all_sellout_data[5],
                         "publish_total_price": all_sell_data[0], "publish_total_count": all_sell_data[1],
                         "publish_sell_count": all_sell_data[2]
                     }
