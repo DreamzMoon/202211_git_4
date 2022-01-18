@@ -122,9 +122,10 @@ def transfer_all():
                 if select_phone:
 
                     # 今天的
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
+                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
                     cursor.execute(sql)
                     order_data = cursor.fetchone()
+                    logger.info(order_data)
 
                     sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' % select_phone
                     cursor.execute(sql)
