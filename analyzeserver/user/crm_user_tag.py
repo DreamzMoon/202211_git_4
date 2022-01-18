@@ -69,7 +69,13 @@ def user_tag_uinsert():
         logger.info("dddddd")
         tag_list = request.json.get("tag_list")
         unionid_list = request.json.get("unionid_list")
+
         params = []
+        if len(unionid_list) == 1:
+            #先删除这个用户的所有标签 再插入
+            delete_sql = '''delete from crm_user_tag where unionid = %s''' %unionid_list[0]
+            cursor_analyze.execute(delete_sql)
+
         for tag_id in tag_list:
             for unionid in unionid_list:
                 #判断标签是否存在 如果存在不在进行打标
