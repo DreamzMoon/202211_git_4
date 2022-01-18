@@ -341,3 +341,35 @@ def user_tag_distribute():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_analyze.close()
+
+
+
+
+@usertagbp.route("mes",methods=["POST"])
+def user_tag_mes():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+
+        token = request.headers["Token"]
+        user_id = request.json.get("user_id")
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        unionid = request.json.get("unionid")
+        sql = '''select tag_id from crm_user_tag where unionid = %s''' %unionid
+        tag_data = pd.read_sql(sql,conn_analyze)
+        tag_id_list = tag_data["tag_id"].to_list()
+
+        return {"code":"0000","msg":tag_id_list,"status":"success"}
+
+    except Exception as e:
+        logger.error(e)
+        logger.exception(traceback.format_exc())
+        # 参数名错误
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
