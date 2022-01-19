@@ -535,13 +535,13 @@ def plat_statis():
                                                         (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                                                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
                                                         sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                        from user_storage_value where group by day_time order by day_time desc limit %s)
+                                                        from user_storage_value group by day_time order by day_time desc limit %s)
                                                         union all
                                                         (
                                                         select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                                                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
                                                         sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                         from user_storage_value_today where  group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                                                         from user_storage_value_today  group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                                                         limit 1)
                                                         order by day_time asc
                                                         ''' % (limit_list[1])
