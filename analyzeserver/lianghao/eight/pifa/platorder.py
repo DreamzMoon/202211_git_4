@@ -123,7 +123,7 @@ def transfer_all():
                     flag = 0
 
                 logger.info(flag)
-
+                select_phone = ",".join(select_phone)
 
                 if select_phone:
                     if not flag:
