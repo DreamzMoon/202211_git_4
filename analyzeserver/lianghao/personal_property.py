@@ -95,7 +95,7 @@ def platform_data():
                     select_phone.append(tp)
         else:
             lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
-            lh_user_phone = pd.read_sql(lh_user_sql, conn_analyze)
+            lh_user_phone = pd.read_sql(lh_user_sql, conn_lh)
             lh_phone = lh_user_phone["phone"].to_list()
 
             select_phone = list(set(lh_phone) - set(args_phone_lists))
@@ -235,10 +235,10 @@ def platform_data():
 
                 use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                                         select sum(use_count) use_count,sum(public_count) public_count from user_storage_value ''' + condition_sql + '''union all
-                                        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                                        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today ''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
                                         limit 1)
                                         ) user_storage'''
-
+                logger.info(use_public_sql)
                 cursor_analyze.execute(use_public_sql)
                 use_public = cursor_analyze.fetchone()
 
