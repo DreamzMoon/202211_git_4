@@ -221,5 +221,5 @@ if __name__ == '__main__':
     result = insert_operatecenter()
     logger.info(result)
 
-    result = update_operatecenter()
-    logger.info(result)
+    # result = update_operatecenter()
+    # logger.info(result)
