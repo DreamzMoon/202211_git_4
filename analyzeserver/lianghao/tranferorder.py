@@ -199,18 +199,18 @@ def transfer_all():
                         return {"code": "0000", "status": "success", "msg": last_data}
                     else:
                         # 采购
-                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE() '''
                         cursor.execute(sql)
                         order_data = cursor.fetchone()
 
                         # 出售
-                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE() '''
                         cursor.execute(sql)
                         sellout_data = cursor.fetchone()
 
                         # 发布
                         sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
-                                                                                and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                                                                                and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE() '''
                         cursor.execute(sql)
                         sell_data = cursor.fetchone()
                         logger.info(sell_data)

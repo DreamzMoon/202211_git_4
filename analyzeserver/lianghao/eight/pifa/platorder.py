@@ -198,17 +198,17 @@ def transfer_all():
                         return {"code":"0000","status":"success","msg":last_data}
                     else:
                         # 今天的
-                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE()'''
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                         cursor.execute(sql)
                         order_data = cursor.fetchone()
                         logger.info(order_data)
 
-                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE()'''
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from le_order where `status` = 1 and  del_flag = 0 and type = 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                         cursor.execute(sql)
                         sell_out_data = cursor.fetchone()
 
                         sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count
-                                            from le_sell where del_flag=0  and status != 1 and DATE_FORMAT(create_time,"%%Y-%%m-%%d") = CURRENT_DATE()
+                                            from le_sell where del_flag=0  and status != 1 and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE()
                                              '''
                         cursor.execute(sql)
                         sell_data = cursor.fetchone()
