@@ -340,8 +340,11 @@ def daily_user_summary():
             if start_time and end_time:
                 match_data = match_data.loc[(match_data['day_time'] >= start_time) & (match_data['day_time'] <= end_time), :]
         else:
-            day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
-            match_data = all_data.loc[all_data['day_time'] == day_time, :]
+            match_data = all_data.copy()
+            # day_time = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
+            # match_data = all_data.loc[all_data['day_time'] == day_time, :]
+
+        match_data.sort_values("day_time",ascending=False,inplace=True)
         # 汇总数据
         tital_data = {}
         tital_data['buy_count'] = int(match_data['buy_count'].sum())
