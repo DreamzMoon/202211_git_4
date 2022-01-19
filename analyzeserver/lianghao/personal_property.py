@@ -375,7 +375,7 @@ def plat_statis():
                     select_phone.append(tp)
         else:
             lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
-            lh_user_phone = pd.read_sql(lh_user_sql, conn_analyze)
+            lh_user_phone = pd.read_sql(lh_user_sql, conn_lh)
             lh_phone = lh_user_phone["phone"].to_list()
 
             select_phone = list(set(lh_phone) - set(args_phone_lists))
