@@ -96,6 +96,7 @@ def transfer_all():
 
                 #查tag_phone_list
                 select_phone = []
+                lh_phone = []
                 if tag_phone_list:
                     for tp in tag_phone_list:
                         if tp in args_list:
@@ -123,6 +124,7 @@ def transfer_all():
 
                 if select_phone:
                     if not flag:
+                        logger.info("flag")
                         # 采购
                         sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
                         cursor.execute(sql)
@@ -394,6 +396,7 @@ def transfer_buy_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -850,6 +853,7 @@ def transfer_sell_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1291,6 +1295,7 @@ def transfer_public_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
