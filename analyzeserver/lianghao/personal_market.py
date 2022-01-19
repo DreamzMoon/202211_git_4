@@ -1174,7 +1174,7 @@ def person_buy():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
 
-        personal_datas["person"] = user_data
+        personal_datas["person"] = user_data[0]
 
 
         #获取所有的数据
@@ -1632,7 +1632,7 @@ def person_sell():
             # return {"code": "0000", "status": "success", "msg": "暂无该用户数据"}
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
-
+        personal_datas["person"] = user_data[0]
         # 获取所有的数据
 
         all_sql = '''select count(*) order_count,sum(count) total_count,sum(total_price) total_price,GROUP_CONCAT(pay_type) sum_pay_type from lh_order where del_flag = 0 and type in (1,4) and `status`=1 group by sell_phone having sell_phone = %s'''
