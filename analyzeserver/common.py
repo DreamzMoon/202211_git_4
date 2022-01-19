@@ -271,9 +271,7 @@ def match_attribute(data_df, request, mode):
     try:
         if mode == 'order':
             match_df = data_df.loc[
-                ((data_df['buyer_name'].str.contains(request.json['buyer_info'], regex=False)) | (data_df['buyer_phone'].str.contains(request.json['buyer_info'], regex=False)) | (data_df['buyer_unionid'].str.contains(request.json['buyer_info'], regex=False)))  # 购买人信息
-                & (data_df['order_sn'].str.contains(request.json['order_sn'], regex=False))  # 订单编号
-                & ((data_df['sell_name'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_phone'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_unionid'].str.contains(request.json['sell_info'], regex=False)))  # 出售人信息
+                (data_df['order_sn'].str.contains(request.json['order_sn'], regex=False))  # 订单编号
                 & (data_df['pay_type'].str.contains(request.json['pay_id'], regex=False))  # 支付类型
                 & (data_df['transfer_type'].str.contains(request.json['transfer_id'], regex=False))  # 转让类型
                 ]
@@ -282,8 +280,7 @@ def match_attribute(data_df, request, mode):
             if request.json['start_order_time']:
                 match_df = match_df.loc[(match_df['order_time']>=request.json['start_order_time']) & (match_df['order_time']<=(request.json['end_order_time'])), :]
         elif mode == 'publish':
-            match_df = data_df.loc[((data_df['sell_name'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_phone'].str.contains(request.json['sell_info'], regex=False)) | (data_df['sell_unionid'].str.contains(request.json['sell_info'], regex=False)))  # 出售人信息
-                   & (data_df['status'].str.contains(request.json['status'], regex=False))  # 支付类型
+            match_df = data_df.loc[ (data_df['status'].str.contains(request.json['status'], regex=False))  # 支付类型
                    & (data_df['transfer_type'].str.contains(request.json['transfer_id'], regex=False))  # 转让类型
             , :]
             if request.json['parent']:
@@ -533,7 +530,7 @@ def map_type(df):
     # 转让类型映射
     map_transfer_type = {
         "0": "自主",
-        "1": "市场",
+        "1": "渠道",
         "3": "未知"
     }
     map_status = {
