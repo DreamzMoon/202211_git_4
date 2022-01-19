@@ -949,6 +949,7 @@ def edit_base_info():
             4: "成功"
         }
         map_sex_dict = {
+            0: "未知",
             1: "男",
             2: "女"
         }
