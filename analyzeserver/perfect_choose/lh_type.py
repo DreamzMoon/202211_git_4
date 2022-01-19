@@ -55,13 +55,24 @@ def eight_pay_type_list():
     except:
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
-# 转让类型
+@typebp.route("/eight/transfer_type/list", methods=["GET"])
+def eight_transfer_type():
+    try:
+        map_transfer_type = [
+            {"transfer_id": "0", "transfer_name": "自主"},
+            {"transfer_id": "1", "transfer_name": "渠道"},
+        ]
+        return {"code": "0000", "status": "success", "msg": map_transfer_type}
+    except:
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+# 7位转让类型
 @typebp.route("/transfer_type/list", methods=["GET"])
 def transfer_type():
     try:
         map_transfer_type = [
             {"transfer_id": "0", "transfer_name": "自主"},
-            {"transfer_id": "1", "transfer_name": "市场"},
+            {"transfer_id": "1", "transfer_name": "渠道"},
             {"transfer_id": "3", "transfer_name": "未知"}
         ]
         return {"code": "0000", "status": "success", "msg": map_transfer_type}
