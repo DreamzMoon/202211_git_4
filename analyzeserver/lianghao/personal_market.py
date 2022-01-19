@@ -117,13 +117,12 @@ def personal_publish():
                 where phone is not null and del_flag=0
             '''
         else:
-            crm_user_sql = '''
+            crm_user_sql = f'''
                 select * from (
                 select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name
-                ,operate_id, operatename from lh_analyze.crm_user where phone like "%s" or unionid like "%s" or `name` like "%s" or nickname like "%s") t 
-                where t.publish_phone is not null and (t.publish_name like "%s" or t.publish_phone like "%s" or t.publish_unionid like "%s")
-            ''' % ("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
-            logger.info(crm_user_sql)
+                ,operate_id, operatename from lh_analyze.crm_user where phone like "%{keyword}%" or unionid like "%{keyword}%" or `name` like "%{keyword}%" or nickname like "%{keyword}%") t 
+                where t.publish_phone is not null and (t.publish_name like "%{keyword}%" or t.publish_phone like "%{keyword}%" or t.publish_unionid like "%{keyword}%")
+            '''.format(keyword=keyword)
         crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         if crm_user_df.shape[0] == 0:
             logger.info('return data')
