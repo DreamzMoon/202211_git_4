@@ -96,6 +96,7 @@ def transfer_all():
 
                 #查tag_phone_list
                 select_phone = []
+                lh_phone = []
                 if tag_phone_list:
                     for tp in tag_phone_list:
                         if tp in args_list:
@@ -103,89 +104,173 @@ def transfer_all():
                         else:
                             select_phone.append(tp)
                 else:
-                    lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+                    lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
                     lh_user_phone = pd.read_sql(lh_user_sql,conn_read)
                     lh_phone = lh_user_phone["phone"].to_list()
 
                     select_phone = list(set(lh_phone)-set(args_list))
 
+                flag = 0
+                if len(lh_phone) == len(select_phone):
+                    flag = 1
+                else:
+                    flag = 0
+
+                logger.info(flag)
+
                 select_phone = ",".join(select_phone)
 
-                logger.info(select_phone)
+                # logger.info(select_phone)
 
                 if select_phone:
-                    # 采购
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
-                    cursor.execute(sql)
-                    order_data = cursor.fetchone()
+                    if not flag:
+                        logger.info("flag")
+                        # 采购
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
+                        cursor.execute(sql)
+                        order_data = cursor.fetchone()
 
-                    #出售
-                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' % select_phone
-                    cursor.execute(sql)
-                    sellout_data = cursor.fetchone()
+                        #出售
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' % select_phone
+                        cursor.execute(sql)
+                        sellout_data = cursor.fetchone()
 
 
-                    # 发布
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
-                                                        and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' %select_phone
-                    cursor.execute(sql)
-                    sell_data = cursor.fetchone()
-                    logger.info(sell_data)
+                        # 发布
+                        sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
+                                                            and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() and sell_phone in (%s)''' %select_phone
+                        cursor.execute(sql)
+                        sell_data = cursor.fetchone()
+                        # logger.info(sell_data)
 
-                    # 采购
-                    sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
-                        sql = sql + time_condition
+                        # 采购
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s)''' % select_phone
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' %(start_time,end_time)
+                            sql = sql + time_condition
 
-                    cursor.execute(sql)
-                    all_order_data = cursor.fetchone()
+                        cursor.execute(sql)
+                        all_order_data = cursor.fetchone()
 
-                    # chushou
-                    sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s)''' % select_phone
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
-                        start_time, end_time)
-                        sql = sql + time_condition
+                        # chushou
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s)''' % select_phone
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
+                            start_time, end_time)
+                            sql = sql + time_condition
 
-                    cursor.execute(sql)
-                    all_sellout_data = cursor.fetchone()
+                        cursor.execute(sql)
+                        all_sellout_data = cursor.fetchone()
 
-                    sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone in (%s)''' % select_phone
-                    if start_time and end_time:
-                        time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
-                        sql = sql + time_condition
-                    cursor.execute(sql)
+                        sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1 and sell_phone in (%s)''' % select_phone
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (start_time, end_time)
+                            sql = sql + time_condition
+                        cursor.execute(sql)
 
-                    all_sell_data = cursor.fetchone()
+                        all_sell_data = cursor.fetchone()
 
-                    today_data = {
-                        "buy_order_count": order_data[0],
-                        "buy_total_count": order_data[1], "buy_total_price": order_data[2],
-                        "sell_order_count": sellout_data[0], "sell_total_count": sellout_data[1],
-                        "sell_total_price": sellout_data[2], "sell_real_price": sellout_data[3],
-                        "sell_fee": sellout_data[4], "fee": sellout_data[5],
-                        "publish_total_price": sell_data[0], "publish_total_count": sell_data[1],
-                        "publish_sell_count": sell_data[2]
-                    }
-                    logger.info("today_data:%s" % today_data)
+                        today_data = {
+                            "buy_order_count": order_data[0],
+                            "buy_total_count": order_data[1], "buy_total_price": order_data[2],
+                            "sell_order_count": sellout_data[0], "sell_total_count": sellout_data[1],
+                            "sell_total_price": sellout_data[2], "sell_real_price": sellout_data[3],
+                            "sell_fee": sellout_data[4], "fee": sellout_data[5],
+                            "publish_total_price": sell_data[0], "publish_total_count": sell_data[1],
+                            "publish_sell_count": sell_data[2]
+                        }
+                        logger.info("today_data:%s" % today_data)
 
-                    all_data = {
-                        "buy_order_count": all_order_data[0],
-                        "buy_total_count": all_order_data[1], "buy_total_price": all_order_data[2],
-                        "sell_order_count": all_sellout_data[0], "sell_total_count": all_sellout_data[1],
-                        "sell_total_price": all_sellout_data[2], "sell_real_price": all_sellout_data[3],
-                        "sell_fee": all_sellout_data[4], "fee": all_sellout_data[5],
-                        "publish_total_price": all_sell_data[0], "publish_total_count": all_sell_data[1],
-                        "publish_sell_count": all_sell_data[2]
-                    }
+                        all_data = {
+                            "buy_order_count": all_order_data[0],
+                            "buy_total_count": all_order_data[1], "buy_total_price": all_order_data[2],
+                            "sell_order_count": all_sellout_data[0], "sell_total_count": all_sellout_data[1],
+                            "sell_total_price": all_sellout_data[2], "sell_real_price": all_sellout_data[3],
+                            "sell_fee": all_sellout_data[4], "fee": all_sellout_data[5],
+                            "publish_total_price": all_sell_data[0], "publish_total_count": all_sell_data[1],
+                            "publish_sell_count": all_sell_data[2]
+                        }
 
-                    last_data = {
-                        "today_data": today_data,
-                        "all_data": all_data
-                    }
+                        last_data = {
+                            "today_data": today_data,
+                            "all_data": all_data
+                        }
 
-                    return {"code": "0000", "status": "success", "msg": last_data}
+                        return {"code": "0000", "status": "success", "msg": last_data}
+                    else:
+                        # 采购
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                        cursor.execute(sql)
+                        order_data = cursor.fetchone()
+
+                        # 出售
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                        cursor.execute(sql)
+                        sellout_data = cursor.fetchone()
+
+                        # 发布
+                        sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1
+                                                                                and DATE_FORMAT(up_time, '%%Y%%m%%d') = CURRENT_DATE() '''
+                        cursor.execute(sql)
+                        sell_data = cursor.fetchone()
+                        logger.info(sell_data)
+
+                        # 采购
+                        sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
+                            start_time, end_time)
+                            sql = sql + time_condition
+
+                        cursor.execute(sql)
+                        all_order_data = cursor.fetchone()
+
+                        # chushou
+                        sql = '''select count(*) sell_order_count,sum(count) sell_total_count,sum(total_price) sell_total_price,sum(total_price-sell_fee) sell_real_price,sum(sell_fee) sell_fee,sum(fee) fee from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)'''
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(create_time,"%%Y-%%m-%%d") >= "%s" and date_format(create_time,"%%Y-%%m-%%d") <= "%s"''' % (
+                                start_time, end_time)
+                            sql = sql + time_condition
+
+                        cursor.execute(sql)
+                        all_sellout_data = cursor.fetchone()
+
+                        sql = '''select sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0  and status != 1'''
+                        if start_time and end_time:
+                            time_condition = ''' and date_format(up_time,"%%Y-%%m-%%d") >= "%s" and date_format(up_time,"%%Y-%%m-%%d") <= "%s"''' % (
+                            start_time, end_time)
+                            sql = sql + time_condition
+                        cursor.execute(sql)
+
+                        all_sell_data = cursor.fetchone()
+
+                        today_data = {
+                            "buy_order_count": order_data[0],
+                            "buy_total_count": order_data[1], "buy_total_price": order_data[2],
+                            "sell_order_count": sellout_data[0], "sell_total_count": sellout_data[1],
+                            "sell_total_price": sellout_data[2], "sell_real_price": sellout_data[3],
+                            "sell_fee": sellout_data[4], "fee": sellout_data[5],
+                            "publish_total_price": sell_data[0], "publish_total_count": sell_data[1],
+                            "publish_sell_count": sell_data[2]
+                        }
+                        logger.info("today_data:%s" % today_data)
+
+                        all_data = {
+                            "buy_order_count": all_order_data[0],
+                            "buy_total_count": all_order_data[1], "buy_total_price": all_order_data[2],
+                            "sell_order_count": all_sellout_data[0], "sell_total_count": all_sellout_data[1],
+                            "sell_total_price": all_sellout_data[2], "sell_real_price": all_sellout_data[3],
+                            "sell_fee": all_sellout_data[4], "fee": all_sellout_data[5],
+                            "publish_total_price": all_sell_data[0], "publish_total_count": all_sell_data[1],
+                            "publish_sell_count": all_sell_data[2]
+                        }
+
+                        last_data = {
+                            "today_data": today_data,
+                            "all_data": all_data
+                        }
+
+                        return {"code": "0000", "status": "success", "msg": last_data}
 
                 else:
                     today_data = {
@@ -215,6 +300,7 @@ def transfer_all():
                     }
 
                     return {"code": "0000", "status": "success", "msg": last_data}
+
 
 
         except:
@@ -310,6 +396,7 @@ def transfer_buy_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -317,11 +404,19 @@ def transfer_buy_order():
                 else:
                     select_phone.append(tp)
         else:
-            lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
 
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        flag = 0
+        if len(lh_phone) == len(select_phone):
+            flag = 1
+        else:
+            flag = 0
+
+        logger.info(flag)
 
         select_phone = ",".join(select_phone)
 
@@ -330,61 +425,116 @@ def transfer_buy_order():
             #今日
 
             if select_phone:
-                if time_type == 1:
-                    circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                if not flag:
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time,"%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time,"%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(query_time)
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
+
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
+                    circle_sql = ""
+
+                    condition_sql1 = " and phone in (%s)" %select_phone
+                    condition_sql2 = " and phone in (%s)" %select_phone
+                    circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
+
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today":circle_data[0][0],"today_buy_total_price":circle_data[0][1],"today_buy_order_count":circle_data[0][2],
+                        "yesterday":circle_data[1][0],"yes_buy_total_price":circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
+                    }
+
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    if select_phone:
+                        condition_sql = " and phone in (%s)" % select_phone
+                        today_sql = today_sql + condition_sql + group_order_sql
+                    else:
+                        pass
+
+                    logger.info("today_sql:%s" %today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle":circle,"today":today}
+                    return {"code":"0000","status":"successs","msg":last_data}
                 else:
-                    query_time = (datetime.datetime.strptime(end_time,"%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
-                    yesterday_query_time = (datetime.datetime.strptime(end_time,"%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
-                    circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(query_time)
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(
+                            days=-1)).strftime("%Y-%m-%d")
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % (
+                            query_time)
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % (
+                            yesterday_query_time)
 
-                # #直接拼接sql 不然会有很多重复的代码 很烦人
-                circle_sql = ""
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
+                    circle_sql = ""
 
-                condition_sql1 = " and phone in (%s)" %select_phone
-                condition_sql2 = " and phone in (%s)" %select_phone
-                circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
+                    circle_sql = circle_sql1 + circle_conn + circle_sql2
 
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                        "today_buy_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                        "yes_buy_order_count": circle_data[1][2]
+                    }
 
-                logger.info(circle_sql)
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today":circle_data[0][0],"today_buy_total_price":circle_data[0][1],"today_buy_order_count":circle_data[0][2],
-                    "yesterday":circle_data[1][0],"yes_buy_total_price":circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
-                }
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % query_time
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
-                if time_type == 1:
-                    today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
-                else:
-                    today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    today_sql = today_sql + group_order_sql
 
-                if select_phone:
-                    condition_sql = " and phone in (%s)" % select_phone
-                    today_sql = today_sql + condition_sql + group_order_sql
-                else:
-                    pass
-
-                logger.info("today_sql:%s" %today_sql)
-                cursor.execute(today_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["buy_order_count"] = int(td[1])
-                    td_dict["buy_total_count"] = float(td[2])
-                    td_dict["buy_total_price"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle":circle,"today":today}
-                return {"code":"0000","status":"successs","msg":last_data}
+                    logger.info("today_sql:%s" % today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
 
                 circle = {
@@ -398,49 +548,96 @@ def transfer_buy_order():
                 return {"code": "0000", "status": "successs", "msg": last_data}
         elif time_type == 2 or time_type == 3:
             if select_phone:
-                if time_type == 2:
-                    query_range = ["-0", "-6", "-7", "-13"]
-                elif time_type == 3:
-                    query_range = ["-0","-29","-30","-59"]
-                circle_sql = ""
+                if not flag:
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0","-29","-30","-59"]
+                    circle_sql = ""
 
-                circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
-                            union all
-                            select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
+                    circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                                union all
+                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
 
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],"today_buy_order_count":circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
-                }
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],"today_buy_order_count":circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],"yes_buy_order_count":circle_data[1][2]
+                    }
 
-                week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
-
-
-                condition_sql = ''' and phone in (%s)''' %select_phone
-                week_sql = week_sql + condition_sql + group_order_sql
+                    week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
 
-                logger.info(week_sql)
-                cursor.execute(week_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["buy_order_count"] = int(td[1])
-                    td_dict["buy_total_count"] = float(td[2])
-                    td_dict["buy_total_price"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle": circle, "today": today}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    condition_sql = ''' and phone in (%s)''' %select_phone
+                    week_sql = week_sql + condition_sql + group_order_sql
+
+
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0", "-29", "-30", "-59"]
+                    circle_sql = ""
+
+                    circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                                union all
+                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' % (
+                    query_range[0], query_range[1], query_range[2], query_range[3])
+
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                        "today_buy_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                        "yes_buy_order_count": circle_data[1][2]
+                    }
+
+                    week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' % (
+                    query_range[0], query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+
+                    week_sql = week_sql + group_order_sql
+
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_buy_total_price": 0,
@@ -454,53 +651,105 @@ def transfer_buy_order():
         elif time_type == 4:
             # 自定义
             if select_phone:
-                sub_day = int(daysss.days + 1)
-                before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
-                before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                if not flag:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
 
 
-                circle_sql = '''
-                                select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" and phone in (%s) group by statistic_time order by statistic_time asc) a
-                                union all
-                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and phone in (%s) group by statistic_time order by statistic_time asc) b 
-                                ''' % (end_time, start_time,select_phone, before_end_time, before_start_time,select_phone)
+                    circle_sql = '''
+                                    select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" and phone in (%s) group by statistic_time order by statistic_time asc) a
+                                    union all
+                                    select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and phone in (%s) group by statistic_time order by statistic_time asc) b 
+                                    ''' % (end_time, start_time,select_phone, before_end_time, before_start_time,select_phone)
 
-                logger.info(circle_sql)
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
 
-                circle = {
-                    "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
-                    "today_buy_order_count": circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
-                    "yes_buy_order_count": circle_data[1][2]
-                }
+                    circle = {
+                        "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                        "today_buy_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                        "yes_buy_order_count": circle_data[1][2]
+                    }
 
-                sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
-                condition_sql = ''' and phone in (%s)''' %(select_phone)
-                sql = sql + condition_sql + group_order_sql
+                    condition_sql = ''' and phone in (%s)''' %(select_phone)
+                    sql = sql + condition_sql + group_order_sql
 
-                logger.info(sql)
-                cursor.execute(sql)
-                current_datas = cursor.fetchall()
-                logger.info(current_datas)
-                datas = []
-                for td in reversed(current_datas):
-                    logger.info(td)
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["buy_order_count"] = int(td[1])
-                    td_dict["buy_total_count"] = float(td[2])
-                    td_dict["buy_total_price"] = float(td[3])
-                    datas.append(td_dict)
-                logger.info(datas)
-                last_data = {"circle": circle, "today": datas}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    logger.info(sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle, "today": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+
+                    circle_sql = '''
+                                                        select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
+                                                        union all
+                                                        select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b 
+                                                        ''' % (
+                    end_time, start_time, before_end_time, before_start_time)
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+
+                    circle = {
+                        "today": circle_data[0][0], "today_buy_total_price": circle_data[0][1],
+                        "today_buy_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_buy_total_price": circle_data[1][1],
+                        "yes_buy_order_count": circle_data[1][2]
+                    }
+
+                    sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' % (
+                    start_time, end_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+
+                    sql = sql  + group_order_sql
+
+                    logger.info(sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["buy_order_count"] = int(td[1])
+                        td_dict["buy_total_count"] = float(td[2])
+                        td_dict["buy_total_price"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle, "today": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_buy_total_price": 0,
@@ -604,6 +853,7 @@ def transfer_sell_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -611,11 +861,19 @@ def transfer_sell_order():
                 else:
                     select_phone.append(tp)
         else:
-            lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
 
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        flag = 0
+        if len(lh_phone) == len(select_phone):
+            flag = 1
+        else:
+            flag = 0
+
+        logger.info(flag)
 
         select_phone = ",".join(select_phone)
 
@@ -623,59 +881,115 @@ def transfer_sell_order():
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
             if select_phone:
-                if time_type == 1:
-                    circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                if not flag:
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %yesterday_query_time
+
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
+                    circle_sql = ""
+
+                    condition_sql1 = " and sell_phone in (%s)" %select_phone
+                    condition_sql2 = " and sell_phone in (%s)" %select_phone
+                    circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today":circle_data[0][0],"today_sell_total_price":circle_data[0][1],"today_sell_order_count":circle_data[0][2],
+                        "yesterday":circle_data[1][0],"yes_sell_total_price":circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
+                    }
+
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    condition_sql = " and sell_phone in (%s)" % args_phone_lists
+                    today_sql = today_sql + condition_sql + group_order_sql
+
+                    logger.info("today_sql:%s" %today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle":circle,"today":today}
+                    return {"code":"0000","status":"successs","msg":last_data}
                 else:
-                    query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
-                    yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%Y-%m-%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(
+                            days=-1)).strftime("%Y-%m-%d")
 
-                    circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %yesterday_query_time
+                        circle_sql1 = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % query_time
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,if(sum(total_price),sum(total_price),0) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % yesterday_query_time
 
-                # #直接拼接sql 不然会有很多重复的代码 很烦人
-                circle_sql = ""
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
+                    circle_sql = ""
 
-                condition_sql1 = " and sell_phone in (%s)" %select_phone
-                condition_sql2 = " and sell_phone in (%s)" %select_phone
-                circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
 
-                logger.info(circle_sql)
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today":circle_data[0][0],"today_sell_total_price":circle_data[0][1],"today_sell_order_count":circle_data[0][2],
-                    "yesterday":circle_data[1][0],"yes_sell_total_price":circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
-                }
+                    circle_sql = circle_sql1 + circle_conn + circle_sql2
 
-                if time_type == 1:
-                    today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
-                else:
-                    today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
+                        "today_sell_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
+                        "yes_sell_order_count": circle_data[1][2]
+                    }
 
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(create_time, '%Y-%m-%d %H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H') AS statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d') = "%s"''' % query_time
 
-                condition_sql = " and sell_phone in (%s)" % args_phone_lists
-                today_sql = today_sql + condition_sql + group_order_sql
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
-                logger.info("today_sql:%s" %today_sql)
-                cursor.execute(today_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["sell_order_count"] = int(td[1])
-                    td_dict["sell_total_count"] = float(td[2])
-                    td_dict["sell_total_price"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle":circle,"today":today}
-                return {"code":"0000","status":"successs","msg":last_data}
+                    today_sql = today_sql + group_order_sql
+
+                    logger.info("today_sql:%s" % today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_sell_total_price": 0,
@@ -688,45 +1002,89 @@ def transfer_sell_order():
                 return {"code": "0000", "status": "successs", "msg": last_data}
         elif time_type == 2 or time_type == 3:
             if select_phone:
-                if time_type == 2:
-                    query_range = ["-0", "-6", "-7", "-13"]
-                elif time_type == 3:
-                    query_range = ["-0","-29","-30","-59"]
-                circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
-                            union all
-                            select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                            select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
+                if not flag:
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0","-29","-30","-59"]
+                    circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                                union all
+                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and sell_phone in (%s) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
 
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],"today_sell_order_count":circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
-                }
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],"today_sell_order_count":circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],"yes_sell_order_count":circle_data[1][2]
+                    }
 
-                week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' %(query_range[0],query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
 
-                condition_sql = ''' and sell_phone in (%s)''' %select_phone
-                week_sql = week_sql + condition_sql + group_order_sql
+                    condition_sql = ''' and sell_phone in (%s)''' %select_phone
+                    week_sql = week_sql + condition_sql + group_order_sql
 
-                logger.info(week_sql)
-                cursor.execute(week_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["sell_order_count"] = int(td[1])
-                    td_dict["sell_total_count"] = float(td[2])
-                    td_dict["sell_total_price"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle": circle, "today": today}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0", "-29", "-30", "-59"]
+                    circle_sql = '''select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc) a
+                                union all
+                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)  group by statistic_time order by statistic_time desc ) b''' % (
+                    query_range[0], query_range[1], query_range[2], query_range[3])
+
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
+                        "today_sell_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
+                        "yes_sell_order_count": circle_data[1][2]
+                    }
+
+                    week_sql = '''select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(create_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) ''' % (
+                    query_range[0], query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    week_sql = week_sql + group_order_sql
+
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_sell_total_price": 0,
@@ -740,51 +1098,100 @@ def transfer_sell_order():
         elif time_type == 4:
             # 自定义
             if select_phone:
-                sub_day = int(daysss.days + 1)
-                before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
-                before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                if not flag:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
 
 
-                circle_sql = '''
-                                select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" and sell_phone in (%s) group by statistic_time order by statistic_time asc) a
-                                union all
-                                select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
-                                select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and sell_phone in (%s) group by statistic_time order by statistic_time asc) b 
-                                ''' % (end_time, start_time,select_phone,before_end_time, before_start_time, select_phone)
+                    circle_sql = '''
+                                    select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" and sell_phone in (%s) group by statistic_time order by statistic_time asc) a
+                                    union all
+                                    select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                    select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" and sell_phone in (%s) group by statistic_time order by statistic_time asc) b 
+                                    ''' % (end_time, start_time,select_phone,before_end_time, before_start_time, select_phone)
 
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
 
-                circle = {
-                    "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
-                    "today_sell_order_count": circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
-                    "yes_sell_order_count": circle_data[1][2]
-                }
+                    circle = {
+                        "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
+                        "today_sell_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
+                        "yes_sell_order_count": circle_data[1][2]
+                    }
 
-                sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
-                condition_sql = ''' and sell_phone in (%s)''' %(select_phone)
-                sql = sql + condition_sql + group_order_sql
+                    sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' %(start_time,end_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    condition_sql = ''' and sell_phone in (%s)''' %(select_phone)
+                    sql = sql + condition_sql + group_order_sql
 
-                logger.info(sql)
-                cursor.execute(sql)
-                current_datas = cursor.fetchall()
-                logger.info(current_datas)
-                datas = []
-                for td in reversed(current_datas):
-                    logger.info(td)
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["sell_order_count"] = int(td[1])
-                    td_dict["sell_total_count"] = float(td[2])
-                    td_dict["sell_total_price"] = float(td[3])
-                    datas.append(td_dict)
-                logger.info(datas)
-                last_data = {"circle": circle, "today": datas}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    logger.info(sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle, "today": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+
+                    circle_sql = '''
+                                                        select "current" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) a
+                                                        union all
+                                                        select "last" week,if(sum(buy_total_price),sum(buy_total_price),0) buy_total_price,if(sum(buy_order_count),sum(buy_order_count),0) buy_order_count from(
+                                                        select DATE_FORMAT(create_time, '%%Y-%%m-%%d') statistic_time,sum(total_price) buy_total_price,count(*) buy_order_count from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4)  and create_time<="%s" and create_time>="%s" group by statistic_time order by statistic_time asc) b 
+                                                        ''' % (
+                    end_time, start_time, before_end_time, before_start_time)
+
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+
+                    circle = {
+                        "today": circle_data[0][0], "today_sell_total_price": circle_data[0][1],
+                        "today_sell_order_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_sell_total_price": circle_data[1][1],
+                        "yes_sell_order_count": circle_data[1][2]
+                    }
+
+                    sql = '''select DATE_FORMAT(create_time,"%%Y-%%m-%%d") statistic_time,count(*) buy_order_count,if(sum(count),sum(count),0) buy_total_count,if(sum(total_price),sum(total_price),0) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and create_time >= "%s" and create_time <= "%s"''' % (
+                    start_time, end_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    sql = sql  + group_order_sql
+
+                    logger.info(sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["sell_order_count"] = int(td[1])
+                        td_dict["sell_total_count"] = float(td[2])
+                        td_dict["sell_total_price"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle, "today": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_sell_total_price": 0,
@@ -888,6 +1295,7 @@ def transfer_public_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -895,11 +1303,19 @@ def transfer_public_order():
                 else:
                     select_phone.append(tp)
         else:
-            lh_user_sql = '''select phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
             lh_user_phone = pd.read_sql(lh_user_sql, conn_read)
             lh_phone = lh_user_phone["phone"].to_list()
 
             select_phone = list(set(lh_phone) - set(args_phone_lists))
+
+        flag = 0
+        if len(lh_phone) == len(select_phone):
+            flag = 1
+        else:
+            flag = 0
+
+        logger.info(flag)
 
         select_phone = ",".join(select_phone)
 
@@ -908,59 +1324,115 @@ def transfer_public_order():
         if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
             #今日
             if select_phone:
-                if time_type == 1:
-                    circle_sql1 = '''select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                if not flag:
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+
+                        circle_sql1 = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
+
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
+
+                    condition_sql1 = " and sell_phone in (%s)" %select_phone
+                    condition_sql2 = " and sell_phone in (%s)" %select_phone
+                    circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today":circle_data[0][0],"today_public_total_price":circle_data[0][1],"today_publish_sell_count":circle_data[0][2],
+                        "yesterday":circle_data[1][0],"yes_public_total_price":circle_data[1][1],"yes_publish_sell_count":circle_data[1][2]
+                    }
+
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(up_time, '%Y%m%d %H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d %%H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %query_time
+
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    condition_sql = " and sell_phone in (%s)" % select_phone
+                    today_sql = today_sql + condition_sql + group_order_sql
+
+
+                    logger.info("today_sql:%s" %today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle":circle,"today":today}
+                    return {"code":"0000","status":"successs","msg":last_data}
                 else:
-                    query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
-                    yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+                    if time_type == 1:
+                        circle_sql1 = '''select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(up_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = date_add(CURRENT_DATE(),INTERVAL -1 day)'''
+                    else:
+                        query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
+                        yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(
+                            days=-1)).strftime("%Y-%m-%d")
 
-                    circle_sql1 = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %query_time
-                    circle_conn = " union all"
-                    circle_sql2 = ''' select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %(yesterday_query_time)
+                        circle_sql1 = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' % query_time
+                        circle_conn = " union all"
+                        circle_sql2 = ''' select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' % (
+                            yesterday_query_time)
 
-                # #直接拼接sql 不然会有很多重复的代码 很烦人
-
-                condition_sql1 = " and sell_phone in (%s)" %select_phone
-                condition_sql2 = " and sell_phone in (%s)" %select_phone
-                circle_sql = circle_sql1 +condition_sql1 + circle_conn + circle_sql2 + condition_sql2
-
-                logger.info(circle_sql)
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today":circle_data[0][0],"today_public_total_price":circle_data[0][1],"today_publish_sell_count":circle_data[0][2],
-                    "yesterday":circle_data[1][0],"yes_public_total_price":circle_data[1][1],"yes_publish_sell_count":circle_data[1][2]
-                }
-
-                if time_type == 1:
-                    today_sql = '''select DATE_FORMAT(up_time, '%Y%m%d %H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
-                else:
-                    today_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d %%H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' %query_time
-
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
-
-                condition_sql = " and sell_phone in (%s)" % select_phone
-                today_sql = today_sql + condition_sql + group_order_sql
+                    # #直接拼接sql 不然会有很多重复的代码 很烦人
 
 
-                logger.info("today_sql:%s" %today_sql)
-                cursor.execute(today_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["publish_total_price"] = int(td[1])
-                    td_dict["publish_total_count"] = float(td[2])
-                    td_dict["publish_sell_count"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle":circle,"today":today}
-                return {"code":"0000","status":"successs","msg":last_data}
+                    circle_sql = circle_sql1  + circle_conn + circle_sql2
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],
+                        "today_publish_sell_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],
+                        "yes_publish_sell_count": circle_data[1][2]
+                    }
+
+                    if time_type == 1:
+                        today_sql = '''select DATE_FORMAT(up_time, '%Y%m%d %H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%Y%m%d') = CURRENT_DATE()'''
+                    else:
+                        today_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d %%H') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d') = "%s"''' % query_time
+
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    today_sql = today_sql + group_order_sql
+
+                    logger.info("today_sql:%s" % today_sql)
+                    cursor.execute(today_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_public_total_price": 0,
@@ -973,54 +1445,105 @@ def transfer_public_order():
                 return {"code": "0000", "status": "successs", "msg": last_data}
         elif time_type == 2 or time_type == 3:
             if select_phone:
-                circle_sql = ""
-                if time_type == 2:
-                    query_range = ["-0", "-6", "-7", "-13"]
-                elif time_type == 3:
-                    query_range = ["-0", "-29", "-30", "-59"]
+                if not flag:
+                    circle_sql = ""
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0", "-29", "-30", "-59"]
 
-                circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
-                and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
-                group by statistic_time order by statistic_time desc
-                ) a
-                union all
-                select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
-                and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
-                group by statistic_time order by statistic_time desc) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
-
-
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
-                circle = {
-                    "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],"today_publish_sell_count": circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],"yes_publish_sell_count": circle_data[1][2]}
-
-                # 本周
-                week_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)'''  %(query_range[0],query_range[1])
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
-
-                condition_sql = ''' and sell_phone in (%s)''' %select_phone
-                week_sql = week_sql + condition_sql + group_order_sql
+                    circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
+                    and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
+                    group by statistic_time order by statistic_time desc
+                    ) a
+                    union all
+                    select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
+                    and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
+                    group by statistic_time order by statistic_time desc) b''' %(select_phone,query_range[0],query_range[1],select_phone,query_range[2],query_range[3])
 
 
-                logger.info(week_sql)
-                cursor.execute(week_sql)
-                today_data = cursor.fetchall()
-                logger.info(today_data)
-                today = []
-                for td in reversed(today_data):
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["publish_total_price"] = int(td[1])
-                    td_dict["publish_total_count"] = float(td[2])
-                    td_dict["publish_sell_count"] = float(td[3])
-                    today.append(td_dict)
-                logger.info(today)
-                last_data = {"circle": circle, "today": today}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],"today_publish_sell_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],"yes_publish_sell_count": circle_data[1][2]}
+
+                    # 本周
+                    week_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)'''  %(query_range[0],query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    condition_sql = ''' and sell_phone in (%s)''' %select_phone
+                    week_sql = week_sql + condition_sql + group_order_sql
+
+
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    circle_sql = ""
+                    if time_type == 2:
+                        query_range = ["-0", "-6", "-7", "-13"]
+                    elif time_type == 3:
+                        query_range = ["-0", "-29", "-30", "-59"]
+
+                    circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                                        select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  
+                                        and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
+                                        group by statistic_time order by statistic_time desc
+                                        ) a
+                                        union all
+                                        select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                                        select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 
+                                        and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)
+                                        group by statistic_time order by statistic_time desc) b''' % (
+                    query_range[0], query_range[1], query_range[2], query_range[3])
+
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+                    circle = {
+                        "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],
+                        "today_publish_sell_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],
+                        "yes_publish_sell_count": circle_data[1][2]}
+
+                    # 本周
+                    week_sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and DATE_FORMAT(up_time, '%%Y-%%m-%%d')<=DATE_ADD(CURRENT_DATE(),INTERVAL %s day) and DATE_FORMAT(up_time, '%%Y-%%m-%%d')>=DATE_ADD(CURRENT_DATE(),INTERVAL %s day)''' % (
+                    query_range[0], query_range[1])
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+
+                    week_sql = week_sql + group_order_sql
+
+                    logger.info(week_sql)
+                    cursor.execute(week_sql)
+                    today_data = cursor.fetchall()
+                    logger.info(today_data)
+                    today = []
+                    for td in reversed(today_data):
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        today.append(td_dict)
+                    logger.info(today)
+                    last_data = {"circle": circle, "today": today}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
                 circle = {
                     "today": "current", "today_public_total_price": 0,
@@ -1032,57 +1555,110 @@ def transfer_public_order():
                 return {"code": "0000", "status": "successs", "msg": last_data}
         elif time_type == 4:
             if select_phone:
-                sub_day = int(daysss.days + 1)
-                before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
-                before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                if not flag:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d %H:%M:%S")
 
 
 
-                circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
-                and up_time <= "%s" and up_time >= "%s"
-                group by statistic_time order by statistic_time desc
-                ) a
-                union all
-                select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
-                select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
-                and up_time <= "%s" and up_time >= "%s"
-                group by statistic_time order by statistic_time desc) b''' %(select_phone,end_time,start_time,select_phone,before_end_time,before_start_time)
+                    circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
+                    and up_time <= "%s" and up_time >= "%s"
+                    group by statistic_time order by statistic_time desc
+                    ) a
+                    union all
+                    select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1 and sell_phone in (%s) 
+                    and up_time <= "%s" and up_time >= "%s"
+                    group by statistic_time order by statistic_time desc) b''' %(select_phone,end_time,start_time,select_phone,before_end_time,before_start_time)
 
 
-                logger.info(circle_sql)
-                cursor.execute(circle_sql)
-                circle_data = cursor.fetchall()
-                logger.info(circle_data)
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
 
-                circle = {
-                    "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],
-                    "today_publish_sell_count": circle_data[0][2],
-                    "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],
-                    "yes_publish_sell_count": circle_data[1][2]}
+                    circle = {
+                        "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],
+                        "today_publish_sell_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],
+                        "yes_publish_sell_count": circle_data[1][2]}
 
-                # 自定义
-                sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' %(end_time,start_time)
-                group_order_sql = ''' group by statistic_time order by statistic_time desc'''
-                condition_sql = ''' and sell_phone in (%s)''' %(select_phone)
-                sql = sql + condition_sql + group_order_sql
+                    # 自定义
+                    sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' %(end_time,start_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    condition_sql = ''' and sell_phone in (%s)''' %(select_phone)
+                    sql = sql + condition_sql + group_order_sql
 
-                logger.info("todaysql:%s" %sql)
-                cursor.execute(sql)
-                current_datas = cursor.fetchall()
-                logger.info(current_datas)
-                datas = []
-                for td in reversed(current_datas):
-                    logger.info(td)
-                    td_dict = {}
-                    td_dict["statistic_time"] = td[0]
-                    td_dict["publish_total_price"] = int(td[1])
-                    td_dict["publish_total_count"] = float(td[2])
-                    td_dict["publish_sell_count"] = float(td[3])
-                    datas.append(td_dict)
-                logger.info(datas)
-                last_data = {"circle": circle,"data": datas}
-                return {"code": "0000", "status": "successs", "msg": last_data}
+                    logger.info("todaysql:%s" %sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle,"data": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
+                else:
+                    sub_day = int(daysss.days + 1)
+                    before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+                    before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime(
+                        "%Y-%m-%d %H:%M:%S")
+
+                    circle_sql = '''select "current" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  
+                                    and up_time <= "%s" and up_time >= "%s"
+                                    group by statistic_time order by statistic_time desc
+                                    ) a
+                                    union all
+                                    select "last" week,if(sum(publish_total_price),sum(publish_total_price),0) publish_total_price,sum(publish_sell_count) publish_sell_count from(
+                                    select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,sum(total_price) publish_total_price,sum(count) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  
+                                    and up_time <= "%s" and up_time >= "%s"
+                                    group by statistic_time order by statistic_time desc) b''' % (
+                    end_time, start_time, before_end_time, before_start_time)
+
+                    logger.info(circle_sql)
+                    cursor.execute(circle_sql)
+                    circle_data = cursor.fetchall()
+                    logger.info(circle_data)
+
+                    circle = {
+                        "today": circle_data[0][0], "today_public_total_price": circle_data[0][1],
+                        "today_publish_sell_count": circle_data[0][2],
+                        "yesterday": circle_data[1][0], "yes_public_total_price": circle_data[1][1],
+                        "yes_publish_sell_count": circle_data[1][2]}
+
+                    # 自定义
+                    sql = '''select DATE_FORMAT(up_time, '%%Y-%%m-%%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,if(sum(count),sum(count),0) publish_total_count,count(*) publish_sell_count from lh_sell where del_flag = 0 and status != 1  and up_time <= "%s" and up_time >= "%s"''' % (
+                    end_time, start_time)
+                    group_order_sql = ''' group by statistic_time order by statistic_time desc'''
+                    sql = sql  + group_order_sql
+
+                    logger.info("todaysql:%s" % sql)
+                    cursor.execute(sql)
+                    current_datas = cursor.fetchall()
+                    logger.info(current_datas)
+                    datas = []
+                    for td in reversed(current_datas):
+                        logger.info(td)
+                        td_dict = {}
+                        td_dict["statistic_time"] = td[0]
+                        td_dict["publish_total_price"] = int(td[1])
+                        td_dict["publish_total_count"] = float(td[2])
+                        td_dict["publish_sell_count"] = float(td[3])
+                        datas.append(td_dict)
+                    logger.info(datas)
+                    last_data = {"circle": circle, "data": datas}
+                    return {"code": "0000", "status": "successs", "msg": last_data}
             else:
 
                 circle = {

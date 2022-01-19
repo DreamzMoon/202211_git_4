@@ -238,7 +238,7 @@ try:
     city_df.loc[city_df['code'] == '429000000000', 'name'] = '潜江市'
     city_df['city'] = None
     for index, rows in crm_user_city_df.iterrows():
-        city_df.loc[city_df['name'].str.contains(rows['city']), 'city'] = rows['city']
+        city_df.loc[city_df['name'].str.contains('^%s.*' % rows['city']), 'city'] = rows['city']
     crm_user_city_df = crm_user_city_df.merge(city_df, how='left', on='city')
     crm_user_city_df.drop(['city', 'name'], axis=1, inplace=True)
     crm_user_city_df.rename(columns={"code": "city_code"}, inplace=True)
