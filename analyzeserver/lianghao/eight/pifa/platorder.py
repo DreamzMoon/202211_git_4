@@ -103,6 +103,7 @@ def transfer_all():
 
                 # 查tag_phone_list
                 select_phone = []
+                lh_phone = []
                 if tag_phone_list:
                     for tp in tag_phone_list:
                         if tp in args_list:
@@ -582,6 +583,7 @@ def transfer_buy_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1030,6 +1032,7 @@ def transfer_sell_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1470,6 +1473,7 @@ def transfer_public_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:

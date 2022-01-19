@@ -99,6 +99,7 @@ def transfer_all():
 
                 # 查tag_phone_list
                 select_phone = []
+                lh_phone = []
                 if tag_phone_list:
                     for tp in tag_phone_list:
                         if tp in args_list:
@@ -575,6 +576,7 @@ def transfer_buy_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1017,6 +1019,7 @@ def transfer_sell_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1461,6 +1464,7 @@ def transfer_public_order():
 
         # 查tag_phone_list
         select_phone = []
+        lh_phone = []
         if tag_phone_list:
             for tp in tag_phone_list:
                 if tp in args_phone_lists:
@@ -1489,6 +1493,7 @@ def transfer_public_order():
             #今日
             if select_phone:
                 if not flag:
+
                     if time_type == 1:
                         circle_sql1 = '''select DATE_FORMAT(create_time, '%Y-%m-%d') AS statistic_time,if(sum(total_price),sum(total_price),0) publish_total_price,count(*) publish_sell_count from le_second_hand_sell where del_flag = 0 and status != 1 and DATE_FORMAT(create_time, '%Y%m%d') = CURRENT_DATE()'''
                         circle_conn = " union all"
