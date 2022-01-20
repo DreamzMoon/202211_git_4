@@ -55,17 +55,7 @@ select count(*) count from le_pretty_5 union all
 select count(*) count from le_pretty_6 union all
 select count(*) count from le_pretty_7 union all
 select count(*) count from le_pretty_8 union all
-select count(*) count from le_pretty_9 union all 
-select count(*) count from le_free_pretty_0 union all
-select count(*) count from le_free_pretty_1 union all
-select count(*) count from le_free_pretty_2 union all
-select count(*) count from le_free_pretty_3 union all
-select count(*) count from le_free_pretty_4 union all
-select count(*) count from le_free_pretty_5 union all
-select count(*) count from le_free_pretty_6 union all
-select count(*) count from le_free_pretty_7 union all
-select count(*) count from le_free_pretty_8 union all
-select count(*) count from le_free_pretty_9
+select count(*) count from le_pretty_9 
 ) t
 '''
 

@@ -160,7 +160,7 @@ def tran_hold():
         end_time = datetime.datetime.now().strftime("%Y-%m-%d")
         ergodic_time = start_time.strftime("%Y-%m-%d")
 
-        time_sql = '''select min(date) price_start_time from lh_config_guide where del_flag = 0'''
+        time_sql = '''select min(date) price_start_time from le_config_guide where del_flag = 0'''
         price_start_time = pd.read_sql(time_sql,conn_lh)["price_start_time"][0]
         price_start_time = price_start_time
 
@@ -256,34 +256,34 @@ def no_tran_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         # 判断开始时间 脚本从开始时间--结束时间
-        time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
+        time_sql = '''select min(create_time) start from le_order where del_flag = 0'''
         start_time = pd.read_sql(time_sql, conn_lh)["start"][0]
         end_time = datetime.datetime.now().strftime("%Y-%m-%d")
         # end_time = "2021-12-18"
         ergodic_time = start_time.strftime("%Y-%m-%d")
 
-        time_sql = '''select min(date) price_start_time from lh_config_guide where del_flag = 0'''
+        time_sql = '''select min(date) price_start_time from le_config_guide where del_flag = 0'''
         price_start_time = pd.read_sql(time_sql, conn_lh)["price_start_time"][0]
         price_start_time = price_start_time
 
         # 可转让 持有
         sql = '''
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_0 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_0 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all 
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_1 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_1 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_2 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_2 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_3 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_3 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_4 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_4 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_5 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_5 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_6 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_6 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_7 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_7 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_8 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_8 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_9 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_9 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_a WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_a WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_b WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_b WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_c WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_c WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_d WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_d WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_e WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_e WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time  FROM le_pretty_hold_f WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_f WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) 
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_0 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_0 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all 
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_1 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_1 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_2 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_2 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_3 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_3 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_4 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_4 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_5 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_5 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_6 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_6 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_7 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_7 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_8 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_8 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_9 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_9 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_a WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_a WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_b WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_b WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_c WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_c WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_d WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_d WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_e WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_e WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_f WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_f WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) 
             '''
         no_tran_data = pd.read_sql(sql, conn_lh)
 
@@ -377,7 +377,7 @@ if __name__ == "__main__":
         df_list.append(public_2_result[1])
 
         # 二手批发
-        public_pia_result = public_second_lh()
+        public_pia_result = public_pifa_lh()
         if not public_pia_result[0]:
             logger.info('发布获取失败')
             logger.info(public_pia_result[1])
