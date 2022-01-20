@@ -414,7 +414,6 @@ def personal_order_flow():
             buy_phone_list = []
             query_phone = []
         if query_phone:
-            user_condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
             if sell_phone_list and buy_phone_list:
                 order_condition_sql = ''' where buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
             elif sell_phone_list:
@@ -422,16 +421,7 @@ def personal_order_flow():
             else:
                 order_condition_sql = ''' where buyer_phone in (%s)''' % (",".join(buy_phone_list))
         else:
-            user_condition_sql = ''
             order_condition_sql = ''
-
-        crm_user_sql = '''
-            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
-            from lh_analyze.crm_user
-            where phone is not null and del_flag=0
-        '''
-        crm_user_sql += user_condition_sql
-        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
 
         # 订单流水数据
         order_flow_sql = '''
@@ -450,7 +440,13 @@ def personal_order_flow():
         order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
         if order_flow_df.shape[0] == 0:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
-
+        crm_user_sql = '''
+                    select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
+                    from lh_analyze.crm_user
+                    where phone is not null and del_flag=0
+                '''
+        # crm_user_sql += user_condition_sql
+        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         flag_1, fina_df = order_and_user_merge(order_flow_df, crm_user_df)
         fina_df.sort_values('order_time', ascending=False, inplace=True)
         if not flag_1:
@@ -574,10 +570,8 @@ def personal_publish_order_flow():
                 return {"code": "0000", "status": "success", "msg": [], "count": 0}
         if keyword_phone:
             pub_condition_sql = ''' and sell_phone in (%s)''' % (",".join(keyword_phone))
-            user_condition_sql = ''' and phone in (%s)''' % (",".join(keyword_phone))
         else:
             pub_condition_sql = ''
-            user_condition_sql = ''
         publish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, price_status transfer_type, `status`, create_time publish_time, up_time, sell_time
                         from lh_pretty_client.lh_sell
                         where del_flag = 0'''
@@ -591,7 +585,6 @@ def personal_publish_order_flow():
             from lh_analyze.crm_user
             where phone is not null and del_flag=0
         '''
-        crm_user_sql += user_condition_sql
         crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
         fina_df['sell_unionid'].fillna('', inplace=True)
