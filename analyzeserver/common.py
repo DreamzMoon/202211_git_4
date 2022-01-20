@@ -420,8 +420,10 @@ def user_first_second_near_publish(data_df):
             near_df = data_df[-1:].reset_index(drop=True).loc[
                 0, ['count', 'total_price', 'pretty_type', 'create_time', 'pay_type']]
             near_df.fillna('', inplace=True)
-            logger.info(near_df)
-            near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+            try:
+                near_time['publish_time'] = near_df['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                near_time['publish_time'] = near_df['create_time']
             near_time['total_price'] = near_df['total_price']
             try:
                 near_time['pay_type'] = int(near_df['pay_type'])

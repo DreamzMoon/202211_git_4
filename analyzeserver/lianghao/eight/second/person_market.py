@@ -333,7 +333,7 @@ def personal_publish():
             user_condition_sql = ''
 
         data_sql = '''
-            select sell_phone publish_phone, total_price, create_time from lh_pretty_client.lh_sell where del_flag = 0 and `status` != 1 and (sell_phone is not null or sell_phone != '')
+            select sell_phone publish_phone, total_price, create_time from lh_pretty_client.le_second_hand_sell where del_flag = 0 and `status` != 1 and (sell_phone is not null and sell_phone != '')
         '''
         data_sql += pub_condition_sql
         publish_df = pd.read_sql(data_sql, conn_lh)
@@ -456,55 +456,25 @@ def personal_publish_detail():
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_an or not conn_lh:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        # 用户基础信息
-        # search_user_info_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, id unionid, pid parentid from luke_sincerechat.user where phone=%s''' % phone
-        # user_info_df = pd.read_sql(search_user_info_sql, conn_an)
-        # parent_info_sql = '''select id parentid, phone parent_phone from luke_sincerechat.user where id=%s''' % \
-        #                   user_info_df['parentid'].values[0]
-        # parent_df = pd.read_sql(parent_info_sql, conn_an)
-        # 合并上级手机号
-        # user_base_info_df = user_info_df.merge(parent_df, how='left', on='parentid')
-        # 查找运营中心
-        # operate_sql = '''
-        #             select a.phone, if (crm =0, Null, b.operatename) operatename, b.crm from
-        #             (WITH RECURSIVE temp as (
-        #                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t WHERE phone = %s
-        #                     UNION ALL
-        #                     SELECT t.id, t.pid, t.phone FROM luke_sincerechat.user t INNER JOIN temp ON t.id = temp.pid
-        #             )
-        #             SELECT * FROM temp
-        #             )a left join luke_lukebus.operationcenter b
-        #             on a.id = b.unionid
-        #             ''' % phone
-        # match_operate_data = pd.read_sql(operate_sql, conn_an)
-        # match_operatename = match_operate_data.loc[
-        #     (match_operate_data['operatename'].notna()) & (match_operate_data['crm'] == 1), 'operatename'].tolist()
-        # if match_operatename:
-        #     match_operate_data.loc[0, 'operatename'] = match_operatename[0]
-        # match_user_data = match_operate_data.loc[:0, :]
-        #
-        # # 用户基本信息
-        # user_base_info_df['operatename'] = match_user_data['operatename']
-
 
         # 存储总数据
         fina_data = {}
 
         search_user_info_sql = '''
-                    select unionid, phone, parentid, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, operatename
-                    from lh_analyze.crm_user
-                    where phone = %s and del_flag=0
-                ''' % phone
+            select unionid, phone, parentid, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, operatename
+            from lh_analyze.crm_user
+            where phone = %s and del_flag=0
+        ''' % phone
         user_base_info_df = pd.read_sql(search_user_info_sql, conn_an)
         user_base_info_df.fillna("", inplace=True)
         user_base_info = user_base_info_df.to_dict('records')[0]
         user_base_info['phone'] = phone
         fina_data['user_base_info'] = user_base_info
 
-        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.lh_sell where del_flag=0 and sell_phone=%s and `status`!=1''' % phone
+        publish_sql = '''select id sell_id, count, total_price, pretty_type_name pretty_type, create_time from lh_pretty_client.le_second_hand_sell where del_flag=0 and sell_phone=%s and `status`!=1''' % phone
         user_publish_base_df = pd.read_sql(publish_sql, conn_lh)
 
-        order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.lh_order where del_flag=0 and sell_phone= %s and `status`=1 and pay_type is not null and sell_id is not null''' % phone
+        order_sql = '''select sell_id, sell_phone publish_phone, pay_type from lh_pretty_client.le_order where del_flag=0 and sell_phone= %s and `status`=1 and type=4 and pay_type is not null and sell_id is not null''' % phone
         user_order_df = pd.read_sql(order_sql, conn_lh)
         # 此步合并会存在已发布但是未出售时的publish_phone与pay_type为空，导致二次或者最近出错，因此在进行首次、二次、最近计算时，需要去除为空的数据
         user_publish_df = user_order_df.merge(user_publish_base_df, how='left', on='sell_id')
@@ -645,7 +615,6 @@ def personal_order_flow():
             buy_phone_list = []
             query_phone = []
         if query_phone:
-            user_condition_sql = ''' and phone in (%s)''' % (",".join(query_phone))
             if sell_phone_list and buy_phone_list:
                 order_condition_sql = ''' where buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
             elif sell_phone_list:
@@ -653,33 +622,32 @@ def personal_order_flow():
             else:
                 order_condition_sql = ''' where buyer_phone in (%s)''' % (",".join(buy_phone_list))
         else:
-            user_condition_sql = ''
             order_condition_sql = ''
-
-        crm_user_sql = '''
-            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
-            from lh_analyze.crm_user
-            where phone is not null and del_flag=0
-        '''
-        crm_user_sql += user_condition_sql
-        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
 
         # 订单流水数据
         order_flow_sql = '''
             select t1.order_sn, t1.buyer_phone, t1.pay_type, t1.count, t1.buy_price, t1.sell_phone, t1.sell_price, t1.true_price, t1.sell_fee, t1.order_time, t2.transfer_type from
             (select order_sn, phone buyer_phone, pay_type, count, total_price buy_price, sell_phone, total_price sell_price, total_price - sell_fee true_price, sell_fee, order_time, sell_id
-            from lh_pretty_client.lh_order
+            from lh_pretty_client.le_order
             where `status`  = 1
-            and type in (1, 4)
+            and type=4
+            and del_flag=0
             and phone is not null) t1
             left join
-            (select id, price_status transfer_type from lh_pretty_client.lh_sell) t2
+            (select id, type transfer_type from lh_pretty_client.le_second_hand_sell) t2
             on t1.sell_id = t2.id
             '''
         order_flow_sql += order_condition_sql
         order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
         if order_flow_df.shape[0] == 0:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
+
+        crm_user_sql = '''
+            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
+            from lh_analyze.crm_user
+            where phone is not null and del_flag=0
+        '''
+        crm_user_df = pd.read_sql(crm_user_sql, conn_an)
 
         flag_1, fina_df = order_and_user_merge(order_flow_df, crm_user_df)
         fina_df.sort_values('order_time', ascending=False, inplace=True)
@@ -702,7 +670,7 @@ def personal_order_flow():
             match_df = match_result[1]
         match_df.drop(['sell_name'], axis=1, inplace=True)
         match_df.fillna("", inplace=True)
-        match_df = map_type(match_df)
+        match_df = map_type(match_df, category=8)
         match_df['order_time'] = match_result[1]['order_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
         match_df.drop('operate_id', axis=1, inplace=True)
         match_dict_list = match_df.to_dict('records')
@@ -827,8 +795,6 @@ def personal_publish_order_flow():
         fina_df['sell_unionid'].fillna('', inplace=True)
         fina_df['parentid'].fillna('', inplace=True)
         fina_df['status'] = fina_df['status'].astype(str)
-        fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
-        fina_df['transfer_type'].fillna(3, inplace=True)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
