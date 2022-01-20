@@ -569,8 +569,10 @@ def personal_publish_order_flow():
             else:
                 return {"code": "0000", "status": "success", "msg": [], "count": 0}
         if keyword_phone:
+            user_condition_sql = ''' and phone in (%s)''' % (",".join(keyword_phone))
             pub_condition_sql = ''' and sell_phone in (%s)''' % (",".join(keyword_phone))
         else:
+            user_condition_sql = ''
             pub_condition_sql = ''
         publish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, price_status transfer_type, `status`, create_time publish_time, up_time, sell_time
                         from lh_pretty_client.lh_sell
@@ -585,6 +587,7 @@ def personal_publish_order_flow():
             from lh_analyze.crm_user
             where phone is not null and del_flag=0
         '''
+        crm_user_sql += user_condition_sql
         crm_user_df = pd.read_sql(crm_user_sql, conn_an)
         fina_df = publish_order_df.merge(crm_user_df, how='left', on='sell_phone')
         fina_df['sell_unionid'].fillna('', inplace=True)
