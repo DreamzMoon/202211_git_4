@@ -33,7 +33,7 @@ def transferred_count_and_value():
             '''TODO'8888-08-08'时间问题待进行8位靓号数据分析改进'''
             pretty_hold_sql = '''
                 select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from le_pretty_hold_%s
-                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') <= now()
+                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = current_date and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d %%H:%%i:%%s') <= now()
             ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
