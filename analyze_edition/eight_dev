@@ -29,3 +29,37 @@ CREATE TABLE `user_daily_order_82` (
 
 
 #新增订单统计脚本
+
+
+
+
+CREATE TABLE `user_storage_eight` (
+  `day_time` date DEFAULT NULL COMMENT '日期',
+  `unionid` bigint(20) DEFAULT NULL COMMENT '用户id',
+  `hold_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '手机号',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '姓名',
+  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户名称',
+  `parentid` bigint(20) DEFAULT NULL COMMENT '归属上级id',
+  `parent_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '上级手机号码',
+  `operate_id` bigint(20) DEFAULT NULL COMMENT '运营中心id',
+  `operatename` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '归属运营中心',
+  `leader_unionid` bigint(20) DEFAULT NULL COMMENT '运营中心负责人id',
+  `leader` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '运营中心负责人名称',
+  `leader_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '运营中心负责人手机号',
+  `no_tran_price` decimal(20,2) DEFAULT NULL COMMENT '不可转让价值',
+  `no_tran_count` int(11) DEFAULT NULL COMMENT '不可转让数量',
+  `transferred_count` int(11) DEFAULT NULL COMMENT '已转让数量',
+  `transferred_price` decimal(20,2) DEFAULT NULL COMMENT '已转让价值',
+  `public_count_2` int(11) DEFAULT NULL COMMENT '二手发布数量',
+  `public_price_2` decimal(20,2) DEFAULT NULL COMMENT '二手发布价值',
+	`public_count_pifa` int(11) DEFAULT NULL COMMENT '二手发布数量',
+  `public_price_pifa` decimal(20,2) DEFAULT NULL COMMENT '二手发布价值',
+  `use_total_price` decimal(20,2) DEFAULT NULL COMMENT '已使用价值',
+  `use_count` int(11) DEFAULT NULL COMMENT '已使用数量',
+  `hold_price` decimal(20,2) DEFAULT NULL COMMENT '持有数量',
+  `hold_count` int(11) DEFAULT NULL COMMENT '持有价值',
+  `tran_price` decimal(20,2) DEFAULT NULL COMMENT '可转让价值',
+  `tran_count` int(11) DEFAULT NULL COMMENT '可转让数量',
+  `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
+  `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户每日名片网数据统计表';

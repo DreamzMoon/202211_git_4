@@ -86,7 +86,7 @@ def public_second_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_second_hand_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
+        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_2,sum(total_price) public_price_2 from le_second_hand_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
         '''
         public_data = pd.read_sql(sql,conn_lh)
         return True,public_data
@@ -101,7 +101,7 @@ def public_pifa_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
+        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_pifa,sum(total_price) public_price_pifa from le_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
         '''
         public_data = pd.read_sql(sql,conn_lh)
         return True,public_data
@@ -366,15 +366,26 @@ if __name__ == "__main__":
         logger.info('transferred_shape：')
         logger.info(transferred_result[1].shape)
         df_list.append(transferred_result[1])
-        # 发布
-        public_result = public_lh()
-        if not public_result[0]:
+        # 二手发布
+        public_2_result = public_second_lh()
+        if not public_2_result[0]:
             logger.info('发布获取失败')
-            logger.info(public_result[1])
+            logger.info(public_2_result[1])
             break
         logger.info('public_shape：')
-        logger.info(public_result[1].shape)
-        df_list.append(public_result[1])
+        logger.info(public_2_result[1].shape)
+        df_list.append(public_2_result[1])
+
+        # 二手批发
+        public_pia_result = public_second_lh()
+        if not public_pia_result[0]:
+            logger.info('发布获取失败')
+            logger.info(public_pia_result[1])
+            break
+        logger.info('public_shape：')
+        logger.info(public_pia_result[1].shape)
+        df_list.append(public_pia_result[1])
+
         # 已使用
         use_result = use_lh()
         if not use_result[0]:
@@ -419,7 +430,7 @@ if __name__ == "__main__":
         # 数据入库
         logger.info('写入数据')
         conn_analyze = pd_conn(analyze_mysql_conf)
-        df_merge.to_sql('user_storage_82', con=conn_analyze, if_exists="append", index=False)
+        df_merge.to_sql('user_storage_eight', con=conn_analyze, if_exists="append", index=False)
         run_end = time.time()
         logger.info(run_start - run_end)
         break
