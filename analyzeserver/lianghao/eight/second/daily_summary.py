@@ -449,3 +449,330 @@ def daily_operate():
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
         conn_analyze.close()
+
+
+
+'''平台每日名片网估值'''
+@daily_eight_secondbp.route("plat/value",methods=["POST"])
+def daily_plat_value():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor_analyze = conn_analyze.cursor()
+
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code":"10001","status":"failed","msg":message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        page = request.json.get("page")
+        size = request.json.get("size")
+
+        unioinid_lists = [x.strip() for x in request.json["unioinid_lists"]]
+        phone_lists = [x.strip() for x in request.json["phone_lists"]]
+        bus_lists = [x.strip() for x in request.json["bus_lists"]]
+
+        tag_id = request.json.get("tag_id")
+
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+
+        if start_time and end_time:
+            start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+            start_time = datetime.date(start_time.year, start_time.month, start_time.day)
+            end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+            end_time = datetime.date(end_time.year, end_time.month, end_time.day)
+        args_list = []
+        # 过滤手机号
+        if phone_lists:
+            args_list = phone_lists.copy()
+            logger.info(args_list)
+        # 过滤用户id
+        if unioinid_lists:
+            # 走统计表
+            try:
+                sql = '''select phone from crm_user where find_in_set (unionid,%s) and phone != "" and phone is not null'''
+                ags_list = ",".join(unioinid_lists)
+                logger.info(ags_list)
+                cursor_analyze.execute(sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
+                for p in phone_lists:
+                    args_list.append(p[0])
+                # args_list = ",".join(args_list)
+            except Exception as e:
+                logger.exception(e)
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+
+        # 过滤运营中心的
+        if bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            sql = '''select phone from crm_user where find_in_set (operate_id,%s)  and del_flag = 0'''
+            cursor_analyze.execute(sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            logger.info(phone_lists)
+            args_list = [p[0] for p in phone_lists]
+            # args_list = ",".join(args_list)
+
+        tag_phone_list = []
+        if tag_id:
+            phone_result = find_tag_user_phone(tag_id)
+            if phone_result[0]:
+                tag_phone_list = phone_result[1]
+            else:
+                return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
+
+        # 查tag_phone_list
+        select_phone = []
+        lh_phone = []
+        if tag_phone_list:
+            for tp in tag_phone_list:
+                if tp in args_list:
+                    continue
+                else:
+                    select_phone.append(tp)
+        else:
+            lh_user_sql = '''select distinct(phone) phone from lh_user where del_flag = 0 and phone != "" and phone is not null'''
+            lh_user_phone = pd.read_sql(lh_user_sql, conn_lh)
+            lh_phone = lh_user_phone["phone"].to_list()
+
+            select_phone = list(set(lh_phone) - set(args_list))
+
+        flag = 0
+        if len(lh_phone) == len(select_phone):
+            flag = 1
+        else:
+            flag = 0
+
+        logger.info(flag)
+
+        select_phone = ",".join(select_phone)
+
+        code_page = ""
+        code_size = ""
+
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        sql = '''select day_time,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count_2) public_count,sum(public_price_2) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count from user_storage_eight'''
+        group_sql = '''  group by day_time order by day_time desc'''
+        if select_phone:
+            if not flag:
+                condition_sql = " where hold_phone in (%s)" % select_phone
+                sql = sql + condition_sql +group_sql
+
+                logger.info(sql)
+                data = pd.read_sql(sql,conn_analyze)
+                # logger.info(data)
+
+
+                if start_time and end_time:
+                    data = data[(data["day_time"] >= start_time) & (data["day_time"] <= end_time)]
+
+                data = data.to_dict("records")
+                for d in data:
+                    d["day_time"] = datetime.datetime.strftime(d["day_time"], "%Y-%m-%d")
+                count = len(data)
+
+                return_data = data[code_page:code_size] if page and size else data.copy()
+                msg = {"data": return_data}
+
+                return {"code":"0000","status":"success","msg":msg,"count":count}
+            else:
+                sql = sql + group_sql
+
+                logger.info(sql)
+                data = pd.read_sql(sql, conn_analyze)
+                # logger.info(data)
+
+                if start_time and end_time:
+                    data = data[(data["day_time"] >= start_time) & (data["day_time"] <= end_time)]
+
+                data = data.to_dict("records")
+                for d in data:
+                    d["day_time"] = datetime.datetime.strftime(d["day_time"], "%Y-%m-%d")
+                count = len(data)
+
+                return_data = data[code_page:code_size] if page and size else data.copy()
+                msg = {"data": return_data}
+
+                return {"code": "0000", "status": "success", "msg": msg, "count": count}
+        else:
+            msg = {"data": []}
+
+            return {"code": "0000", "status": "success", "msg": msg, "count": 0}
+
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_lh.close()
+
+
+@daily_eight_secondbp.route("operate/value",methods=["POST"])
+def daily_operate_value():
+    try:
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        page = request.json.get("page")
+        size = request.json.get("size")
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+        keyword = request.json.get("keyword")
+        bus_id = request.json.get("bus_id")
+
+        code_page = ""
+        code_size = ""
+
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        sql = '''
+        select day_time,operate_id,operatename,leader,leader_phone,leader_unionid ,sum(no_tran_price) no_tran_price,sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price,sum(public_count_2) public_count,sum(public_price_2) public_price,sum(use_total_price) use_total_price,sum(use_count) use_count,sum(hold_price) hold_price,sum(hold_count) hold_count,sum(tran_price) tran_price,sum(tran_count) tran_count from user_storage_eight where operatename != "" group by day_time,operatename order by day_time desc,hold_count desc'''
+
+
+        order_data = pd.read_sql(sql,conn_analyze)
+        order_data["day_time"] = order_data["day_time"].apply(lambda x: x.strftime('%Y-%m-%d'))
+        order_data["leader_unionid"] = order_data["leader_unionid"].astype(str)
+
+        if start_time and end_time:
+            order_data = order_data[(order_data["day_time"] >= start_time) & (order_data["day_time"] <= end_time)]
+
+        if bus_id:
+            logger.info("bus_id:%s" %bus_id)
+            order_data = order_data[order_data["operate_id"] == bus_id]
+
+        #筛选出关键词
+        order_data = order_data[(order_data["leader_phone"].str.contains(keyword))|(order_data["leader"].str.contains(keyword))|(order_data["leader_unionid"].str.contains(keyword))]
+
+
+        count = len(order_data)
+        return_data = order_data[code_page:code_size] if page and size else order_data.copy()
+        return_data = return_data.to_dict("records")
+        msg_data = {"data":return_data}
+        return {"code": "0000", "status": "success", "msg": msg_data, "count": count}
+    except:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_analyze.close()
+
+
+
+
+@daily_eight_secondbp.route("user/value",methods=["POST"])
+def daily_ser_value():
+    try:
+        conn_an = direct_get_conn(analyze_mysql_conf)
+        logger.info(request.json)
+
+        token = request.headers["Token"]
+        user_id = request.json["user_id"]
+
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+
+        # 表单选择operateid
+        operateid = request.json['operateid']
+        # 出售人信息
+        search_key = request.json['keyword'].strip()
+        # 归属上级
+        parent = request.json['parent'].strip()
+        # 时间
+        start_time = request.json['start_time']
+        end_time = request.json['end_time']
+
+        page = request.json['page']
+        size = request.json['size']
+
+        condition = []
+        if search_key:
+            condition.append(''' (nickname like "%%%s%%" or hold_phone like "%%%s%%" or unionid like "%%%s%%")''' %(search_key,search_key,search_key))
+        if operateid:
+            condition.append(''' operate_id = %s''' %operateid)
+        if parent:
+            condition.append(''' (parentid = %s or parent_phone = %s)''' %(parent,parent))
+        if start_time and end_time:
+            condition.append(''' day_time>="%s" and day_time <= "%s"''' %(start_time,end_time))
+
+        sql = '''select day_time, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+                    transferred_count, transferred_price, public_count_2 public_count,public_price_2 public_price, use_total_price, 
+                    use_count, hold_price, hold_count, tran_price,tran_count
+                    from lh_analyze.user_storage_eight'''
+        count_sql = '''
+        select count(*) count 
+                    from lh_analyze.user_storage_eight
+        '''
+
+
+        for i in range(0,len(condition)):
+            if i == 0:
+                sql = sql + " where "+condition[i]
+                count_sql = count_sql + " where "+condition[i]
+            else:
+                sql = sql + " and " + condition[i]
+                count_sql = count_sql + " and " + condition[i]
+
+        count = int(pd.read_sql(count_sql,conn_an)["count"][0])
+
+
+
+        logger.info(count_sql)
+
+        order_sql = ''' order by day_time desc,hold_count desc '''
+        limit_sql = ''' limit %s,%s''' %((page-1)*size,size)
+        sql = sql + order_sql + limit_sql
+        logger.info(sql)
+        value_data = pd.read_sql(sql,conn_an)
+
+        # value_data.sort_values(['day_time', 'hold_count'], ascending=False, inplace=True)
+        value_data.fillna("",inplace=True)
+        value_data = value_data.to_dict("records")
+
+        # if page and size:
+        #     code_page = (page - 1) * size
+        #     code_size = page * size
+
+        # return_data = value_data[code_page:code_size] if page and size else value_data.copy()
+        logger.info("count:%s" %count)
+        logger.info(type(value_data))
+        for r in value_data:
+            r["day_time"] = datetime.datetime.strftime(r["day_time"], "%Y-%m-%d")
+        logger.info(value_data)
+        msg_data = {"data":value_data}
+        return {"code":"0000","status":"success","msg":msg_data,"count":count}
+
+
+    except Exception as e:
+        logger.error(traceback.format_exc())
+
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_an.close()
+        except:
+            pass
+
