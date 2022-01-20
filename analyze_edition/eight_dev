@@ -25,3 +25,7 @@ CREATE TABLE `user_daily_order_82` (
   `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间',
   `updtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户每日订单数据统计表';
+
+
+
+#新增订单统计脚本

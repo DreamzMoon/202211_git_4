@@ -110,7 +110,7 @@ def user_daily_order_data(mode='update'):
 
 
 if __name__ == '__main__':
-    result = user_daily_order_data('create')
+    result = user_daily_order_data('update')
     if not result:
         logger.error(result[1])
     else:
