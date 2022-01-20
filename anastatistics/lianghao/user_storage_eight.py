@@ -209,7 +209,7 @@ def tran_hold():
                 current_hold_datas["guide_price"] = 19
             else:
                 #匹配当前的价格表
-                price_sql = '''select pretty_type_id,max(guide_price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
+                price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
                 price_data = pd.read_sql(price_sql,conn_lh)
 
                 # 转让
@@ -300,7 +300,7 @@ def no_tran_lh():
                 current_no_tran_datas["guide_price"] = 19
             else:
                 # 匹配当前的价格表
-                price_sql = '''select pretty_type_id,max(guide_price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
+                price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
                 price_data = pd.read_sql(price_sql, conn_lh)
 
                 # 转让
