@@ -20,6 +20,7 @@ from functools import reduce
 from analyzeserver.common import *
 import time
 
+# 每天的凌晨20分开始跑
 
 # 已转让数量与价值
 def transferred_count_and_value():

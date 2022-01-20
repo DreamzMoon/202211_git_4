@@ -14,6 +14,8 @@ import datetime
 from datetime import timedelta,date
 import traceback
 
+# 每天凌晨02分跑
+
 # 数据库连接
 def user_daily_order_data(mode='update'):
     try:
