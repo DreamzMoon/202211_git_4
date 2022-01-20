@@ -37,6 +37,7 @@ from analyzeserver.log.system_log import syslogbp
 from analyzeserver.public.uploadfile import uploadmodubp
 from analyzeserver.public.chinaaddress import chaddrbp
 from analyzeserver.user.crm_user_tag import usertagbp
+from analyzeserver.lianghao.eight.second.daily_summary import daily_eight_secondbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -63,6 +64,7 @@ app.register_blueprint(dailybp)
 # 8位二手
 app.register_blueprint(platsecondbp)
 app.register_blueprint(personsecondbp)
+app.register_blueprint(daily_eight_secondbp)
 
 # 8位批发
 app.register_blueprint(platpfbp)
