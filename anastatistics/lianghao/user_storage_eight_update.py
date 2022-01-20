@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022/1/20 10:45
+# @Time : 2022/1/20 13:43
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
-# @File : user_storage_eight.py
+# @File : user_storage_eight_update.py
 
-'''用户每日名片网数据统计表首次同步使用  8位的除了发布不一样 资产都是一样的 所以发布统计直接这个脚本进行'''
+'''用户每日名片网数据统计表首次同步使用  8位的除了发布不一样 资产都是一样的 所以发布统计直接这个脚本进行 更新'''
 import os
 import sys
 
@@ -36,7 +36,7 @@ def transferred_count_and_value():
             '''TODO'8888-08-08'时间问题待进行8位靓号数据分析改进'''
             pretty_hold_sql = '''
                 select hold_phone, sell_order_sn order_sn, date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') day_time from le_pretty_hold_%s
-                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') < current_date
+                where del_flag=0 and `status`=3 and date_format(if(update_time!='8888-08-08',update_time,create_time), '%%Y-%%m-%%d') = date_sub(current_date, interval 1 day)
             ''' % hold_table_type
             hold_df = pd.read_sql(pretty_hold_sql, conn_lh)
             hold_df_list.append(hold_df)
@@ -86,7 +86,7 @@ def public_second_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_2,sum(total_price) public_price_2 from le_second_hand_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
+        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_2,sum(total_price) public_price_2 from le_second_hand_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time = date_sub(current_date, interval 1 day) order by day_time desc
         '''
         public_data = pd.read_sql(sql,conn_lh)
         return True,public_data
@@ -101,7 +101,7 @@ def public_pifa_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql = '''
-        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_pifa,sum(total_price) public_price_pifa from le_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time != current_date order by day_time desc
+        select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count_pifa,sum(total_price) public_price_pifa from le_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone having day_time = date_sub(current_date, interval 1 day) order by day_time desc
         '''
         public_data = pd.read_sql(sql,conn_lh)
         return True,public_data
@@ -139,7 +139,7 @@ def use_lh():
         (select min(bind_time) statistic_time,pretty_id  from le_pretty_bind_records  group by pretty_id) b on a.pretty_id = b.pretty_id
         ) 
         group by day_time,hold_phone
-        having day_time != current_date
+        having day_time = date_sub(current_date, interval 1 day) 
         order by day_time desc
         '''
         use_data = pd.read_sql(sql,conn_lh)
@@ -155,14 +155,7 @@ def tran_hold():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         #判断开始时间 脚本从开始时间--结束时间
-        time_sql = '''select min(create_time) start from lh_order where del_flag = 0'''
-        start_time = pd.read_sql(time_sql,conn_lh)["start"][0]
-        end_time = datetime.datetime.now().strftime("%Y-%m-%d")
-        ergodic_time = start_time.strftime("%Y-%m-%d")
-
-        time_sql = '''select min(date) price_start_time from le_config_guide where del_flag = 0'''
-        price_start_time = pd.read_sql(time_sql,conn_lh)["price_start_time"][0]
-        price_start_time = price_start_time
+        ergodic_time = (datetime.datetime.now() + timedelta(days=-1)).strftime("%Y-%m-%d")
 
         #可转让 持有
         sql = '''
@@ -190,59 +183,35 @@ def tran_hold():
         # hold持有
         hold_datas = data.loc[:, ['hold_phone', 'pretty_type_id', 'pay_time']]
 
-        days = 1
+        # 满足当前时间的可转让数据
+        current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
+        # 满足当前时间的持有数据
+        current_hold_datas = hold_datas[hold_datas['pay_time'] <= ergodic_time]
+        #匹配当前的价格表
+        price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
+        price_data = pd.read_sql(price_sql,conn_lh)
+
         # 转让
-        last_tran = []
+        current_tran_datas = pd.merge(current_tran_datas,price_data,on="pretty_type_id",how="left")
+        # 找不到的话就19
+        current_tran_datas["guide_price"] = current_tran_datas["guide_price"].fillna(19)
+
         # 持有
+        current_hold_datas = current_hold_datas.merge(price_data, how='left', on='pretty_type_id')
+        current_hold_datas["guide_price"] = current_hold_datas["guide_price"].fillna(19)
 
-        user_hold_value_df_list = []
+        # 转让
+        current_tran_datas["tran_count"] = 0
+        transfer_data = current_tran_datas[["hold_phone","guide_price","tran_count"]]
+        transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index().rename(columns={"guide_price": "tran_price"})
+        transfer_data["day_time"] = ergodic_time
 
-        while ergodic_time != end_time:
-            # 满足当前时间的可转让数据
-            current_tran_datas = tran_datas[tran_datas["thaw_time"] <= ergodic_time]
-            # 满足当前时间的持有数据
-            current_hold_datas = hold_datas[hold_datas['pay_time'] <= ergodic_time]
+        # 持有
+        current_hold_datas["hold_count"] = 0
+        hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index().rename(columns={"guide_price": "hold_price"})
+        hold_grouped['day_time'] = ergodic_time
 
-            #查价格前先判断当前时间有没有到指导价的时间 小于 按照19算
-            if price_start_time > ergodic_time:
-                current_tran_datas["guide_price"] = 19
-                current_hold_datas["guide_price"] = 19
-            else:
-                #匹配当前的价格表
-                price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
-                price_data = pd.read_sql(price_sql,conn_lh)
-
-                # 转让
-                current_tran_datas = pd.merge(current_tran_datas,price_data,on="pretty_type_id",how="left")
-                # 找不到的话就19
-                current_tran_datas["guide_price"] = current_tran_datas["guide_price"].fillna(19)
-
-                # 持有
-                current_hold_datas = current_hold_datas.merge(price_data, how='left', on='pretty_type_id')
-                current_hold_datas["guide_price"] = current_hold_datas["guide_price"].fillna(19)
-
-            # 转让
-            current_tran_datas["tran_count"] = 0
-            transfer_data = current_tran_datas[["hold_phone","guide_price","tran_count"]]
-            # transfer_data = transfer_data.groupby('hold_phone')['guide_price'].sum().reset_index()
-            transfer_data = transfer_data.groupby("hold_phone").agg({"guide_price": "sum", "tran_count": "count"}).reset_index()
-            transfer_data["day_time"] = ergodic_time
-
-            # 持有
-            current_hold_datas["hold_count"] = 0
-            # hold_grouped = current_hold_datas.groupby('hold_phone')['guide_price'].sum().reset_index()
-            hold_grouped = current_hold_datas.groupby("hold_phone").agg({"guide_price": "sum", "hold_count": "count"}).reset_index()
-            hold_grouped['day_time'] = ergodic_time
-            user_hold_value_df_list.append(hold_grouped)
-
-            ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-            days += 1
-            last_tran.append(transfer_data)
-        last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
-        last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True).rename(columns={"guide_price": "hold_price"})
-        # last_tran_data = pd.concat(last_tran, axis=0, ignore_index=True)
-        # last_hold_data = pd.concat(user_hold_value_df_list, axis=0, ignore_index=True)
-        fina_data = last_hold_data.merge(last_tran_data, how='outer', on=['day_time', 'hold_phone'])
+        fina_data = hold_grouped.merge(transfer_data, how='outer', on=['day_time', 'hold_phone'])
         fina_data.fillna(0, inplace=True)
         return True, fina_data
     except Exception as e:
@@ -255,72 +224,50 @@ def tran_hold():
 def no_tran_lh():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        # 判断开始时间 脚本从开始时间--结束时间
-        time_sql = '''select min(create_time) start from le_order where del_flag = 0'''
-        start_time = pd.read_sql(time_sql, conn_lh)["start"][0]
-        end_time = datetime.datetime.now().strftime("%Y-%m-%d")
-        # end_time = "2021-12-18"
-        ergodic_time = start_time.strftime("%Y-%m-%d")
-
-        time_sql = '''select min(date) price_start_time from le_config_guide where del_flag = 0'''
-        price_start_time = pd.read_sql(time_sql, conn_lh)["price_start_time"][0]
-        price_start_time = price_start_time
+        end_time = datetime.datetime.now() + timedelta(days=-1)
+        ergodic_time = end_time.strftime("%Y-%m-%d")
 
         # 可转让 持有
         sql = '''
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_0 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_0 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all 
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_1 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_1 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_2 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_2 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_3 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_3 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_4 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_4 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_5 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_5 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_6 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_6 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_7 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_7 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_8 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_8 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_9 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_9 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_a WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_a WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_b WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_b WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_c WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_c WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_d WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_d WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_e WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_e WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
-        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time is not null,update_time,create_time) update_time FROM le_pretty_hold_f WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_f WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) 
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_0 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_0 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all 
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_1 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_1 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_2 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_2 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_3 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_3 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_4 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_4 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_5 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_5 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_6 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_6 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_7 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_7 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_8 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_8 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_9 WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_9 WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_a WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_a WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_b WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_b WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_c WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_c WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_d WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_d WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_e WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_e WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) union all
+        SELECT hold_phone,pretty_id,pretty_type_id,if(update_time,update_time,create_time) update_time FROM le_pretty_hold_f WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM le_pretty_hold_f WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) 
             '''
         no_tran_data = pd.read_sql(sql, conn_lh)
 
-        days = 1
+        # 满足当前时间的可转让数据
+        current_no_tran_datas = no_tran_data[no_tran_data["update_time"] <= ergodic_time]
+
+        # 匹配当前的价格表
+        price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
+        price_data = pd.read_sql(price_sql, conn_lh)
+
         # 转让
-        last_no_tran = []
+        current_no_tran_datas = pd.merge(current_no_tran_datas, price_data, on="pretty_type_id", how="left")
+        # 找不到的话就19
+        current_no_tran_datas["guide_price"] = current_no_tran_datas["guide_price"].fillna(19)
 
-        while ergodic_time != end_time:
-            # 满足当前时间的可转让数据
-            current_no_tran_datas = no_tran_data[no_tran_data["update_time"] <= ergodic_time]
+        current_no_tran_datas["no_tran_count"] = 0
+        # 转让
+        no_tran_datas = current_no_tran_datas[["hold_phone", "guide_price","no_tran_count"]]
+        no_tran_datas = no_tran_datas.groupby("hold_phone").agg({"guide_price": "sum", "no_tran_count": "count"}).reset_index()
+        no_tran_datas["day_time"] = ergodic_time
+        no_tran_datas.rename(columns={"guide_price": "no_tran_price"}, inplace=True)
 
-            # 查价格前先判断当前时间有没有到指导价的时间 小于 按照19算
-            if price_start_time > ergodic_time:
-                current_no_tran_datas["guide_price"] = 19
-            else:
-                # 匹配当前的价格表
-                price_sql = '''select pretty_type_id,max(price) guide_price from le_config_guide where  del_flag = 0  and "%s">=date group by pretty_type_id ''' % ergodic_time
-                price_data = pd.read_sql(price_sql, conn_lh)
-
-                # 转让
-                current_no_tran_datas = pd.merge(current_no_tran_datas, price_data, on="pretty_type_id", how="left")
-                # 找不到的话就19
-                current_no_tran_datas["guide_price"] = current_no_tran_datas["guide_price"].fillna(19)
-
-            current_no_tran_datas["no_tran_count"] = 0
-            # 转让
-            no_tran_datas = current_no_tran_datas[["hold_phone", "guide_price","no_tran_count"]]
-            no_tran_datas = no_tran_datas.groupby("hold_phone").agg({"guide_price": "sum", "no_tran_count": "count"}).reset_index()
-            no_tran_datas["day_time"] = ergodic_time
-
-            ergodic_time = (start_time + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-            days += 1
-            last_no_tran.append(no_tran_datas)
-        # last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True).rename(columns={"guide_price": "tran_price"})
-        last_no_tran_data = pd.concat(last_no_tran, axis=0, ignore_index=True)
-        last_no_tran_data.rename(columns={"guide_price": "no_tran_price"}, inplace=True)
-        return True,last_no_tran_data
+        return True,no_tran_datas
     except Exception as e:
         logger.info(traceback.format_exc())
         return False, e
@@ -430,7 +377,7 @@ if __name__ == "__main__":
         # 数据入库
         logger.info('写入数据')
         conn_analyze = pd_conn(analyze_mysql_conf)
-        df_merge.to_sql('user_storage_eightbak', con=conn_analyze, if_exists="append", index=False)
+        df_merge.to_sql('user_storage_eight_update', con=conn_analyze, if_exists="append", index=False)
         run_end = time.time()
         logger.info(run_start - run_end)
         break
