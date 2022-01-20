@@ -152,7 +152,7 @@ def tran_hold():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         current_time = datetime.datetime.now()
-        ergodic_time = current_time.strftime("%Y-%m-%d %H:%M:S")
+        ergodic_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
         #可转让 持有
         sql = '''
