@@ -21,10 +21,10 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 import numpy as np
 
-ppbp = Blueprint('property', __name__, url_prefix='/lh/property')
+pifappbp = Blueprint('property2', __name__, url_prefix='/le/pifa/property')
 
 # 平台数据总览
-@ppbp.route('/platform/all', methods=['POST'])
+@pifappbp.route('/platform/all', methods=['POST'])
 def platform_data():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -112,7 +112,7 @@ def platform_data():
 
         #算总数 因为不变
         # 算出今日的总持有
-        below_sql = '''select sum(hold_count) hold_total_count from user_storage_value_today '''
+        below_sql = '''select sum(hold_count) hold_total_count from user_storage_eight_today '''
         below_group_sql = ''' group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1'''
         below_sql = below_sql + below_group_sql
         today_hold_count = pd.read_sql(below_sql, conn_analyze)
@@ -129,14 +129,12 @@ def platform_data():
 
                 #发布的单独取
                 all_public_sql = '''
-                select sum(public_count) from (
-                select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
-                union all
-                select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-                on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-                group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
-                        '''
-
+                    select sum(public_count) from (
+                    select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price 
+                    from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_sell
+                    where del_flag = 0 and `status` != 1 group by day_time, hold_phone
+                    ) t group by day_time,hold_phone  order by day_time desc) t
+                '''
 
                 condition_sql = ""
                 for i in range(0,len(condition)):
@@ -150,7 +148,10 @@ def platform_data():
 
                 # 按照统计表倒序排序按照时间分组取出最新的
 
-                below_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today '''
+                below_sql = '''select sum(public_count_pifa) public_total_count,sum(public_price_pifa) publish_total_price,sum(transferred_count) traned_total_count,
+                sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,
+                sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price
+                from user_storage_eight_today '''
                 below_group_sql = ''' group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1'''
 
                 below_sql = below_sql + condition_sql + below_group_sql if condition_sql else below_sql+below_group_sql
@@ -163,22 +164,20 @@ def platform_data():
                     "no_tran_price": below_data["no_tran_total_price"], "hold_count": below_data["hold_total_count"], "hold_price": below_data["hold_total_price"]
                 }
 
-                use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
-                            select sum(use_count) use_count,sum(public_count) public_count from user_storage_value ''' + condition_sql +'''union all
-                            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                use_public_sql = '''select sum(use_count) use_count,sum(public_count_pifa) public_count from (
+                            select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight ''' + condition_sql +'''union all
+                            (select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                             limit 1)
                             ) user_storage'''
-
-
 
                 cursor_analyze.execute(use_public_sql)
                 use_public = cursor_analyze.fetchone()
 
                 try:
                     r = get_redis()
-                    plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
+                    plat_lh_total_count_7 = int(r.get("plat_lh_total_count_eight"))
                 except:
-                    plat_lh_total_count_7 = plat_lh_total_count_seven
+                    plat_lh_total_count_7 = plat_le_total_count_eight
                 logger.info(plat_lh_total_count_7)
 
                 all_data["plat_count"] = plat_lh_total_count_7
@@ -197,13 +196,12 @@ def platform_data():
 
                 # 发布的单独取
                 all_public_sql = '''
-                            select sum(public_count) from (
-                            select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone
-                            union all
-                            select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-                            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-                            group by day_time,hold_phone ) t group by day_time,hold_phone  order by day_time desc) t
-                                    '''
+                    select sum(public_count) from (
+                    select day_time,hold_phone,sum(public_count) public_count,sum(public_price) public_price 
+                    from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_sell
+                    where del_flag = 0 and `status` != 1 group by day_time, hold_phone
+                    ) t group by day_time,hold_phone  order by day_time desc) t
+                '''
 
                 condition_sql = ""
                 for i in range(0, len(condition)):
@@ -217,7 +215,10 @@ def platform_data():
 
                 # 按照统计表倒序排序按照时间分组取出最新的
 
-                below_sql = '''select sum(public_count) public_total_count,sum(public_price) publish_total_price,sum(transferred_count) traned_total_count,sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,sum(hold_price) hold_total_price from user_storage_value_today '''
+                below_sql = '''select sum(public_count_pifa) public_total_count,sum(public_price_pifa) publish_total_price,sum(transferred_count) traned_total_count,
+                            sum(transferred_price) traned_total_price,sum(use_count) used_total_count,sum(use_total_price) used_total_price,sum(tran_count) tran_total_count,
+                            sum(tran_price) tran_total_price,sum(no_tran_count) no_tran_total_count,sum(no_tran_price) no_tran_total_price,sum(hold_count) hold_total_count,
+                            sum(hold_price) hold_total_price from user_storage_eight_today '''
                 below_group_sql = ''' group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1'''
 
                 below_sql = below_sql + condition_sql + below_group_sql if condition_sql else below_sql + below_group_sql
@@ -233,20 +234,20 @@ def platform_data():
                     "hold_price": below_data["hold_total_price"]
                 }
 
-                use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
-                                        select sum(use_count) use_count,sum(public_count) public_count from user_storage_value ''' + condition_sql + '''union all
-                                        (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today ''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
-                                        limit 1)
-                                        ) user_storage'''
+                use_public_sql = '''select sum(use_count) use_count,sum(public_count_pifa) public_count from (
+                                    select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight ''' + condition_sql + '''union all
+                                    (select sum(use_count) use_count,sum(public_count) public_count from user_storage_eight_today ''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
+                                    limit 1)
+                                    ) user_storage'''
                 logger.info(use_public_sql)
                 cursor_analyze.execute(use_public_sql)
                 use_public = cursor_analyze.fetchone()
 
                 try:
                     r = get_redis()
-                    plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
+                    plat_lh_total_count_7 = int(r.get("plat_lh_total_count_eight"))
                 except:
-                    plat_lh_total_count_7 = plat_lh_total_count_seven
+                    plat_lh_total_count_7 = plat_le_total_count_eight
                 logger.info(plat_lh_total_count_7)
 
                 all_data["plat_count"] = plat_lh_total_count_7
@@ -274,9 +275,9 @@ def platform_data():
 
             try:
                 r = get_redis()
-                plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
+                plat_lh_total_count_7 = int(r.get("plat_lh_total_count_eight"))
             except:
-                plat_lh_total_count_7 = plat_lh_total_count_seven
+                plat_lh_total_count_7 = plat_le_total_count_eight
 
             all_data["plat_count"] = plat_lh_total_count_7
             all_data["plat_hold_count"] = 0
@@ -297,7 +298,7 @@ def platform_data():
         conn_lh.close()
 
 # 平台名片网数据统计
-@ppbp.route("plat/statis",methods=['POST'])
+@pifappbp.route("plat/statis",methods=['POST'])
 def plat_statis():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -405,20 +406,20 @@ def plat_statis():
             if select_phone:
                 if not flag:
                     form_sql = '''
-                        select day_time, sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,
+                        select day_time, sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,
                         sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price, sum(hold_count) hold_count,sum(hold_price)  hold_price
-                        from user_storage_value_hour where hold_phone in ({}) and date_format(day_time, "%Y-%m-%d") = current_date
+                        from user_storage_eight_hour where hold_phone in ({}) and date_format(day_time, "%Y-%m-%d") = current_date
                         group by day_time
                         order by day_time asc
                     '''.format(select_phone)
                     circle_sql = '''
-                        (select "current" statistic_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        (select "current" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today where hold_phone in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc limit 1)
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_eight_today where hold_phone in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc limit 1)
                         union all 
-                        (select "yesterday" statistic_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        (select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today where hold_phone in (%s) order by day_time desc limit 1)
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_eight_today where hold_phone in (%s) order by day_time desc limit 1)
                     '''%(select_phone,select_phone)
 
 
@@ -432,21 +433,21 @@ def plat_statis():
                     return {"code": "0000", "status": "sucesss", "msg": msg_data}
                 else:
                     form_sql = '''
-                                        select day_time, sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,
-                                        sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price, sum(hold_count) hold_count,sum(hold_price)  hold_price
-                                        from user_storage_value_hour where date_format(day_time, "%Y-%m-%d") = current_date
-                                        group by day_time
-                                        order by day_time asc
-                                    '''
+                        select day_time, sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price, sum(no_tran_count) no_tran_count,
+                        sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price, sum(hold_count) hold_count,sum(hold_price)  hold_price
+                        from user_storage_eight_hour where date_format(day_time, "%Y-%m-%d") = current_date
+                        group by day_time
+                        order by day_time asc
+                    '''
                     circle_sql = '''
-                                        (select "current" statistic_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1)
-                                        union all 
-                                        (select "yesterday" statistic_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today order by day_time desc limit 1)
-                                    '''
+                        (select "current" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1)
+                        union all 
+                        (select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_eight_today order by day_time desc limit 1)
+                    '''
 
                     form_data = pd.read_sql(form_sql, conn_analyze)
                     form_data['day_time'] = form_data['day_time'].apply(lambda x: x.strftime('%Y-%m-%d %H'))
@@ -482,44 +483,42 @@ def plat_statis():
                     limit_list = [0,6,7,7] if time_type == 2 else [0,29,30,30]
 
                     form_sql = '''
-                                    (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                    sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                    sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                    from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc limit %s)
-                                    union all
-                                    (
-                                    select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                    sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                    sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                     from user_storage_value_today where hold_phone in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                    limit 1)
-                                    order by day_time asc
-                                    ''' % (select_phone,limit_list[1],select_phone)
+                        (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc limit %s)
+                        union all
+                        (
+                        select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                         from user_storage_eight_today where hold_phone in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        order by day_time asc
+                    ''' % (select_phone,limit_list[1],select_phone)
 
                     circle_sql = '''
-                                                select "current" statistic_time,
-                                    sum(public_count) public_count,sum(tran_count) tran_count,
-                                    sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                    (select sum(public_count) public_count,sum(tran_count) tran_count,
-                                    sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                    from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
-                                    union all
-                                    (
-                                    select sum(public_count) public_count,sum(tran_count) tran_count,
-                                    sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                     from user_storage_value_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                    limit 1)
-                                    ) t1  
-                                    union all 
-                                    select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
-                                    sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                    (select sum(public_count) public_count,sum(tran_count) tran_count,
-                                    sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                    from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
-                                    ) t2
-                                    ''' % (select_phone,limit_list[0], limit_list[1],select_phone, limit_list[2], limit_list[3])
-
-
+                        select "current" statistic_time,
+                        sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
+                        (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                        from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
+                        union all
+                        (
+                        select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                         from user_storage_eight_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        ) t1  
+                        union all 
+                        select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
+                        (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                        from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
+                        ) t2
+                    ''' % (select_phone,limit_list[0], limit_list[1],select_phone, limit_list[2], limit_list[3])
 
                     form_data = pd.read_sql(form_sql,conn_analyze)
                     form_data = form_data.to_dict("records")
@@ -532,43 +531,42 @@ def plat_statis():
                     limit_list = [0, 6, 7, 7] if time_type == 2 else [0, 29, 30, 30]
 
                     form_sql = '''
-                                                        (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                        from user_storage_value group by day_time order by day_time desc limit %s)
-                                                        union all
-                                                        (
-                                                        select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                         from user_storage_value_today  group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                                        limit 1)
-                                                        order by day_time asc
-                                                        ''' % (limit_list[1])
+                        (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight group by day_time order by day_time desc limit %s)
+                        union all
+                        (
+                        select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                         from user_storage_eight_today  group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        order by day_time asc
+                    ''' % (limit_list[1])
 
                     circle_sql = '''
-                                                                    select "current" statistic_time,
-                                                        sum(public_count) public_count,sum(tran_count) tran_count,
-                                                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                        (select sum(public_count) public_count,sum(tran_count) tran_count,
-                                                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                        from user_storage_value group by day_time order by day_time desc limit %s,%s)
-                                                        union all
-                                                        (
-                                                        select sum(public_count) public_count,sum(tran_count) tran_count,
-                                                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                         from user_storage_value_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                                        limit 1)
-                                                        ) t1  
-                                                        union all 
-                                                        select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
-                                                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                        (select sum(public_count) public_count,sum(tran_count) tran_count,
-                                                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                        from user_storage_value  group by day_time order by day_time desc limit %s,%s)
-                                                        ) t2
-                                                        ''' % (
-                     limit_list[0], limit_list[1], limit_list[2], limit_list[3])
+                        select "current" statistic_time,
+                        sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
+                        (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                        from user_storage_eight group by day_time order by day_time desc limit %s,%s)
+                        union all
+                        (
+                        select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                         from user_storage_eight_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        ) t1  
+                        union all 
+                        select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
+                        (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
+                        from user_storage_eight group by day_time order by day_time desc limit %s,%s)
+                        ) t2
+                    ''' % (limit_list[0], limit_list[1], limit_list[2], limit_list[3])
 
                     form_data = pd.read_sql(form_sql, conn_analyze)
                     form_data = form_data.to_dict("records")
@@ -603,42 +601,41 @@ def plat_statis():
                     before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
                     before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
 
-
                     form_sql = '''
-                                            select * from (
-                                (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                from user_storage_value where hold_phone not (%s) group by day_time order by day_time desc )
-                                union all
-                                (
-                                select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                from user_storage_value_today where hold_phone not (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                limit 1)
-                                ) t where day_time >= "%s" and day_time <= "%s"
-                                            ''' % (select_phone,select_phone,start_time, end_time)
+                        select * from (
+                        (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight where hold_phone not (%s) group by day_time order by day_time desc )
+                        union all
+                        (
+                        select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight_today where hold_phone not (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        ) t where day_time >= "%s" and day_time <= "%s"
+                    ''' % (select_phone,select_phone,start_time, end_time)
 
-                    circle_sql = '''(select "curent" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                    circle_sql = '''(select "curent" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                (select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                (select day_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc )
+                                from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                 union all
                                 (
-                                select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                select day_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                from user_storage_value_today where hold_phone not in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                                from user_storage_eight_today where hold_phone not in (%s) group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                                 limit 1)
                                 ) t1 where day_time >="%s" and day_time <= "%s")
                                 union all 
                                 (
-                                select "yeaterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                select "yeaterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                (select day_time, sum(public_count) public_count,sum(tran_count) tran_count,
+                                (select day_time, sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc )
+                                from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                 ) t2 where day_time >= "%s" and day_time <="%s")''' % (select_phone,select_phone,
                     start_time, end_time,args_phone_lists, before_start_time, before_end_time)
 
@@ -659,40 +656,40 @@ def plat_statis():
                     before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
 
                     form_sql = '''
-                                                                select * from (
-                                                    (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                                    sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                                    sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                    from user_storage_value  group by day_time order by day_time desc )
-                                                    union all
-                                                    (
-                                                    select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count) public_count,sum(public_price) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
-                                                    sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                                                    sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
-                                                    from user_storage_value_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
-                                                    limit 1)
-                                                    ) t where day_time >= "%s" and day_time <= "%s"
-                                                                ''' % (start_time, end_time)
+                        select * from (
+                        (select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight  group by day_time order by day_time desc )
+                        union all
+                        (
+                        select date_format(day_time,"%%Y-%%m-%%d") day_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
+                        sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price,sum(transferred_count) transferred_count,sum(transferred_price) transferred_price
+                        from user_storage_eight_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                        limit 1)
+                        ) t where day_time >= "%s" and day_time <= "%s"
+                    ''' % (start_time, end_time)
 
-                    circle_sql = '''(select "curent" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                    circle_sql = '''(select "curent" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                    (select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    (select day_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                    from user_storage_value where hold_phone in (%s) group by day_time order by day_time desc )
+                                                    from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                                     union all
                                                     (
-                                                    select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    select day_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                    from user_storage_value_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                                                    from user_storage_eight_today group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                                                     limit 1)
                                                     ) t1 where day_time >="%s" and day_time <= "%s")
                                                     union all 
                                                     (
-                                                    select "yeaterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    select "yeaterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                    (select day_time, sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    (select day_time, sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
-                                                    from user_storage_value group by day_time order by day_time desc )
+                                                    from user_storage_eight group by day_time order by day_time desc )
                                                     ) t2 where day_time >= "%s" and day_time <="%s")''' % (
                     start_time, end_time, args_phone_lists, before_start_time, before_end_time)
 
@@ -736,7 +733,7 @@ def plat_statis():
         conn_lh.close()
 
 # 个人持有名片网估值统计详情
-@ppbp.route("person/detail",methods=['POST'])
+@pifappbp.route("person/detail",methods=['POST'])
 def person_detail():
     try:
         try:
@@ -774,7 +771,7 @@ def person_detail():
         data["user"] = user_data
 
         # 先算投入价值
-        sql = '''select sum(total_price) total_price from lh_order where type in (1,4) and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
+        sql = '''select sum(total_price) total_price from le_order where type=1 and del_flag = 0 and `status` = 1 and phone = %s''' %hold_phone
         cursor_lh.execute(sql)
         investment = cursor_lh.fetchone()
         logger.info(investment)
@@ -783,8 +780,11 @@ def person_detail():
         except:
             investment = 0
 
-        sql = '''select public_count,public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,hold_price,transferred_count,transferred_price from user_storage_value_today where hold_phone = %s
-group by addtime order by addtime desc limit 1''' %hold_phone
+        sql = '''
+            select public_count_pifa public_count,public_price_pifa public_price,transferred_count,transferred_price,use_count,use_total_price,tran_count ,tran_price,no_tran_count,no_tran_price,hold_count,
+            hold_price,transferred_count,transferred_price from user_storage_eight_today where hold_phone = %s
+            group by addtime order by addtime desc limit 1
+        ''' %hold_phone
 
 
         sum_data = (pd.read_sql(sql, conn_analyze)).to_dict("records")[0]
@@ -799,50 +799,42 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         lh_user_id = lh_user_id[0]
 
         # 持有
-        hold_sql = '''select pretty_type_id,count(*) hold_count from lh_pretty_hold_%s where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        hold_sql = '''select pretty_type_id,count(*) hold_count from le_pretty_hold_%s where del_flag=0 and `status` in (0,1,2) and is_open_vip = 0 and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         hold_data = pd.read_sql(hold_sql,conn_lh)
 
         # 可转让
-        tran_sql = '''select pretty_type_id,count(*) tran_count from lh_pretty_hold_%s where del_flag=0 and `status` = 0 and is_open_vip = 0 and is_sell = 1 and pay_type !=0  and thaw_time<=now() and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
+        tran_sql = '''select pretty_type_id,count(*) tran_count from le_pretty_hold_%s where del_flag=0 and `status` = 0 and is_open_vip = 0 and is_sell = 1 and pay_type !=0  and thaw_time<=now() and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         tran_data = pd.read_sql(tran_sql,conn_lh)
 
-        # traning_sql = '''
-        #     select day_time,hold_phone, pretty_type_name, sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, pretty_type_name, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by day_time, hold_phone, pretty_type_name
-        #     union all
-        #     select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone, lsrd.pretty_type_name, count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-        #     on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-        #     group by day_time,hold_phone, pretty_type_name) t group by day_time,hold_phone, pretty_type_name having hold_phone = {} order by day_time desc
-        # '''.format(hold_phone)
-
         traning_sql = '''
-        select pretty_type_name, sum(public_count) public_count,sum(public_price) public_price from (select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, pretty_type_name, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 and sell_phone = {} group by day_time, hold_phone, pretty_type_name
-union all
-select DATE_FORMAT(lsrd.update_time,"%Y-%m-%d") day_time,lsr.retail_user_phone hold_phone, lsrd.pretty_type_name, count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1 and lsr.retail_user_phone = {}
-group by day_time,hold_phone, pretty_type_name) t group by pretty_type_name 
+            select DATE_FORMAT(create_time,"%Y-%m-%d") day_time,sell_phone hold_phone, pretty_type_name, sum(count) public_count,sum(total_price) public_price
+            from le_sell where del_flag = 0 and `status` != 1 and sell_phone = {} group by day_time, hold_phone, pretty_type_name
         '''.format(hold_phone,hold_phone)
 
         traning_data = pd.read_sql(traning_sql, conn_lh)
 
         # 不可转让
-        no_tran_sql = '''SELECT pretty_type_id,count(*) no_tran_count FROM lh_pretty_hold_%s WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_%s WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],lh_user_id[0],hold_phone)
+        no_tran_sql = '''SELECT pretty_type_id,count(*) no_tran_count FROM le_pretty_hold_%s WHERE del_flag=0 AND is_open_vip=0 AND STATUS=0 and pretty_id not in (SELECT pretty_id FROM lh_pretty_hold_%s WHERE STATUS=0 AND is_open_vip=0 AND thaw_time<=now() AND del_flag=0 AND is_sell=1 AND pay_type !=0) and hold_phone = %s group by pretty_type_id''' %(lh_user_id[0],lh_user_id[0],hold_phone)
         no_tran_data = pd.read_sql(no_tran_sql,conn_lh)
 
         # 已转让
         # traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 3 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         traned_sql = '''
-        select pretty_type_name,count(*) traned_count,sum(unit_price) traned_sum_price from (
-        select pretty_hold.pretty_type_name,lh_order.unit_price from lh_pretty_hold_%s pretty_hold
-        left join lh_order on pretty_hold.order_sn = lh_order.order_sn
-        where pretty_hold.hold_phone = %s and pretty_hold.del_flag=0 and pretty_hold.`status`= 3 
-        ) t
-        group by pretty_type_name
+            select pretty_type_name,count(*) traned_count,sum(unit_price) traned_sum_price from (
+            select pretty_hold.pretty_type_name,le_order.unit_price from le_pretty_hold_%s pretty_hold
+            left join le_order on pretty_hold.order_sn = le_order.order_sn
+            where pretty_hold.hold_phone = %s and pretty_hold.del_flag=0 and pretty_hold.`status`= 3 
+            ) t
+            group by pretty_type_name
         '''%(lh_user_id[0],hold_phone)
         traned_data = pd.read_sql(traned_sql,conn_lh)
 
         # 价格表
-        price_sql = '''select lh_config_guide.pretty_type_id,lh_pretty_type.name pretty_type_name,max(guide_price) guide_price from lh_config_guide
-        left join lh_pretty_type on lh_config_guide.pretty_type_id = lh_pretty_type.id where lh_config_guide.del_flag = 0  and "%s">=lh_config_guide.date group by pretty_type_id ''' % current_time
+        price_sql = '''
+            select le_config_guide.pretty_type_id,le_pretty_type.name pretty_type_name,max(price) guide_price from le_config_guide
+            left join le_pretty_type on le_config_guide.pretty_type_id = le_pretty_type.id
+            where le_config_guide.del_flag = 0  and "%s">=le_config_guide.date group by pretty_type_id
+        ''' % current_time
         price_data = pd.read_sql(price_sql, conn_lh)
 
         hold_data = hold_data.merge(price_data,on="pretty_type_id")
@@ -856,7 +848,7 @@ group by day_time,hold_phone, pretty_type_name) t group by pretty_type_name
 
         # 已使用的现查
         use_sql = '''select count(*) use_count from (
-        select pretty_id,count(*) use_count from lh_bind_pretty_log where hold_phone = %s and del_flag = 0 group by pretty_id
+        select pretty_id,count(*) use_count from le_pretty_bind_records where hold_phone = %s and del_flag = 0 group by pretty_id
         ) t''' %hold_phone
         cursor_lh.execute(use_sql)
         use_count = cursor_lh.fetchone()[0]
@@ -964,9 +956,7 @@ group by day_time,hold_phone, pretty_type_name) t group by pretty_type_name
         except:
             pass
 
-
-
-@ppbp.route("person/chart",methods=["POST"])
+@pifappbp.route("person/chart",methods=["POST"])
 def person_charts():
     try:
         try:
@@ -1012,13 +1002,13 @@ def person_charts():
         if time_type == 1:  # 今日
 
             today_sql = '''
-                select day_time, public_count, public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
+                select day_time, public_count_pifa public_count, public_price_pifa public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
                  hold_count, hold_price
-                 from user_storage_value_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
+                 from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
             '''.format(hold_phone)
             ration_sql = '''
                 select tran_price, transferred_price, hold_price
-                from user_storage_value
+                from user_storage_eight
                 where day_time=date_sub(current_date, interval 1 day)
                 and hold_phone=%s
             ''' % hold_phone
@@ -1041,13 +1031,13 @@ def person_charts():
             }
         else:
             today_new_sql = '''
-                        select day_time, a.hold_phone, a.public_count, a.public_price, a.transferred_count, a.transferred_price,
-                        a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_value_today a
-                        join (select hold_phone, max(addtime) time from lh_analyze.user_storage_value_today group by hold_phone) b
-                        on a.hold_phone = b.hold_phone
-                        and a.addtime = b.time
-                        where a.hold_phone=%s
-                    ''' % hold_phone
+                select day_time, a.hold_phone, a.public_count_pifa, a.public_price_pifa, a.transferred_count, a.transferred_price,
+                a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_eight_today a
+                join (select hold_phone, max(addtime) time from lh_analyze.user_storage_eight_today group by hold_phone) b
+                on a.hold_phone = b.hold_phone
+                and a.addtime = b.time
+                where a.hold_phone=%s
+            ''' % hold_phone
             today_new_df = pd.read_sql(today_new_sql, conn_analyze)
             if time_type == 2:  # 本周
                 week_start = datetime.datetime.now() - timedelta(days=6)
@@ -1055,16 +1045,16 @@ def person_charts():
 
                 ration_week_start = (week_start - timedelta(weeks=1)).strftime('%Y-%m-%d')
                 current_sql = '''
-                            select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                            no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                            where hold_phone=%s
-                            and day_time >="%s" and day_time <="%s"
-                        ''' % (hold_phone, week_start.strftime('%Y-%m-%d'), week_end)
+                    select day_time, hold_phone, public_count_pifa public_count, public_price_pifa public_price, transferred_count, transferred_price,
+                    no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time <="%s"
+                ''' % (hold_phone, week_start.strftime('%Y-%m-%d'), week_end)
                 ration_sql = '''
-                            select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                            where hold_phone=%s
-                            and day_time >="%s" and day_time < "%s"
-                        ''' % (hold_phone, ration_week_start, week_start.strftime('%Y-%m-%d'))
+                    select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time < "%s"
+                ''' % (hold_phone, ration_week_start, week_start.strftime('%Y-%m-%d'))
                 current_df = pd.read_sql(current_sql, conn_analyze)
                 current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
             elif time_type == 3:  # 本月
@@ -1073,16 +1063,16 @@ def person_charts():
 
                 ration_month_start = (month_start - timedelta(days=30)).strftime('%Y-%m-%d')
                 current_sql = '''
-                                select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                                no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                                where hold_phone=%s
-                                and day_time >="%s" and day_time <="%s"
-                            ''' % (hold_phone, month_start.strftime('%Y-%m-%d'), month_end)
+                    select day_time, hold_phone, public_count_pifa public_count, public_price_pifa public_price, transferred_count, transferred_price,
+                    no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time <="%s"
+                ''' % (hold_phone, month_start.strftime('%Y-%m-%d'), month_end)
                 ration_sql = '''
-                                select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                                where hold_phone=%s
-                                and day_time >="%s" and day_time < "%s"
-                            ''' % (hold_phone, ration_month_start, month_start.strftime('%Y-%m-%d'))
+                    select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time < "%s"
+                ''' % (hold_phone, ration_month_start, month_start.strftime('%Y-%m-%d'))
                 current_df = pd.read_sql(current_sql, conn_analyze)
                 current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
             else:
@@ -1090,16 +1080,16 @@ def person_charts():
                 before_start_time = (datetime_start_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
                 before_end_time = (datetime_end_time + datetime.timedelta(days=-sub_day)).strftime("%Y-%m-%d")
                 current_sql = '''
-                            select day_time, hold_phone, public_count, public_price, transferred_count, transferred_price,
-                            no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_value
-                            where hold_phone=%s
-                            and day_time >="%s" and day_time <="%s"
-                        ''' % (hold_phone, start_time, end_time)
+                    select day_time, hold_phone, public_count_pifa public_count, public_price_pifa public_price, transferred_count, transferred_price,
+                    no_tran_count, no_tran_price, hold_count, hold_price, tran_count, tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time <="%s"
+                ''' % (hold_phone, start_time, end_time)
                 ration_sql = '''
-                            select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_value
-                            where hold_phone=%s
-                            and day_time >="%s" and day_time <= "%s"
-                        ''' % (hold_phone, before_start_time, before_end_time)
+                    select sum(transferred_price) transferred_price, sum(hold_price) hold_price, sum(tran_price) tran_price from lh_analyze.user_storage_eight
+                    where hold_phone=%s
+                    and day_time >="%s" and day_time <= "%s"
+                ''' % (hold_phone, before_start_time, before_end_time)
                 current_df = pd.read_sql(current_sql, conn_analyze)
                 if end_time == datetime.datetime.now().strftime("%Y-%m-%d"):
                     current_df = pd.concat([today_new_df, current_df], axis=0, ignore_index=True)
@@ -1131,7 +1121,7 @@ def person_charts():
             pass
 
 # 名片网归属数据表
-@ppbp.route('/belong', methods=['POST'])
+@pifappbp.route('/belong', methods=['POST'])
 def bus_card_belong():
     try:
         try:
@@ -1173,13 +1163,6 @@ def bus_card_belong():
             size = request.json['size']
             # 页码
             page = request.json['page']
-
-            # if hold_start_time or hold_end_time:
-            #     order_time_result = judge_start_and_end_time(hold_start_time, hold_end_time)
-            #     if not order_time_result[0]:
-            #         return {"code": order_time_result[1], "status": "failed", "msg": message[order_time_result[1]]}
-            #     request.json['hold_start_time'] = order_time_result[0]
-            #     request.json['hold_end_time'] = order_time_result[1]
         except:
             # 参数名错误
             logger.info(traceback.format_exc())
@@ -1192,7 +1175,7 @@ def bus_card_belong():
 
         pretty_hold_sql = '''
             select pretty_id, pretty_type_name, pretty_type_length, hold_phone, order_type, `status`, is_sell, pay_type, is_open_vip, create_time, thaw_time
-            from lh_pretty_client.lh_pretty_hold_{table_name}
+            from lh_pretty_client.le_pretty_hold_{table_name}
             where del_flag=0
         '''
         # 拼接sql
@@ -1208,7 +1191,7 @@ def bus_card_belong():
         if transfer_type == 0:
             transfer_sql = ''' and thaw_time <= now() and `status`=0 and is_open_vip=0 and is_sell=1'''
         elif transfer_type == 1:
-            transfer_sql = ''' and is_open_vip=0 AND STATUS=0 and pretty_id not in (select pretty_id from lh_pretty_hold_{table_name} where `status`=0 and is_open_vip=0 and thaw_time<=now() and del_flag=0 and is_sell=1 and pay_type !=0)'''
+            transfer_sql = ''' and is_open_vip=0 AND STATUS=0 and pretty_id not in (select pretty_id from le_pretty_hold_{table_name} where `status`=0 and is_open_vip=0 and thaw_time<=now() and del_flag=0 and is_sell=1 and pay_type !=0)'''
         elif transfer_type == 2:
             transfer_sql = ''' and `status`=2'''
         elif transfer_type == 3:
@@ -1260,7 +1243,7 @@ def bus_card_belong():
                                             (hold_user_info_df['nickname'].str.contains(hold_user_info)), :]['phone'].unique().tolist())
         if use_user_info:
             flag = True
-            bind_log_sql = '''select hold_phone, phone from lh_pretty_client.lh_bind_pretty_log'''
+            bind_log_sql = '''select hold_phone, phone from lh_pretty_client.le_pretty_bind_records'''
             bind_log_df = pd.read_sql(bind_log_sql, conn_lh)
             bind_user_info_df = user_info_df.merge(bind_log_df, how='left', on='phone')
             hold_user_phone_list = set(hold_user_phone_list) & set(bind_user_info_df.loc[(bind_user_info_df['unionid'].str.contains(use_user_info)) |
@@ -1273,8 +1256,6 @@ def bus_card_belong():
             hold_user_info_df.dropna(subset=['id'], inplace=True)
             hold_table_type_list = hold_user_info_df.loc[hold_user_info_df['phone'].isin(hold_user_phone_list), :]['id'].unique().tolist()
 
-
-
         hold_df_list = []
         cursor = conn_lh.cursor()
         # 没有任何筛选条件时：sql查询加上limit 10
@@ -1285,36 +1266,6 @@ def bus_card_belong():
             start_index = 0
             end_index = 0
         count = 0
-        # if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
-        #     if start_index == 0 and end_index ==0:
-        #         return {'code': "0000", "status": "success", "msg": "数据量过大,暂不支持导出"}
-        #
-        #    # 获取统计次数
-        #     count_list = []
-        #     # sql列表
-        #     sql_list = []
-        #     for hold_table_type in hold_table_type_list:
-        #         sql_list.append(pretty_hold_sql_1.format(table_name=hold_table_type))
-        #         count_sql = '''
-        #         select count(*) count
-        #         from lh_pretty_client.lh_pretty_hold_%s
-        #         where del_flag=0
-        #         ''' % hold_table_type
-        #         cursor.execute(count_sql)
-        #         count_list.append(int(cursor.fetchone()[0]))
-        #     count = sum(count_list)
-        #     logger.info(count)
-        #     pretty_hold_sql_1 = ''' union all '''.join(sql_list)
-        #     pretty_hold_sql_1 = '''select * from (''' + pretty_hold_sql_1 + ''')t limit %s, %s''' % (start_index, size)
-        #     hold_all_df = pd.read_sql(pretty_hold_sql_1, conn_lh)
-        # else:
-        #     for hold_table_type in hold_table_type_list:
-        #         hold_df = pd.read_sql(pretty_hold_sql_1.format(table_name=hold_table_type), conn_lh)
-        #         hold_df_list.append(hold_df)
-        #     hold_all_df = pd.concat(hold_df_list, axis=0)
-
-        # 转让类型
-        # 正常
 
         if pretty_hold_sql_1 == pretty_hold_sql and not hold_user_info and not use_user_info and not time_type:
             if start_index == 0 and end_index == 0:
@@ -1328,7 +1279,7 @@ def bus_card_belong():
                 sql_list.append(pretty_hold_sql_1.format(table_name=hold_table_type))
                 count_sql = '''
                 select count(*) count
-                from lh_pretty_client.lh_pretty_hold_%s
+                from lh_pretty_client.le_pretty_hold_%s
                 where del_flag=0
                 ''' % hold_table_type
                 cursor.execute(count_sql)
@@ -1395,7 +1346,7 @@ def bus_card_belong():
         if len(use_pretty_id_list) != 0:
             use_pretty_id_list = list(set(hold_all_df.loc[hold_all_df['use_type'] == 0, 'pretty_id'].tolist()))
             use_time_sql = '''
-                select hold_phone, phone use_user_phone, pretty_id, min(use_time) use_time from lh_pretty_client.lh_bind_pretty_log where del_flag=0 and pretty_id in (%s) group by hold_phone, pretty_id
+                select hold_phone, phone use_user_phone, pretty_id, min(bind_time) use_time from lh_pretty_client.le_pretty_bind_records where del_flag=0 and pretty_id in (%s) group by hold_phone, pretty_id
             ''' % ','.join(use_pretty_id_list)
             use_time_df = pd.read_sql(use_time_sql, conn_lh)
             use_time_df['use_time'] = use_time_df['use_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -1451,7 +1402,7 @@ def bus_card_belong():
             pass
 
 # 个人持有名片网估值统计
-@ppbp.route('/personal/hold/total', methods=["POST"])
+@pifappbp.route('/personal/hold/total', methods=["POST"])
 def personal_hold_total():
     try:
         try:
@@ -1477,9 +1428,6 @@ def personal_hold_total():
             # 归属上级
             parent = request.json['parent']
             # 过滤条件
-            # unionid_lists = [int(unionid) for unionid in request.json['unionid_lists']] # unionid
-            # phone_lists = request.json['phone_lists'] # 手机号
-            # bus_lists = [int(bus_id) for bus_id in request.json['bus_lists']] # 运营中心
             unionid_lists = request.json['unionid_lists'] # unionid
             phone_lists = request.json['phone_lists'] # 手机号
             bus_lists = request.json['bus_lists']
@@ -1501,21 +1449,17 @@ def personal_hold_total():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
         # 读取user_storage_value
-        user_storage_value_sql = '''select hold_phone, sum(transferred_count) transferred_count, sum(transferred_price) transferred_price from user_storage_value group by hold_phone'''
+        user_storage_value_sql = '''select hold_phone, sum(transferred_count) transferred_count, sum(transferred_price) transferred_price from user_storage_eight group by hold_phone'''
 
-        # 读取user_storage_value_today表(每10分钟一次，更新最近的是)
-        today_storage_sql = '''select a.hold_phone, a.transferred_count, a.transferred_price, a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_value_today a
-                    join (select hold_phone, max(addtime) time from lh_analyze.user_storage_value_today group by hold_phone) b
+        # 读取user_storage_eight_today表(每10分钟一次，更新最近的是)
+        today_storage_sql = '''select a.hold_phone, a.transferred_count, a.transferred_price, a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_eight_today a
+                    join (select hold_phone, max(addtime) time from lh_analyze.user_storage_eight_today group by hold_phone) b
                     on a.hold_phone = b.hold_phone
                     and a.addtime = b.time
                 '''
         # 读取转让中数据
         public_sql = '''
-            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from lh_sell where del_flag = 0 and `status` != 1 group by hold_phone
-            union all
-            select lsr.retail_user_phone hold_phone,count(*) public_count,sum(lsrd.unit_price) public_price from lh_sell_retail lsr left join lh_sell_retail_detail lsrd
-            on lsr.id = lsrd.retail_id where lsr.del_flag = 0 and lsrd.retail_status != 1
-            group by hold_phone ) t group by hold_phone
+            select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_sell where del_flag = 0 and `status` != 1 group by hold_phone
         '''
         user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
         today_storage_df = pd.read_sql(today_storage_sql, conn_analyze)
@@ -1616,12 +1560,6 @@ def personal_hold_total():
         cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(x, 2))
         cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(x, 2))
         cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(x, 2))
-
-        # cut_data['hold_price'] = cut_data['hold_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['no_tran_price'] = cut_data['no_tran_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(float(x), 2))
 
         return_data = {
             "title_data": title_data,

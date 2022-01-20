@@ -39,6 +39,7 @@ from analyzeserver.public.chinaaddress import chaddrbp
 from analyzeserver.user.crm_user_tag import usertagbp
 from analyzeserver.lianghao.eight.second.daily_summary import daily_eight_secondbp
 from analyzeserver.lianghao.eight.pifa.daily_summary import daily_eight_pifabp
+from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
