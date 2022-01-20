@@ -1603,11 +1603,7 @@ def personal_hold_total():
         cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(x, 2))
         cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(x, 2))
 
-        # cut_data['hold_price'] = cut_data['hold_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['no_tran_price'] = cut_data['no_tran_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(float(x), 2))
-        # cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(float(x), 2))
+
 
         return_data = {
             "title_data": title_data,
