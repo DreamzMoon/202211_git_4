@@ -440,6 +440,7 @@ def personal_order_flow():
             from lh_pretty_client.lh_order
             where `status`  = 1
             and type in (1, 4)
+            and del_flag=0
             and phone is not null) t1
             left join
             (select id, price_status transfer_type from lh_pretty_client.lh_sell) t2
@@ -596,8 +597,8 @@ def personal_publish_order_flow():
         fina_df['sell_unionid'].fillna('', inplace=True)
         fina_df['parentid'].fillna('', inplace=True)
         fina_df['status'] = fina_df['status'].astype(str)
-        fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
-        fina_df['transfer_type'].fillna(3, inplace=True)
+        # fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
+        # fina_df['transfer_type'].fillna(3, inplace=True)
         fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))

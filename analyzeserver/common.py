@@ -250,8 +250,8 @@ def order_and_user_merge(order_df, user_df):
         fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
         fina_df['sell_unionid'] = fina_df['sell_unionid'].astype(str)
         fina_df['sell_unionid'] = fina_df['sell_unionid'].apply(lambda x: del_point(x))
-        fina_df['transfer_type'].fillna(3, inplace=True)
-        fina_df['transfer_type'] = (fina_df['transfer_type'].astype(int)).astype(str)
+        # fina_df['transfer_type'].fillna(3, inplace=True)
+        fina_df['transfer_type'] = fina_df['transfer_type'].astype(str)
         fina_df['pay_type'] = fina_df['pay_type'].astype(str)
 
         return True,fina_df
@@ -513,7 +513,7 @@ def match_time_type_data(data_df, request):
         return False, "10000"
 
 # 关系映射
-def map_type(df):
+def map_type(df, category='7'):
     map_pay_type = {
         "-1": "未知",
         "0": "信用点支付",
@@ -526,12 +526,23 @@ def map_type(df):
         "7": "诚聊通佣金支付",
         "8": "诚聊通红包支付"
     }
+    map_eight_pay_type ={
+        "-1": "信用点",
+        "0": "采购金",
+        "1": "收银台",
+        "2": "诚聊通余额支付",
+        "3": "微信支付",
+        "4": "支付宝支付",
+        "5": "后台系统支付",
+        "6": "银行卡支付",
+        "8": "禄可商务转入"
+    }
+
 
     # 转让类型映射
     map_transfer_type = {
         "0": "自主",
-        "1": "渠道",
-        "3": "未知"
+        "1": "渠道"
     }
     map_status = {
         "0": "上架",
@@ -541,7 +552,10 @@ def map_type(df):
     }
     df['transfer_type'] = df['transfer_type'].map(map_transfer_type)
     try:
-        df['pay_type'] = df['pay_type'].map(map_pay_type)
+        if category == 7:
+            df['pay_type'] = df['pay_type'].map(map_pay_type)
+        else:
+            df['pay_type'] = df['pay_type'].map(map_eight_pay_type)
     except:
         df['status'] = df['status'].map(map_status)
     return df
