@@ -1079,7 +1079,7 @@ def person_buy():
 
         cursor = conn_read.cursor()
         sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from le_order o 
-        left join lh_sell s on o.sell_id = s.id
+        left join le_second_hand_sell s on o.sell_id = s.id
         where o.phone = %s and o.del_flag = 0 and o.type = 4  and o.`status` = 1
         order by create_time asc'''
         cursor.execute(sql,(phone))
@@ -1538,7 +1538,7 @@ def person_sell():
 
         cursor = conn_read.cursor()
         sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from le_order o 
-        left join lh_sell s on o.sell_id = s.id
+        left join le_second_hand_sell s on o.sell_id = s.id
         where o.sell_phone = %s and o.del_flag = 0 and o.type = 4  and o.`status` = 1
         order by create_time asc'''
         cursor.execute(sql, (sell_phone))
