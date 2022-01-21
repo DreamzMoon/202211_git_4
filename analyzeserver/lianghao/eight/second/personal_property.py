@@ -990,8 +990,8 @@ def person_charts():
                 return {"code": "11009", "status": "failed", "msg": message["11009"]}
             if start_time >= end_time:
                 return {"code": "11020", "status": "failed", "msg": message["11020"]}
-            datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-            datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+            datetime_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+            datetime_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
             daysss = datetime_end_time - datetime_start_time
             if daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0) > 30:
                 return {"code": "11018", "status": "failed", "msg": message["11018"]}
@@ -1030,20 +1030,23 @@ def person_charts():
                 }
             else:
                 query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
-                yesterday_query_time = (
-                            datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime(
-                    "%Y-%m-%d")
+                yesterday_query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime("%Y-%m-%d")
+                logger.info(query_time)
+                logger.info(yesterday_query_time)
                 today_sql = '''
                                     select day_time, public_count_2 public_count,public_price_2 public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
                                      hold_count, hold_price
-                                     from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = {}
+                                     from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = "{}"
                                 '''.format(hold_phone,query_time)
                 ration_sql = '''
                                     select tran_price, transferred_price, hold_price
                                     from user_storage_eight
-                                    where day_time=%s
+                                    where day_time="%s"
                                     and hold_phone=%s
-                                ''' %(hold_phone,yesterday_query_time)
+                                ''' %(yesterday_query_time,hold_phone)
+
+                logger.info(today_sql)
+                logger.info(ration_sql)
 
                 today_df = pd.read_sql(today_sql, conn_analyze)
                 ration_df = pd.read_sql(ration_sql, conn_analyze)
