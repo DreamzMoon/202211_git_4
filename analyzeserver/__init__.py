@@ -41,6 +41,7 @@ from analyzeserver.lianghao.eight.second.daily_summary import daily_eight_second
 from analyzeserver.lianghao.eight.pifa.daily_summary import daily_eight_pifabp
 from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
 from analyzeserver.lianghao.eight.second.personal_property import secondppbp
+from analyzeserver.perfect_choose.le_type import letypebp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -63,6 +64,9 @@ app.register_blueprint(homebp)
 app.register_blueprint(userrelatebp)
 app.register_blueprint(ppbp)
 app.register_blueprint(dailybp)
+
+#8位类型列表
+app.register_blueprint(letypebp)
 
 # 8位二手
 app.register_blueprint(platsecondbp)
