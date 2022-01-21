@@ -172,6 +172,7 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,
                 try:
                     r = get_redis()
                     plat_lh_total_count_8 = int(r.get("plat_lh_total_count_eight"))
+                    logger.info(plat_lh_total_count_8)
                 except:
                     plat_lh_total_count_8 = plat_le_total_count_eight
                 logger.info(plat_lh_total_count_8)
@@ -234,12 +235,13 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,
 
                 try:
                     r = get_redis()
-                    plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
+                    plat_lh_total_count_8 = int(r.get("plat_lh_total_count_eight"))
+                    logger.info(plat_lh_total_count_8)
                 except:
-                    plat_lh_total_count_7 = plat_lh_total_count_seven
-                logger.info(plat_lh_total_count_7)
+                    plat_lh_total_count_8 = plat_le_total_count_eight
+                logger.info(plat_lh_total_count_8)
 
-                all_data["plat_count"] = plat_lh_total_count_7
+                all_data["plat_count"] = plat_lh_total_count_8
                 all_data["plat_hold_count"] = today_data["hold_count"]
                 # all_data["plat_surplus_count"] = all_data["plat_count"] - all_data["plat_hold_count"]
                 all_data["plat_surplus_count"] = all_data["plat_count"] - today_hold_count
@@ -264,11 +266,13 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,
 
             try:
                 r = get_redis()
-                plat_lh_total_count_7 = int(r.get("plat_lh_total_count_seven"))
+                plat_lh_total_count_8 = int(r.get("plat_lh_total_count_eight"))
+                logger.info(plat_lh_total_count_8)
             except:
-                plat_lh_total_count_7 = plat_lh_total_count_seven
+                plat_lh_total_count_8 = plat_le_total_count_eight
+            logger.info(plat_lh_total_count_8)
 
-            all_data["plat_count"] = plat_lh_total_count_7
+            all_data["plat_count"] = plat_lh_total_count_8
             all_data["plat_hold_count"] = 0
             all_data["plat_surplus_count"] = all_data["plat_count"] - today_hold_count
             all_data["plat_tran_count"] = 0
