@@ -130,8 +130,7 @@ def platform_data():
                 #发布的单独取
                 all_public_sql = '''
                 select sum(public_lh_count) from (
-select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_count from le_second_hand_sell where del_flag = 0  and `status` != 1 group by statistic_time ) t
-                        '''
+select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,sum(count) public_lh_count from le_second_hand_sell where del_flag = 0  and `status` != 1 group by statistic_time,hold_phone ) t                        '''
 
 
                 condition_sql = ""
@@ -140,7 +139,7 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_c
 
                 if condition_sql:
                     all_public_sql = all_public_sql + condition_sql
-
+                logger.info(all_public_sql)
                 cursor_lh.execute(all_public_sql)
                 all_public_count = cursor_lh.fetchone()[0]
 
@@ -194,8 +193,7 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_c
                 # 发布的单独取
                 all_public_sql = '''
                                 select sum(public_lh_count) from (
-                select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_count from le_second_hand_sell where del_flag = 0  and `status` != 1 group by statistic_time ) t
-                                        '''
+select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,sum(count) public_lh_count from le_second_hand_sell where del_flag = 0  and `status` != 1 group by statistic_time,hold_phone ) t                                        '''
 
                 condition_sql = ""
                 for i in range(0, len(condition)):
@@ -821,7 +819,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         # traned_sql = '''select pretty_type_id,count(*) traned_count from lh_pretty_hold_%s where hold_phone = %s and del_flag=0 and `status`= 3 group by pretty_type_id''' %(lh_user_id[0],hold_phone)
         traned_sql = '''
         select pretty_type_name,count(*) traned_count,sum(unit_price) traned_sum_price from (
-        select pretty_hold.pretty_type_name,lh_order.unit_price from le_pretty_hold_%s pretty_hold
+        select pretty_hold.pretty_type_name,le_order.unit_price from le_pretty_hold_%s pretty_hold
         left join le_order on pretty_hold.order_sn = le_order.order_sn
         where pretty_hold.hold_phone = %s and pretty_hold.del_flag=0 and pretty_hold.`status`= 3 
         ) t
@@ -1355,7 +1353,11 @@ def bus_card_belong():
         else:
             logging.info(hold_table_type_list)
             for hold_table_type in hold_table_type_list:
-                pretty_hold_sql_1 = pretty_hold_sql_1 + ''' and hold_phone in (%s)''' % ','.join(hold_user_phone_list)
+                if hold_user_phone_list:
+                    pretty_hold_sql_1 = pretty_hold_sql_1 + ''' and hold_phone in (%s)''' % ','.join(hold_user_phone_list)
+                else:
+                    pretty_hold_sql_1 = pretty_hold_sql_1
+                logger.info(pretty_hold_sql_1)
                 hold_df = pd.read_sql(pretty_hold_sql_1.format(table_name=hold_table_type), conn_lh)
                 hold_df_list.append(hold_df)
             hold_all_df = pd.concat(hold_df_list, axis=0)
@@ -1498,7 +1500,7 @@ def personal_hold_total():
                 '''
         # 读取转让中数据
         public_sql = '''
-            select hold_phone,sum(public_count_2) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_second_hand_sell where del_flag = 0 and `status` != 1 group by hold_phone
+            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_second_hand_sell where del_flag = 0 and `status` != 1 group by hold_phone
             ) t group by hold_phone
         '''
         user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
@@ -1610,7 +1612,7 @@ def personal_hold_total():
         return {"code": "0000", "status": "success", "msg": return_data, "count": fina_df.shape[0]}
     except Exception as e:
         logger.error(e)
-        logger.error(traceback.format_exc())
+        logger.exception(traceback.format_exc())
     finally:
         try:
             conn_lh.close()
