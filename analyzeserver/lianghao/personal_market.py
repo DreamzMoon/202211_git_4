@@ -1502,8 +1502,6 @@ def personal_sell_all():
         if df_merged.empty:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
-        result_count = len(df_merged)
-
         # conn_analyze = direct_get_conn(analyze_mysql_conf)
         sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
         crm_data = pd.read_sql(sql, conn_analyze)
@@ -1520,6 +1518,7 @@ def personal_sell_all():
             df_merged = df_merged[df_merged["parentid"] == parent_id]
         # 按时间倒序
         df_merged.sort_values('last_time', ascending=False, inplace=True)
+        result_count = len(df_merged)
         if page and size:
             need_data = df_merged[code_page:code_size]
         else:
