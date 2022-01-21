@@ -378,7 +378,7 @@ if __name__ == "__main__":
         # 数据入库
         logger.info('写入数据')
         conn_analyze = pd_conn(analyze_mysql_conf)
-        df_merge.to_sql('user_storage_eight_update', con=conn_analyze, if_exists="append", index=False)
+        df_merge.to_sql('user_storage_eight', con=conn_analyze, if_exists="append", index=False)
         run_end = time.time()
         logger.info(run_start - run_end)
         break
