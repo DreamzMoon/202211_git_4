@@ -234,9 +234,9 @@ def platform_data():
                     "hold_price": below_data["hold_total_price"]
                 }
 
-                use_public_sql = '''select sum(use_count) use_count,sum(public_count_pifa) public_count from (
+                use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                                     select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight ''' + condition_sql + '''union all
-                                    (select sum(use_count) use_count,sum(public_count) public_count from user_storage_eight_today ''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
+                                    (select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight_today ''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
                                     limit 1)
                                     ) user_storage'''
                 logger.info(use_public_sql)
@@ -442,7 +442,7 @@ def plat_statis():
                     circle_sql = '''
                         (select "current" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
-                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_value_today group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1)
+                        sum(hold_count) hold_count,sum(hold_price)  hold_price from user_storage_eight_today group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc limit 1)
                         union all 
                         (select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(public_price_pifa) public_price,sum(tran_count) tran_count,sum(tran_price) tran_price,
                         sum(no_tran_count) no_tran_count,sum(no_tran_price) no_tran_price,sum(use_count) use_count,sum(use_total_price) use_total_price,
@@ -671,7 +671,7 @@ def plat_statis():
                         ) t where day_time >= "%s" and day_time <= "%s"
                     ''' % (start_time, end_time)
 
-                    circle_sql = '''(select "curent" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                    circle_sql = '''(select "curent" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                                                     (select day_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
@@ -685,7 +685,7 @@ def plat_statis():
                                                     ) t1 where day_time >="%s" and day_time <= "%s")
                                                     union all 
                                                     (
-                                                    select "yeaterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                                                    select "yeaterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                                                     (select day_time, sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
