@@ -1031,8 +1031,7 @@ def personal_buy_all():
         if df_merged.empty:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
-        df_merged_count = len(df_merged)
-        logger.info(df_merged.shape)
+
 
 
         # conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -1051,6 +1050,10 @@ def personal_buy_all():
         df_merged['unionid'] = df_merged['unionid'].apply(lambda x: del_point(x))
         if parent_id:
             df_merged = df_merged[df_merged["parentid"] == parent_id]
+
+        df_merged_count = len(df_merged)
+        logger.info(df_merged.shape)
+
         df_merged.sort_values('last_time', ascending=False, inplace=True)
         if page and size:
             need_data = df_merged[code_page:code_size]
