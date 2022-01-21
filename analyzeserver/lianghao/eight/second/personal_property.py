@@ -21,7 +21,7 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 import numpy as np
 
-secondppbp = Blueprint('property2', __name__, url_prefix='/lh/second/property')
+secondppbp = Blueprint('property2', __name__, url_prefix='/le/second/property')
 
 # 平台数据总览
 @secondppbp.route('/platform/all', methods=['POST'])
@@ -160,8 +160,8 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_c
                 }
 
                 use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
-                            select sum(use_count) use_count,sum(public_count) public_count from user_storage_eight_today ''' + condition_sql +'''union all
-                            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                            select sum(use_count) use_count,sum(public_count_2) public_count from user_storage_eight_today ''' + condition_sql +'''union all
+                            (select sum(use_count) use_count,sum(public_count_2) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                             limit 1)
                             ) user_storage'''
 
@@ -490,9 +490,9 @@ def plat_statis():
 
                     circle_sql = '''
                                                 select "current" statistic_time,
-                                    sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                    sum(public_count) public_count,sum(tran_count) tran_count,
                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                    (select sum(public_count) public_count,sum(tran_count) tran_count,
+                                    (select sum(public_count_2) public_count,sum(tran_count) tran_count,
                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                     from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
                                     union all
@@ -503,9 +503,9 @@ def plat_statis():
                                     limit 1)
                                     ) t1  
                                     union all 
-                                    select "yesterday" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                    select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                    (select sum(public_count) public_count,sum(tran_count) tran_count,
+                                    (select sum(public_count_2) public_count,sum(tran_count) tran_count,
                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                     from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc limit %s,%s)
                                     ) t2
@@ -540,9 +540,9 @@ def plat_statis():
 
                     circle_sql = '''
                                                                     select "current" statistic_time,
-                                                        sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                                        sum(public_count) public_count,sum(tran_count) tran_count,
                                                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                        (select sum(public_count) public_count,sum(tran_count) tran_count,
+                                                        (select sum(public_count_2) public_count,sum(tran_count) tran_count,
                                                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                                         from user_storage_eight group by day_time order by day_time desc limit %s,%s)
                                                         union all
@@ -553,9 +553,9 @@ def plat_statis():
                                                         limit 1)
                                                         ) t1  
                                                         union all 
-                                                        select "yesterday" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                                        select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                        (select sum(public_count) public_count,sum(tran_count) tran_count,
+                                                        (select sum(public_count_2) public_count,sum(tran_count) tran_count,
                                                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                                         from user_storage_eight  group by day_time order by day_time desc limit %s,%s)
                                                         ) t2
@@ -612,9 +612,9 @@ def plat_statis():
                                 ) t where day_time >= "%s" and day_time <= "%s"
                                             ''' % (select_phone,select_phone,start_time, end_time)
 
-                    circle_sql = '''(select "curent" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                    circle_sql = '''(select "curent" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                (select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                (select day_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                 from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                 union all
@@ -626,9 +626,9 @@ def plat_statis():
                                 ) t1 where day_time >="%s" and day_time <= "%s")
                                 union all 
                                 (
-                                select "yeaterday" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                select "yeaterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                (select day_time, sum(public_count) public_count,sum(tran_count) tran_count,
+                                (select day_time, sum(public_count_2) public_count,sum(tran_count) tran_count,
                                 sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                 from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                 ) t2 where day_time >= "%s" and day_time <="%s")''' % (select_phone,select_phone,
@@ -666,9 +666,9 @@ def plat_statis():
                                                     ) t where day_time >= "%s" and day_time <= "%s"
                                                                 ''' % (start_time, end_time)
 
-                    circle_sql = '''(select "curent" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                    circle_sql = '''(select "curent" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                    (select day_time,sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    (select day_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                                     from user_storage_eight where hold_phone in (%s) group by day_time order by day_time desc )
                                                     union all
@@ -680,9 +680,9 @@ def plat_statis():
                                                     ) t1 where day_time >="%s" and day_time <= "%s")
                                                     union all 
                                                     (
-                                                    select "yeaterday" statistic_time,sum(public_count_2) public_count,sum(tran_count) tran_count,
+                                                    select "yeaterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
-                                                    (select day_time, sum(public_count) public_count,sum(tran_count) tran_count,
+                                                    (select day_time, sum(public_count_2) public_count,sum(tran_count) tran_count,
                                                     sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
                                                     from user_storage_eight group by day_time order by day_time desc )
                                                     ) t2 where day_time >= "%s" and day_time <="%s")''' % (
@@ -1498,7 +1498,7 @@ def personal_hold_total():
                 '''
         # 读取转让中数据
         public_sql = '''
-            select hold_phone,sum(public_count) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_second_hand_sell where del_flag = 0 and `status` != 1 group by hold_phone
+            select hold_phone,sum(public_count_2) public_count,sum(public_price) public_price from (select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_second_hand_sell where del_flag = 0 and `status` != 1 group by hold_phone
             ) t group by hold_phone
         '''
         user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
