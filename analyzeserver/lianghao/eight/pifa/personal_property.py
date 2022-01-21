@@ -164,7 +164,7 @@ def platform_data():
                     "no_tran_price": below_data["no_tran_total_price"], "hold_count": below_data["hold_total_count"], "hold_price": below_data["hold_total_price"]
                 }
 
-                use_public_sql = '''select sum(use_count) use_count,sum(public_count_pifa) public_count from (
+                use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                             select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight ''' + condition_sql +'''union all
                             (select sum(use_count) use_count,sum(public_count_pifa) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
                             limit 1)
@@ -499,7 +499,7 @@ def plat_statis():
 
                     circle_sql = '''
                         select "current" statistic_time,
-                        sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(public_count) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                         (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
@@ -512,7 +512,7 @@ def plat_statis():
                         limit 1)
                         ) t1  
                         union all 
-                        select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                         (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
@@ -1031,7 +1031,7 @@ def person_charts():
             }
         else:
             today_new_sql = '''
-                select day_time, a.hold_phone, a.public_count_pifa, a.public_price_pifa, a.transferred_count, a.transferred_price,
+                select day_time, a.hold_phone, a.public_count_pifa public_count, a.public_price_pifa public_price, a.transferred_count, a.transferred_price,
                 a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_eight_today a
                 join (select hold_phone, max(addtime) time from lh_analyze.user_storage_eight_today group by hold_phone) b
                 on a.hold_phone = b.hold_phone
