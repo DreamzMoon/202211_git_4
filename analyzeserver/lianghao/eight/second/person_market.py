@@ -822,6 +822,7 @@ def personal_publish_order_flow():
         match_df['sell_time'] = match_df['sell_time'].astype(str)
         match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("NaT", ""))
         match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("nan", ""))
+        match_df['sell_time'] = match_df['sell_time'].apply(lambda x: x.replace("None", ""))
         match_df.fillna("", inplace=True)
 
         match_df.drop('operate_id', axis=1, inplace=True)
