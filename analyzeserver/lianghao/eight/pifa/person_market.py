@@ -624,11 +624,11 @@ def personal_order_flow():
             query_phone = []
         if query_phone:
             if sell_phone_list and buy_phone_list:
-                order_condition_sql = ''' where buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
+                order_condition_sql = ''' and buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
             elif sell_phone_list:
-                order_condition_sql = ''' where sell_phone in (%s)''' % (",".join(sell_phone_list))
+                order_condition_sql = ''' and sell_phone in (%s)''' % (",".join(sell_phone_list))
             else:
-                order_condition_sql = ''' where buyer_phone in (%s)''' % (",".join(buy_phone_list))
+                order_condition_sql = ''' and buyer_phone in (%s)''' % (",".join(buy_phone_list))
         else:
             order_condition_sql = ''
 
