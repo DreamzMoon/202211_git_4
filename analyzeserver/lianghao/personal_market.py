@@ -1061,7 +1061,10 @@ def personal_buy_all():
 
         last_data = need_data.to_dict("records")
 
-        last_data[0]["total_price"] = round(last_data[0]["total_price"],2)
+        try:
+            last_data[0]["total_price"] = round(last_data[0]["total_price"],2)
+        except:
+            pass
 
         logger.info("last_data:%s" %last_data)
         return {"code": "0000", "status": "success", "msg": last_data, "count": df_merged_count}
