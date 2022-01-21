@@ -165,7 +165,7 @@ def platform_data():
 
                 use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                             select sum(use_count) use_count,sum(public_count) public_count from user_storage_value ''' + condition_sql +'''union all
-                            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") desc 
+                            (select sum(use_count) use_count,sum(public_count) public_count from user_storage_value_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
                             limit 1)
                             ) user_storage'''
 
