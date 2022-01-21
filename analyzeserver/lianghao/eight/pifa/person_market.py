@@ -786,7 +786,7 @@ def personal_publish_order_flow():
             pub_condition_sql = ''
             user_condition_sql = ''
         publish_sql = '''select sell_phone, count, pretty_type_name, total_price/count unit_price, total_price, type  transfer_type, `status`, create_time publish_time, create_time up_time, sell_time
-                        from lh_pretty_client.le_second_hand_sell
+                        from lh_pretty_client.le_sell
                         where del_flag = 0 and status != 1'''
         publish_sql += pub_condition_sql
         publish_order_df = pd.read_sql(publish_sql, conn_lh)
@@ -1087,7 +1087,7 @@ def person_buy():
 
         cursor = conn_read.cursor()
         sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from le_order o 
-        left join lh_sell s on o.sell_id = s.id
+        left join le_sell s on o.sell_id = s.id
         where o.phone = %s and o.del_flag = 0 and o.type = 1  and o.`status` = 1
         order by create_time asc'''
         cursor.execute(sql,(phone))
@@ -1546,7 +1546,7 @@ def person_sell():
 
         cursor = conn_read.cursor()
         sql = '''select o.create_time,o.total_price,o.pay_type,s.pretty_type_name,o.count from le_order o 
-        left join lh_sell s on o.sell_id = s.id
+        left join le_sell s on o.sell_id = s.id
         where o.sell_phone = %s and o.del_flag = 0 and o.type = 1  and o.`status` = 1
         order by create_time asc'''
         cursor.execute(sql, (sell_phone))
