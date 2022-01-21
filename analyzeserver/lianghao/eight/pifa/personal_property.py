@@ -547,7 +547,7 @@ def plat_statis():
 
                     circle_sql = '''
                         select "current" statistic_time,
-                        sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        sum(public_count) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                         (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
@@ -560,7 +560,7 @@ def plat_statis():
                         limit 1)
                         ) t1  
                         union all 
-                        select "yesterday" statistic_time,sum(public_count_pifa) public_count,sum(tran_count) tran_count,
+                        select "yesterday" statistic_time,sum(public_count) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count from (
                         (select sum(public_count_pifa) public_count,sum(tran_count) tran_count,
                         sum(no_tran_count) no_tran_count,sum(transferred_count) transferred_count
@@ -1319,7 +1319,10 @@ def bus_card_belong():
         else:
             logging.info(hold_table_type_list)
             for hold_table_type in hold_table_type_list:
-                pretty_hold_sql_1 = pretty_hold_sql_1 + ''' and hold_phone in (%s)''' % ','.join(hold_user_phone_list)
+                if hold_user_phone_list:
+                    pretty_hold_sql_1 = pretty_hold_sql_1 + ''' and hold_phone in (%s)''' % ','.join(hold_user_phone_list)
+                else:
+                    pretty_hold_sql_1 = pretty_hold_sql_1
                 hold_df = pd.read_sql(pretty_hold_sql_1.format(table_name=hold_table_type), conn_lh)
                 hold_df_list.append(hold_df)
             hold_all_df = pd.concat(hold_df_list, axis=0)

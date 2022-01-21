@@ -74,6 +74,7 @@ app.register_blueprint(secondppbp)
 app.register_blueprint(platpfbp)
 app.register_blueprint(personpfbp)
 app.register_blueprint(daily_eight_pifabp)
+app.register_blueprint(pifappbp)
 
 # crm运营中心管理
 app.register_blueprint(operateconbp)
