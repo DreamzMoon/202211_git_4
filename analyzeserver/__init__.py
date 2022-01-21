@@ -40,6 +40,7 @@ from analyzeserver.user.crm_user_tag import usertagbp
 from analyzeserver.lianghao.eight.second.daily_summary import daily_eight_secondbp
 from analyzeserver.lianghao.eight.pifa.daily_summary import daily_eight_pifabp
 from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
+from analyzeserver.lianghao.eight.second.personal_property import secondppbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -67,6 +68,7 @@ app.register_blueprint(dailybp)
 app.register_blueprint(platsecondbp)
 app.register_blueprint(personsecondbp)
 app.register_blueprint(daily_eight_secondbp)
+app.register_blueprint(secondppbp)
 
 # 8位批发
 app.register_blueprint(platpfbp)

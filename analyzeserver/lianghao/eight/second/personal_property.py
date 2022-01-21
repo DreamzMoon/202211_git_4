@@ -21,10 +21,10 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 import numpy as np
 
-ppbp = Blueprint('property', __name__, url_prefix='/lh/property')
+secondppbp = Blueprint('property2', __name__, url_prefix='/lh/second/property')
 
 # 平台数据总览
-@ppbp.route('/platform/all', methods=['POST'])
+@secondppbp.route('/platform/all', methods=['POST'])
 def platform_data():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -289,7 +289,7 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sum(count) public_lh_c
         conn_lh.close()
 
 # 平台名片网数据统计
-@ppbp.route("plat/statis",methods=['POST'])
+@secondppbp.route("plat/statis",methods=['POST'])
 def plat_statis():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -728,7 +728,7 @@ def plat_statis():
         conn_lh.close()
 
 # 个人持有名片网估值统计详情
-@ppbp.route("person/detail",methods=['POST'])
+@secondppbp.route("person/detail",methods=['POST'])
 def person_detail():
     try:
         try:
@@ -953,9 +953,7 @@ group by addtime order by addtime desc limit 1''' %hold_phone
         except:
             pass
 
-
-
-@ppbp.route("person/chart",methods=["POST"])
+@secondppbp.route("person/chart",methods=["POST"])
 def person_charts():
     try:
         try:
@@ -1120,7 +1118,7 @@ def person_charts():
             pass
 
 # 名片网归属数据表
-@ppbp.route('/belong', methods=['POST'])
+@secondppbp.route('/belong', methods=['POST'])
 def bus_card_belong():
     try:
         try:
@@ -1440,7 +1438,7 @@ def bus_card_belong():
             pass
 
 # 个人持有名片网估值统计
-@ppbp.route('/personal/hold/total', methods=["POST"])
+@secondppbp.route('/personal/hold/total', methods=["POST"])
 def personal_hold_total():
     try:
         try:

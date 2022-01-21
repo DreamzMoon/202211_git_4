@@ -21,7 +21,7 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 import numpy as np
 
-pifappbp = Blueprint('property2', __name__, url_prefix='/le/pifa/property')
+pifappbp = Blueprint('propertypifa', __name__, url_prefix='/le/pifa/property')
 
 # 平台数据总览
 @pifappbp.route('/platform/all', methods=['POST'])
