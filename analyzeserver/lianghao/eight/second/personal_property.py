@@ -160,15 +160,15 @@ select DATE_FORMAT(create_time,"%Y-%m-%d") statistic_time,sell_phone hold_phone,
 
                 use_public_sql = '''select sum(use_count) use_count,sum(public_count) public_count from (
                             select sum(use_count) use_count,sum(public_count_2) public_count from user_storage_eight_today ''' + condition_sql +'''union all
-                            (select sum(use_count) use_count,sum(public_count_2) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%%Y-%%m-%%d %%H-%%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
+                            (select sum(use_count) use_count,sum(public_count_2) public_count from user_storage_eight_today''' + condition_sql + '''group by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") order by DATE_FORMAT(addtime,"%Y-%m-%d %H-%i") desc 
                             limit 1)
                             ) user_storage'''
 
-
+                logger.info(use_public_sql)
 
                 cursor_analyze.execute(use_public_sql)
                 use_public = cursor_analyze.fetchone()
-
+                logger.info(use_public)
                 try:
                     r = get_redis()
                     plat_lh_total_count_8 = int(r.get("plat_lh_total_count_eight"))
