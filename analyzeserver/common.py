@@ -515,7 +515,7 @@ def match_time_type_data(data_df, request):
         return False, "10000"
 
 # 关系映射
-def map_type(df, category='7'):
+def map_type(df, category=7):
     map_pay_type = {
         "-1": "未知",
         "0": "信用点支付",
