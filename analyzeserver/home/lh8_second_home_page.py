@@ -306,7 +306,7 @@ def today_dynamic_transaction():
                 where del_flag=0 and type=4 and (phone is not null or phone !='') and `status`=1
                 and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
                 order by pay_time desc
-                limit 10
+                limit 3
                 ) t1
                 left join
                 (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
