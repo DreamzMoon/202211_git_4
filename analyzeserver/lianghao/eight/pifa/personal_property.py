@@ -1001,71 +1001,37 @@ def person_charts():
 
         # 数据分析
         # 价格表
-        if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
-            if time_type == 1:
-                today_sql = '''
-                    select day_time, public_count_pifa public_count, public_price_pifa public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
-                     hold_count, hold_price
-                     from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
-                '''.format(hold_phone)
-                ration_sql = '''
-                    select tran_price, transferred_price, hold_price
-                    from user_storage_eight
-                    where day_time=date_sub(current_date, interval 1 day)
-                    and hold_phone=%s
-                ''' % hold_phone
+        # if time_type == 1 or (time_type == 4 and daysss and daysss.days + daysss.seconds / (24.0 * 60.0 * 60.0)<1):
+        if time_type == 1:
+            today_sql = '''
+                select day_time, public_count_pifa public_count, public_price_pifa public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
+                 hold_count, hold_price
+                 from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = current_date
+            '''.format(hold_phone)
+            ration_sql = '''
+                select tran_price, transferred_price, hold_price
+                from user_storage_eight
+                where day_time=date_sub(current_date, interval 1 day)
+                and hold_phone=%s
+            ''' % hold_phone
 
-                today_df = pd.read_sql(today_sql, conn_analyze)
-                ration_df = pd.read_sql(ration_sql, conn_analyze)
-                today_df.sort_values('day_time', inplace=True)
-                today_df['day_time'] = today_df['day_time'].apply(lambda x: x.strftime('%Y-%m-%d %H'))
-                ration_data = {
-                    "hold_price": today_df['hold_price'].values[-1],
-                    "ration_hold_price": ration_df['hold_price'].sum(),
-                    "tran_price": today_df['tran_price'].values[-1],
-                    "ration_tran_price": ration_df['tran_price'].sum(),
-                    "transferred_price": today_df['transferred_price'].values[-1],
-                    "ration_transferred_price": ration_df['transferred_price'].sum()
-                }
-                analyze_data = {
-                    "day_data": today_df.to_dict("records"),
-                    "ration_data": ration_data
-                }
-            else:
-                query_time = (datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%d")
-                yesterday_query_time = (
-                            datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(days=-1)).strftime(
-                    "%Y-%m-%d")
-                logger.info(query_time)
-                logger.info(yesterday_query_time)
-                today_sql = '''
-                                    select day_time, public_count_pifa public_count, public_price_pifa public_price, tran_count, tran_price, no_tran_count, no_tran_price, transferred_count, transferred_price,
-                                     hold_count, hold_price
-                                     from user_storage_eight_hour where hold_phone={} and date_format(day_time, '%Y-%m-%d') = "{}"
-                                '''.format(hold_phone,query_time)
-                ration_sql = '''
-                                    select tran_price, transferred_price, hold_price
-                                    from user_storage_eight
-                                    where day_time="%s"
-                                    and hold_phone=%s
-                                ''' % (hold_phone,yesterday_query_time)
+            today_df = pd.read_sql(today_sql, conn_analyze)
+            ration_df = pd.read_sql(ration_sql, conn_analyze)
+            today_df.sort_values('day_time', inplace=True)
+            today_df['day_time'] = today_df['day_time'].apply(lambda x: x.strftime('%Y-%m-%d %H'))
+            ration_data = {
+                "hold_price": today_df['hold_price'].values[-1],
+                "ration_hold_price": ration_df['hold_price'].sum(),
+                "tran_price": today_df['tran_price'].values[-1],
+                "ration_tran_price": ration_df['tran_price'].sum(),
+                "transferred_price": today_df['transferred_price'].values[-1],
+                "ration_transferred_price": ration_df['transferred_price'].sum()
+            }
+            analyze_data = {
+                "day_data": today_df.to_dict("records"),
+                "ration_data": ration_data
+            }
 
-                today_df = pd.read_sql(today_sql, conn_analyze)
-                ration_df = pd.read_sql(ration_sql, conn_analyze)
-                today_df.sort_values('day_time', inplace=True)
-                today_df['day_time'] = today_df['day_time'].apply(lambda x: x.strftime('%Y-%m-%d %H'))
-                ration_data = {
-                    "hold_price": today_df['hold_price'].values[-1],
-                    "ration_hold_price": ration_df['hold_price'].sum(),
-                    "tran_price": today_df['tran_price'].values[-1],
-                    "ration_tran_price": ration_df['tran_price'].sum(),
-                    "transferred_price": today_df['transferred_price'].values[-1],
-                    "ration_transferred_price": ration_df['transferred_price'].sum()
-                }
-                analyze_data = {
-                    "day_data": today_df.to_dict("records"),
-                    "ration_data": ration_data
-                }
         else:
             today_new_sql = '''
                 select day_time, a.hold_phone, a.public_count_pifa public_count, a.public_price_pifa public_price, a.transferred_count, a.transferred_price,
