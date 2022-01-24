@@ -15,6 +15,7 @@ import time
 import json
 from config import *
 import traceback
+import re
 
 from util.help_fun import send_dingding
 
@@ -22,6 +23,17 @@ def get_proxy():
     try:
         proxy = "http://http.tiqu.letecs.com/getip3?num=1&type=1&pro=&city=0&yys=0&port=1&time=1&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions=&gm=4"
         proxy_res = requests.get(proxy)
+        res = json.loads(proxy_res)
+        if res.status_code == 113:
+            myip = re.findall(r"请添加白名单(.*)",res["msg"])[0]
+            add_white_url = "http://wapi.http.cnapi.cc/index/index/save_white?neek=258804&appkey=796ec57056871781ab48d4f9bd2bdf50&white=%s" % myip
+            white_res = requests.get(add_white_url)
+            logger.info(white_res.text)
+
+            proxy = "http://http.tiqu.letecs.com/getip3?num=1&type=1&pro=&city=0&yys=0&port=1&time=1&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=1&regions=&gm=4"
+            proxy_res = requests.get(proxy)
+            proxy = proxy_res.text.strip()
+            return True, proxy
         proxy = proxy_res.text.strip()
         return True,proxy
     except:
