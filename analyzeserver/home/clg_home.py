@@ -28,4 +28,51 @@ clghomebp = Blueprint('clghome', __name__, url_prefix='/clghome')
 
 @clghomebp.route("person/top",methods=["GET"])
 def person_top():
-    pass
+    try:
+        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
+        try:
+            logger.info("env:%s" % ENV)
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+
+
+        sql = '''select phone,sum(pay_money) from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6)
+        group by phone limit 3'''
+        logger.info(sql)
+        datas = pd.read_sql(sql, conn_clg)
+        # datas = datas.to_dict("records")
+        # logger.info(len(datas))
+        phone_lists = datas["phone"].tolist()
+
+        logger.info(phone_lists)
+        if not phone_lists:
+            return {"code": "0000", "status": "success", "msg": []}
+        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+            ",".join(phone_lists))
+        logger.info(sql)
+        user_data = pd.read_sql(sql, conn_analyze)
+        datas = datas.merge(user_data, on="phone", how="left")
+        logger.info(datas)
+        datas["username"].fillna("", inplace=True)
+        datas = datas.to_dict("records")
+
+        return {"code": "0000", "status": "success", "msg": datas}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_clg.close()
+        conn_analyze.close()

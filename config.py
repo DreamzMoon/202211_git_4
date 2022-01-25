@@ -84,8 +84,8 @@ elif ENV == 'local':
         "host": '127.0.0.1',
         "port": 23306,
         "user": 'root',
-        "password": 'root',
-        "db": 'lh_analyze',
+        "password": 'lk123888',
+        "db": 'mall',
         "charset": "utf8mb4"
     }
 else:
