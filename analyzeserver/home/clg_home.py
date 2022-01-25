@@ -25,3 +25,7 @@ import threading
 
 clghomebp = Blueprint('clghome', __name__, url_prefix='/clghome')
 
+
+@clghomebp.route("person/top",methods=["GET"])
+def person_top():
+    pass
