@@ -61,7 +61,7 @@ def person_top():
         logger.info(phone_lists)
         if not phone_lists:
             return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+        sql = '''select phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
             ",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql, conn_analyze)
@@ -364,7 +364,7 @@ def order_status():
         logger.info(phone_lists)
         if not phone_lists:
             return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+        sql = '''select phone,if(`name` is not null and `name`!='',if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
             ",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql, conn_analyze)

@@ -63,7 +63,7 @@ def deal_person():
         logger.info(phone_lists)
         if not phone_lists:
             return {"code":"0000","status":"success","msg":[]}
-        sql = '''select phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(",".join(phone_lists))
+        sql = '''select phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql,conn_analyze)
         datas = datas.merge(user_data,on="phone",how="left")
@@ -323,7 +323,7 @@ def today_dynamic_transaction():
             '''
 
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
+                select phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
             '''
 
         order_df_8 = pd.read_sql(sell_order_sql_8, conn_lh)
@@ -383,7 +383,7 @@ def today_dynamic_publish():
 
         # 用户名称搜索
         search_name_sql = '''
-                select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
+                select phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
             '''
 
 
