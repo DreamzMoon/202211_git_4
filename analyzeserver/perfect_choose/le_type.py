@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022/1/21 17:23
-
-# @Author : xiaowangwang
-# @Email : www@qq.com
-# @File : le_type.py
-
-# -*- coding: utf-8 -*-
 
 # @Time : 2022/1/21 16:59
 

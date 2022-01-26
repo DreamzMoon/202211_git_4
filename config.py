@@ -79,8 +79,24 @@ elif ENV == 'local':
         "db": 'lh_analyze',
         "charset": "utf8mb4"
     }
+
+    clg_mysql_conf = {
+        "host": '127.0.0.1',
+        "port": 23306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
 else:
     pass
+
+clg_ssh_conf = {
+    "host": "47.103.89.16",
+    "ssh_username": "root",
+    "ssh_password": "vM#TrEeBz3oE@4qo",
+    "port": 22
+}
 
 
 analyze_pro = {

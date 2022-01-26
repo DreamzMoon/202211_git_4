@@ -594,7 +594,7 @@ def get_phone_by_keyword(keyword):
         with conn_analyze.cursor() as cursor:
             sql = '''
             select * from (
-            select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname
+            select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname
             ,phone,unionid from crm_user where phone like %s or unionid like %s or `name` like %s or nickname like %s) t 
             where t.phone is not null and (t.nickname like %s or phone like %s or unionid like %s)
             '''

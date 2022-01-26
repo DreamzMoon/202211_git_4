@@ -42,6 +42,7 @@ from analyzeserver.lianghao.eight.pifa.daily_summary import daily_eight_pifabp
 from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
 from analyzeserver.lianghao.eight.second.personal_property import secondppbp
 from analyzeserver.perfect_choose.le_type import letypebp
+from analyzeserver.home.clg_home import clghomebp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -87,7 +88,7 @@ app.register_blueprint(operateconbp)
 app.register_blueprint(homebp)
 app.register_blueprint(lhhomebp)
 app.register_blueprint(lhpfhome8)
-
+app.register_blueprint(clghomebp)
 
 # 日志
 app.register_blueprint(syslogbp)
@@ -96,6 +97,9 @@ app.register_blueprint(syslogbp)
 app.register_blueprint(uploadmodubp)
 app.register_blueprint(chaddrbp)
 app.register_blueprint(usertagbp)
+
+
+
 
 if __name__ == "__main__":
     # app.run()
