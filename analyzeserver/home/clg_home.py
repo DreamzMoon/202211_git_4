@@ -356,8 +356,6 @@ def order_status():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-
-
         sql = '''select o.phone,o.pay_money,od.goods_name from trade_order_info o
         left join trade_order_item od on o.order_sn = od.order_sn
         where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
@@ -371,7 +369,7 @@ def order_status():
         logger.info(phone_lists)
         if not phone_lists:
             return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null and `name`!='',if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+        sql = '''select phone,if(`name` is not null and `name`!='',name, if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
             ",".join(phone_lists))
         logger.info(sql)
         user_data = pd.read_sql(sql, conn_analyze)
@@ -428,7 +426,7 @@ def area_list():
             on t1.order_sn=t2.order_sn
         '''
         if not province_code and not city_code:
-            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province',area_name=', consignee_province', condition='')
+            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='')
             area_list_sql += ' group by consignee_province'
         else:
             # 查找省名称
@@ -450,7 +448,7 @@ def area_list():
                 city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
                 logger.info(city_name_list)
                 # 拼接sql
-                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city', area_name=', consignee_city', condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)))
+                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city area_name', area_name=', consignee_city', condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)))
                 area_list_sql += ' group by consignee_city'
             else:
                 # 查找市名称
@@ -464,7 +462,7 @@ def area_list():
                 region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
                 logger.info(region_name_list)
                 # 拼接sql
-                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county', area_name=', consignee_county',
+                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county area_name', area_name=', consignee_county',
                                                      condition=' and consignee_province="%s" and consignee_city="%s" and consignee_county in (%s)' % (
                                                      province_name, city_name, ','.join(region_name_list)))
                 area_list_sql += ' group by consignee_county'
