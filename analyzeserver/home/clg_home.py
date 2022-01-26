@@ -31,7 +31,7 @@ clghomebp = Blueprint('clghome', __name__, url_prefix='/clghome')
 @clghomebp.route("person/top",methods=["GET"])
 def person_top():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
@@ -83,7 +83,7 @@ def person_top():
 @clghomebp.route("datacenter", methods=["GET"])
 def data_center():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         if not conn_clg:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         try:
@@ -124,7 +124,7 @@ def data_center():
 @clghomebp.route("product/top",methods=["GET"])
 def product_top():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
@@ -167,7 +167,7 @@ def product_top():
 @clghomebp.route("shop/top",methods=["GET"])
 def shop_top():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
@@ -226,7 +226,7 @@ def today_dynamic_newuser():
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_an = direct_get_conn(analyze_mysql_conf)
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         if not conn_clg or not conn_an:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
 
@@ -299,7 +299,7 @@ def today_dynamic_goods():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         if not conn_clg:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
 
@@ -331,7 +331,7 @@ def today_dynamic_goods():
 @clghomebp.route("order/status",methods=["GET"])
 def order_status():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
@@ -386,7 +386,7 @@ def order_status():
 @clghomebp.route("area/statis")
 def area_statis():
     try:
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
