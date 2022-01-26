@@ -382,6 +382,109 @@ def order_status():
         conn_clg.close()
         conn_analyze.close()
 
+'''区域成交统计列表'''
+@clghomebp.route('/area/list', methods=["POST"])
+def area_list():
+    try:
+        try:
+            logger.info(request.json)
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+            province_code = request.json['province_code']
+            city_code = request.json['city_code']
+            page = request.json['page']
+            size = request.json['size']
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_clg or not conn_analyze:
+            return {"code": "10002", "status": "failed", "message": message["10002"]}
+        analyze_cursor = conn_analyze.cursor()
+
+        area_list_sql = '''
+            select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
+            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
+            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0{condition}) t1
+            left join
+            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+            on t1.order_sn=t2.order_sn
+        '''
+        if not province_code and not city_code:
+            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province',area_name=', consignee_province', condition='')
+            area_list_sql += ' group by consignee_province'
+        else:
+            # 查找省名称
+            province_sql = '''select name from lh_analyze.province where code=%s'''
+            analyze_cursor.execute(province_sql, province_code)
+            province_name = analyze_cursor.fetchone()[0]
+            logger.info(province_name)
+            # 几个直辖市处理----前端限制不展示后两级只传省编码，服务端直接返回区数据
+            municipality_province_code = ['11', '12', '31', '50']
+            # 查直辖市下市辖区编码
+            if province_code in municipality_province_code:
+                municipality_city_sql = '''select code from province where province_code=%s'''
+                analyze_cursor.execute(municipality_city_sql, province_code)
+                city_code = analyze_cursor.fetchone()[0]
+            if not city_code:
+                # 查找省对应城市
+                city_list_sql = '''select name from lh_analyze.city where province_code=%s''' % province_code
+                city_list_df = pd.read_sql(city_list_sql, conn_analyze)
+                city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
+                logger.info(city_name_list)
+                # 拼接sql
+                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city', area_name=', consignee_city', condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)))
+                area_list_sql += ' group by consignee_city'
+            else:
+                # 查找市名称
+                city_sql = '''select name from lh_analyze.city where code=%s''' % city_code
+                analyze_cursor.execute(city_sql)
+                city_name = analyze_cursor.fetchone()[0]
+                logger.info(city_name)
+                # 查找市对应区
+                region_list_sql = '''select name from lh_analyze.region where city_code=%s''' % city_code
+                region_list_df = pd.read_sql(region_list_sql, conn_analyze)
+                region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
+                logger.info(region_name_list)
+                # 拼接sql
+                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county', area_name=', consignee_county',
+                                                     condition=' and consignee_province="%s" and consignee_city="%s" and consignee_county in (%s)' % (
+                                                     province_name, city_name, ','.join(region_name_list)))
+                area_list_sql += ' group by consignee_county'
+        logger.info(area_list_sql)
+        area_list_df = pd.read_sql(area_list_sql, conn_clg)
+        area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
+        area_list_df['proportion'] = area_list_df['proportion'].round(2)
+
+        count = area_list_df.shape[0]
+        start_index = (page - 1) * size
+        end_index = page * size
+        area_list_data = area_list_df[start_index:end_index].to_dict("records")
+
+        return_data = {
+            'count': count,
+            "area_list": area_list_data
+        }
+        return {"code": "0000", "status": "success", "msg": return_data}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return {"code": "10000", "status": "success", "msg": message["10000"]}
+    finally:
+        try:
+            conn_clg.close()
+            conn_analyze.close()
+        except:
+            pass
+
 
 @clghomebp.route("area/statis")
 def area_statis():
