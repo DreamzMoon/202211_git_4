@@ -309,7 +309,7 @@ def daily_user_summary():
             logger.error(e)
             return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
-        base_sql = '''select day_time,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, phone, unionid, operate_id, operatename, parentid, parent_phone, buy_count, buy_pretty_count,
+        base_sql = '''select day_time,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname, phone, unionid, operate_id, operatename, parentid, parent_phone, buy_count, buy_pretty_count,
                     buy_total_price, publish_pretty_count, publish_count, publish_total_price, sell_count, sell_total_price, sell_pretty_count, truth_price, sell_fee
                     from lh_analyze.user_daily_order_data'''
 
@@ -725,7 +725,7 @@ def daily_ser_value():
         if start_time and end_time:
             condition.append(''' day_time>="%s" and day_time <= "%s"''' %(start_time,end_time))
 
-        sql = '''select day_time, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
+        sql = '''select day_time, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname, hold_phone, unionid, operate_id, operatename, parentid, parent_phone, no_tran_price, no_tran_count,
                     transferred_count, transferred_price, public_count, public_price, use_total_price, 
                     use_count, hold_price, hold_count, tran_price,tran_count
                     from lh_analyze.user_storage_value'''

@@ -171,7 +171,7 @@ def personal_total():
 
         #这里要进行一个crm数据的合并
         # conn_analyze = direct_get_conn(analyze_mysql_conf)
-        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
+        sql = '''select unionid,parentid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
         logger.info(sql)
         crm_data = pd.read_sql(sql, conn_analyze)
         # conn_analyze.close()
@@ -358,7 +358,7 @@ def personal_publish():
 
         # 用户数据
         crm_user_sql = '''
-            select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) publish_name, operate_id, operatename
+            select unionid publish_unionid, parentid, parent_phone, phone publish_phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) publish_name, operate_id, operatename
             from lh_analyze.crm_user
             where phone is not null and del_flag=0
         '''
@@ -461,7 +461,7 @@ def personal_publish_detail():
         fina_data = {}
 
         search_user_info_sql = '''
-            select unionid, phone, parentid, parent_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) name, operatename
+            select unionid, phone, parentid, parent_phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name, operatename
             from lh_analyze.crm_user
             where phone = %s and del_flag=0
         ''' % phone
@@ -643,7 +643,7 @@ def personal_order_flow():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         crm_user_sql = '''
-            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
+            select unionid buyer_unionid, unionid sell_unionid, parentid, parent_phone, phone buyer_phone, phone sell_phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) sell_name, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) buyer_name, operate_id, operatename
             from lh_analyze.crm_user
             where phone is not null and del_flag=0
         '''
@@ -785,7 +785,7 @@ def personal_publish_order_flow():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         crm_user_sql = '''
-            select unionid sell_unionid, parentid, parent_phone, phone sell_phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) sell_name, operate_id, operatename
+            select unionid sell_unionid, parentid, parent_phone, phone sell_phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) sell_name, operate_id, operatename
             from lh_analyze.crm_user
             where phone is not null and del_flag=0
         '''
@@ -999,7 +999,7 @@ def personal_buy_all():
         # logger.info(df_merged.shape)
 
 
-        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
+        sql = '''select unionid,parentid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
         crm_data = pd.read_sql(sql, conn_analyze)
 
         df_merged = df_merged.merge(crm_data, how="left", on="phone")
@@ -1129,7 +1129,7 @@ def person_buy():
 
 
         #通过手机号码直接查运营中心字段 并返回 nickname operate_name parent_phone parentid phone unionid
-        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone = %s and del_flag=0''' % phone
+        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone = %s and del_flag=0''' % phone
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         user_data = pd.read_sql(crm_sql,conn_analyze)
         user_data = user_data.to_dict("records")
@@ -1461,7 +1461,7 @@ def personal_sell_all():
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         # conn_analyze = direct_get_conn(analyze_mysql_conf)
-        sql = '''select unionid,parentid,phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
+        sql = '''select unionid,parentid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone != "" and phone is not null and del_flag=0'''
         crm_data = pd.read_sql(sql, conn_analyze)
         # conn_analyze.close()
 
@@ -1587,7 +1587,7 @@ def person_sell():
         except:
             pass
 
-        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone = %s and del_flag=0''' % sell_phone
+        crm_sql = '''select unionid,phone,parentid,parent_phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,operatename operate_name from crm_user where phone = %s and del_flag=0''' % sell_phone
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         user_data = pd.read_sql(crm_sql, conn_analyze)
         user_data = user_data.to_dict("records")

@@ -762,7 +762,7 @@ def person_detail():
         data = {"user":{},"up":{},"middle":""}
 
         #根据手机号差个人信息
-        user_sql = '''select if(`name` is not null,`name`,if(nickname is not null,nickname,"")) nickname,phone,unionid,operatename,parentid,parent_phone from crm_user where phone = %s''' %hold_phone
+        user_sql = '''select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone,unionid,operatename,parentid,parent_phone from crm_user where phone = %s''' %hold_phone
         user_data = pd.read_sql(user_sql,conn_analyze)
         user_data = user_data.to_dict("records")
         data["user"] = user_data
@@ -1231,7 +1231,7 @@ def bus_card_belong():
             pretty_type_sql = ''
         pretty_hold_sql_1 += pretty_type_sql
         # 读取用户信息
-        user_info_sql = '''select unionid, phone, if(`name` != "",`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone is not null and phone != ""'''
+        user_info_sql = '''select unionid, phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname from crm_user where phone is not null and phone != ""'''
         user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         user_info_df['unionid'] = user_info_df['unionid'].astype(str)
         logger.info('读取用户信息表')
