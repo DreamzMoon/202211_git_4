@@ -493,7 +493,7 @@ def area_list():
         except:
             pass
 
-
+'''区域排名地图'''
 @clghomebp.route("area/statis")
 def area_statis():
     try:
