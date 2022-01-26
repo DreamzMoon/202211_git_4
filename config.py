@@ -40,14 +40,14 @@ if ENV == "test":
         "charset": "utf8mb4"
     }
 
-    # clg_mysql_conf = {
-    #     "host": '47.103.89.16',
-    #     "port": 3306,
-    #     "user": 'root',
-    #     "password": 'lk123888',
-    #     "db": 'mall',
-    #     "charset": "utf8mb4"
-    # }
+    clg_mysql_conf = {
+        "host": '47.103.89.16',
+        "port": 3306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
 
 elif ENV == "pro":
     # 资讯正式
@@ -75,14 +75,14 @@ elif ENV == "pro":
         "charset": "utf8mb4"
     }
 
-    # clg_mysql_conf = {
-    #     "host": '47.103.89.16',
-    #     "port": 3306,
-    #     "user": 'root',
-    #     "password": 'lk123888',
-    #     "db": 'mall',
-    #     "charset": "utf8mb4"
-    # }
+    clg_mysql_conf = {
+        "host": '47.103.89.16',
+        "port": 3306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
 
 elif ENV == 'local':
     redis_host = "127.0.0.1"
@@ -100,23 +100,23 @@ elif ENV == 'local':
         "charset": "utf8mb4"
     }
 
-    # clg_mysql_conf = {
-    #     "host": '127.0.0.1',
-    #     "port": 23306,
-    #     "user": 'root',
-    #     "password": 'lk123888',
-    #     "db": 'mall',
-    #     "charset": "utf8mb4"
-    # }
+    clg_mysql_conf = {
+        "host": '127.0.0.1',
+        "port": 23306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
 else:
     pass
 
-clg_ssh_conf = {
-    "host": "47.103.89.16",
-    "ssh_username": "root",
-    "ssh_password": "vM#TrEeBz3oE@4qo",
-    "port": 22
-}
+# clg_ssh_conf = {
+#     "host": "47.103.89.16",
+#     "ssh_username": "root",
+#     "ssh_password": "vM#TrEeBz3oE@4qo",
+#     "port": 22
+# }
 
 
 clg_mysql_conf = {
