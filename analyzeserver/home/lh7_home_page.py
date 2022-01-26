@@ -441,8 +441,8 @@ def today_dynamic_publish():
         #         select phone, if(`name` is not null,`name`,if(nickname is not null,nickname,"")) username from luke_sincerechat.user where phone = "%s"
         #     '''
         search_name_sql = '''
-                        select phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone = "%s"
-                    '''
+            select phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone = "%s"
+        '''
 
         # 发布时时动态
         publish_order_sql = '''
@@ -453,7 +453,6 @@ def today_dynamic_publish():
             order by up_time desc
             limit 3
         '''
-
 
         publish_order_df = pd.read_sql(publish_order_sql, conn_lh)
         if publish_order_df.shape[0] > 0:
@@ -527,7 +526,7 @@ def today_dynamic_newuser():
         #     '''
 
         search_name_sql = '''
-                        select phone, if(`name` is not null and `name`!='',if(nickname is not null,nickname,"")) username from crm_user where phone = "%s"
+                        select phone, if(`name` is not null and `name`!='', name, if(nickname is not null,nickname,"")) username from crm_user where phone = "%s"
                     '''
 
         # 新注册用户
