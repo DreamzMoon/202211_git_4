@@ -39,6 +39,16 @@ if ENV == "test":
         "db": 'lh_analyze',
         "charset": "utf8mb4"
     }
+
+    clg_mysql_conf = {
+        "host": '47.103.89.16',
+        "port": 3306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
+
 elif ENV == "pro":
     # 资讯正式
     zx_api_url = 'http://xs.lkkjjt.com/open/content/python'  # api_url
@@ -64,6 +74,16 @@ elif ENV == "pro":
         "db": 'lh_analyze',
         "charset": "utf8mb4"
     }
+
+    clg_mysql_conf = {
+        "host": '47.103.89.16',
+        "port": 3306,
+        "user": 'root',
+        "password": 'lk123888',
+        "db": 'mall',
+        "charset": "utf8mb4"
+    }
+
 elif ENV == 'local':
     redis_host = "127.0.0.1"
     redis_port = 16379
