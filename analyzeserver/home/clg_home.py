@@ -31,8 +31,8 @@ clghomebp = Blueprint('clghome', __name__, url_prefix='/clghome')
 @clghomebp.route("person/top",methods=["GET"])
 def person_top():
     try:
-        conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
-        # conn_clg = direct_get_conn(clg_mysql_conf)
+        # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
+        conn_clg = direct_get_conn(clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
