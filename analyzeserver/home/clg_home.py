@@ -381,3 +381,42 @@ def order_status():
     finally:
         conn_clg.close()
         conn_analyze.close()
+
+
+@clghomebp.route("area/statis")
+def area_statis():
+    try:
+        conn_clg = direct_get_conn(clg_mysql_conf)
+        logger.info(conn_clg)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        cursor = conn_analyze.cursor()
+        try:
+            logger.info("env:%s" % ENV)
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+
+
+        sql = '''select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE() and o.order_status in (4,5,6,10,15) group by consignee_province'''
+        logger.info(sql)
+        datas = pd.read_sql(sql, conn_clg)
+        datas = datas.to_dict("records")
+
+
+        return {"code": "0000", "status": "success", "msg": datas}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        conn_clg.close()
+        conn_analyze.close()
