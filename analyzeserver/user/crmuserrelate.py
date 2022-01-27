@@ -199,177 +199,6 @@ def user_relate_mes():
 
 
 
-# @userrelatebp.route("mes",methods=["POST"])
-# def user_relate_mes():
-#     try:
-#         conn = direct_get_conn(analyze_mysql_conf)
-#
-#         logger.info(request.json)
-#
-#
-#         token = request.headers["Token"]
-#         user_id = request.json["user_id"]
-#
-#         if not user_id and not token:
-#             return {"code": "10001", "status": "failed", "msg": message["10001"]}
-#
-#         check_token_result = check_token(token, user_id)
-#         if check_token_result["code"] != "0000":
-#             return check_token_result
-#
-#         keyword = request.json["keyword"]
-#         bus_id = request.json["bus_id"]
-#         parent = request.json["parent"]
-#         serpro_grade = request.json["serpro_grade"]
-#         capacity = request.json["capacity"]
-#         bus_parent = request.json["bus_parent"]
-#         page = request.json["page"]
-#         size = request.json["size"]
-#
-#         phone_lists = request.json["phone_lists"]
-#         tag_id = request.json.get("tag_id")
-#
-#         code_page = ""
-#         code_size = ""
-#         if page and size:
-#             code_page = (page - 1) * size
-#             code_size = size
-#
-#
-#         #先默认查全部
-#         cursor = conn.cursor()
-#         # sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
-#         # serpro_grade,serpro_status
-#         # from crm_user where del_flag = 0'''
-#         sql = '''
-#         select nickname,phone,crm_user.unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
-#         serpro_grade,serpro_status,GROUP_CONCAT(crm_tag.tag_name) tag_name
-#         from crm_user
-#         left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
-#         left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-#         where crm_user.del_flag = 0
-#         '''
-#
-#         group_sql = ''' group by crm_user.unionid '''
-#
-#         if not tag_id:
-#             logger.info("走这个")
-#             count_sql = '''
-#             select count(*) count
-#             from crm_user
-#             left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
-#             left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-#             where crm_user.del_flag = 0
-#             '''
-#         else:
-#             # 因为分组的关系 所以不适合上面那种
-#             count_sql = '''
-#             select crm_user.unionid,GROUP_CONCAT(crm_tag.tag_name) tag_name
-#             from crm_user
-#             left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
-#             left join crm_tag on crm_user_tag.tag_id = crm_tag.id
-#             where crm_user.del_flag = 0
-#             '''
-#
-#
-#         if phone_lists:
-#             phone_lists = ",".join(phone_lists)
-#             phone_lists_sql = ''' and phone in (%s)''' %phone_lists
-#             sql = sql + phone_lists_sql
-#             count_sql = count_sql +phone_lists_sql
-#         else:
-#             if keyword:
-#                 keyword_sql = ''' and (nickname like "%s" or phone like "%s" or crm_user.unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
-#                 sql = sql + keyword_sql
-#                 count_sql = count_sql + keyword_sql
-#             if bus_id:
-#                 bus_sql = ''' and operate_id = %s''' %(bus_id)
-#                 sql = sql + bus_sql
-#                 count_sql = count_sql + bus_sql
-#
-#             if parent:
-#                 parent_sql = ''' and (parentid = %s or parent_phone=%s)''' %(parent,parent)
-#                 sql = sql + parent_sql
-#                 count_sql = count_sql + parent_sql
-#
-#             if serpro_grade:
-#                 serpro_grade_sql = ''' and serpro_grade = %s''' %serpro_grade
-#                 sql = sql + serpro_grade_sql
-#                 count_sql = count_sql + serpro_grade_sql
-#
-#             if capacity:
-#                 capacity_sql = ''' and capacity = %s''' %capacity
-#                 sql = sql + capacity_sql
-#                 count_sql = count_sql + capacity_sql
-#
-#             if bus_parent:
-#                 bus_parentid_sql = ''' and (bus_parentid = %s or bus_parent_phone = %s)''' %(bus_parent,bus_parent)
-#                 sql = sql + bus_parentid_sql
-#                 count_sql = count_sql + bus_parentid_sql
-#
-#         sql = sql + group_sql
-#         count_sql = count_sql + group_sql
-#
-#         if tag_id:
-#             logger.info("tag_id:%s" %tag_id)
-#             tag_sql = '''select tag_name from crm_tag where id = %s''' %tag_id
-#             cursor.execute(tag_sql)
-#             tag_name = cursor.fetchone()[0]
-#             having_sql = ''' having tag_name like "%s"''' %("%"+tag_name+"%")
-#             sql = sql + having_sql
-#             count_sql = count_sql + having_sql
-#             logger.info(sql)
-#             logger.info(count_sql)
-#
-#
-#         logger.info("code_page:%s" % code_page)
-#         logger.info("code_size:%s" % code_size)
-#         if page and size:
-#             limit_sql = ''' limit %s,%s''' %(code_page,code_size)
-#             sql = sql + limit_sql
-#
-#
-#
-#         logger.info(sql)
-#         cursor.execute(sql)
-#         datas = cursor.fetchall()
-#         logger.info(datas)
-#
-#         logger.info(count_sql)
-#         count = cursor.execute(count_sql)
-#
-#         last_datas = []
-#         for data in datas:
-#             data_dict = {}
-#             data_dict["nickname"] = data[0]
-#             data_dict["phone"] = data[1]
-#             data_dict["unionid"] = data[2]
-#             data_dict["parent_phone"] = data[3]
-#             data_dict["operatename"] = data[4]
-#             data_dict["bus_phone"] = data[5]
-#             data_dict["parentid"] = data[6]
-#             data_dict["capacity"] = data[7]
-#             data_dict["bus_parentid"] = data[8]
-#             data_dict["operatenamedirect"] = data[9]
-#             data_dict["direct_bus_phone"] = data[10]
-#             data_dict["vip_grade"] = data[11]
-#             data_dict["vip_starttime"] = data[12].strftime("%Y-%m-%d %H:%M:%S") if data[11] else ""
-#             data_dict["vip_endtime"] = data[13].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
-#             data_dict["serpro_grade"] = data[14]
-#             data_dict["serpro_status"] = data[15]
-#             data_dict["tag_name"] = data[16]
-#             last_datas.append(data_dict)
-#
-#
-#         return {"code":"0000","msg":last_datas,"count":count,"status":"success"}
-#
-#     except Exception as e:
-#         logger.error(e)
-#         logger.exception(traceback.format_exc())
-#         # 参数名错误
-#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
-
-
 @userrelatebp.route("basicmes",methods=["POST"])
 def user_relate_basicmes():
     try:
@@ -1196,3 +1025,175 @@ def edit_base_info():
         except:
             pass
 
+
+
+#旧的修改用户信息偏慢 新的在上面 旧的暂时保留
+# @userrelatebp.route("mes",methods=["POST"])
+# def user_relate_mes():
+#     try:
+#         conn = direct_get_conn(analyze_mysql_conf)
+#
+#         logger.info(request.json)
+#
+#
+#         token = request.headers["Token"]
+#         user_id = request.json["user_id"]
+#
+#         if not user_id and not token:
+#             return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#         check_token_result = check_token(token, user_id)
+#         if check_token_result["code"] != "0000":
+#             return check_token_result
+#
+#         keyword = request.json["keyword"]
+#         bus_id = request.json["bus_id"]
+#         parent = request.json["parent"]
+#         serpro_grade = request.json["serpro_grade"]
+#         capacity = request.json["capacity"]
+#         bus_parent = request.json["bus_parent"]
+#         page = request.json["page"]
+#         size = request.json["size"]
+#
+#         phone_lists = request.json["phone_lists"]
+#         tag_id = request.json.get("tag_id")
+#
+#         code_page = ""
+#         code_size = ""
+#         if page and size:
+#             code_page = (page - 1) * size
+#             code_size = size
+#
+#
+#         #先默认查全部
+#         cursor = conn.cursor()
+#         # sql = '''select nickname,phone,unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
+#         # serpro_grade,serpro_status
+#         # from crm_user where del_flag = 0'''
+#         sql = '''
+#         select nickname,phone,crm_user.unionid,parent_phone,operatename,bus_phone,parentid,capacity,bus_parentid,operatenamedirect,direct_bus_phone, vip_grade,vip_starttime,vip_endtime,
+#         serpro_grade,serpro_status,GROUP_CONCAT(crm_tag.tag_name) tag_name
+#         from crm_user
+#         left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+#         left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+#         where crm_user.del_flag = 0
+#         '''
+#
+#         group_sql = ''' group by crm_user.unionid '''
+#
+#         if not tag_id:
+#             logger.info("走这个")
+#             count_sql = '''
+#             select count(*) count
+#             from crm_user
+#             left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+#             left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+#             where crm_user.del_flag = 0
+#             '''
+#         else:
+#             # 因为分组的关系 所以不适合上面那种
+#             count_sql = '''
+#             select crm_user.unionid,GROUP_CONCAT(crm_tag.tag_name) tag_name
+#             from crm_user
+#             left join crm_user_tag on crm_user.unionid = crm_user_tag.unionid
+#             left join crm_tag on crm_user_tag.tag_id = crm_tag.id
+#             where crm_user.del_flag = 0
+#             '''
+#
+#
+#         if phone_lists:
+#             phone_lists = ",".join(phone_lists)
+#             phone_lists_sql = ''' and phone in (%s)''' %phone_lists
+#             sql = sql + phone_lists_sql
+#             count_sql = count_sql +phone_lists_sql
+#         else:
+#             if keyword:
+#                 keyword_sql = ''' and (nickname like "%s" or phone like "%s" or crm_user.unionid like "%s")''' %("%"+keyword+"%","%"+keyword+"%","%"+keyword+"%")
+#                 sql = sql + keyword_sql
+#                 count_sql = count_sql + keyword_sql
+#             if bus_id:
+#                 bus_sql = ''' and operate_id = %s''' %(bus_id)
+#                 sql = sql + bus_sql
+#                 count_sql = count_sql + bus_sql
+#
+#             if parent:
+#                 parent_sql = ''' and (parentid = %s or parent_phone=%s)''' %(parent,parent)
+#                 sql = sql + parent_sql
+#                 count_sql = count_sql + parent_sql
+#
+#             if serpro_grade:
+#                 serpro_grade_sql = ''' and serpro_grade = %s''' %serpro_grade
+#                 sql = sql + serpro_grade_sql
+#                 count_sql = count_sql + serpro_grade_sql
+#
+#             if capacity:
+#                 capacity_sql = ''' and capacity = %s''' %capacity
+#                 sql = sql + capacity_sql
+#                 count_sql = count_sql + capacity_sql
+#
+#             if bus_parent:
+#                 bus_parentid_sql = ''' and (bus_parentid = %s or bus_parent_phone = %s)''' %(bus_parent,bus_parent)
+#                 sql = sql + bus_parentid_sql
+#                 count_sql = count_sql + bus_parentid_sql
+#
+#         sql = sql + group_sql
+#         count_sql = count_sql + group_sql
+#
+#         if tag_id:
+#             logger.info("tag_id:%s" %tag_id)
+#             tag_sql = '''select tag_name from crm_tag where id = %s''' %tag_id
+#             cursor.execute(tag_sql)
+#             tag_name = cursor.fetchone()[0]
+#             having_sql = ''' having tag_name like "%s"''' %("%"+tag_name+"%")
+#             sql = sql + having_sql
+#             count_sql = count_sql + having_sql
+#             logger.info(sql)
+#             logger.info(count_sql)
+#
+#
+#         logger.info("code_page:%s" % code_page)
+#         logger.info("code_size:%s" % code_size)
+#         if page and size:
+#             limit_sql = ''' limit %s,%s''' %(code_page,code_size)
+#             sql = sql + limit_sql
+#
+#
+#
+#         logger.info(sql)
+#         cursor.execute(sql)
+#         datas = cursor.fetchall()
+#         logger.info(datas)
+#
+#         logger.info(count_sql)
+#         count = cursor.execute(count_sql)
+#
+#         last_datas = []
+#         for data in datas:
+#             data_dict = {}
+#             data_dict["nickname"] = data[0]
+#             data_dict["phone"] = data[1]
+#             data_dict["unionid"] = data[2]
+#             data_dict["parent_phone"] = data[3]
+#             data_dict["operatename"] = data[4]
+#             data_dict["bus_phone"] = data[5]
+#             data_dict["parentid"] = data[6]
+#             data_dict["capacity"] = data[7]
+#             data_dict["bus_parentid"] = data[8]
+#             data_dict["operatenamedirect"] = data[9]
+#             data_dict["direct_bus_phone"] = data[10]
+#             data_dict["vip_grade"] = data[11]
+#             data_dict["vip_starttime"] = data[12].strftime("%Y-%m-%d %H:%M:%S") if data[11] else ""
+#             data_dict["vip_endtime"] = data[13].strftime("%Y-%m-%d %H:%M:%S") if data[12] else ""
+#             data_dict["serpro_grade"] = data[14]
+#             data_dict["serpro_status"] = data[15]
+#             data_dict["tag_name"] = data[16]
+#             last_datas.append(data_dict)
+#
+#
+#         return {"code":"0000","msg":last_datas,"count":count,"status":"success"}
+#
+#     except Exception as e:
+#         logger.error(e)
+#         logger.exception(traceback.format_exc())
+#         # 参数名错误
+#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
