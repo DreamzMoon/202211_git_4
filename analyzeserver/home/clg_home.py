@@ -362,6 +362,8 @@ def order_status():
         order by o.create_time desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
+        if datas.shape[0] > 0:
+            datas['sub_time'] = round(datas['sub_time'], 0).astype(int)
         datas.sort_values('sub_time', ascending=False, inplace=True)
         # datas = datas.to_dict("records")
         # logger.info(len(datas))
