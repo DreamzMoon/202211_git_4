@@ -1335,7 +1335,11 @@ def bus_card_belong():
                 cursor.execute(count_sql)
                 count_list.append(int(cursor.fetchone()[0]))
             count = sum(count_list)
+            # 如果 page * size > count，则end_index=count，不然会导致sum(count_list) 小于end_index,无法正确判断应该读取哪张表
+            if end_index > count:
+                end_index = count
             logger.info(count)
+            # 跨表维度
             indexs = 0
             count_sum = 0
             # 是否跨表标志位
