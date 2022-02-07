@@ -616,11 +616,11 @@ def personal_order_flow():
             query_phone = []
         if query_phone:
             if sell_phone_list and buy_phone_list:
-                order_condition_sql = ''' where buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
+                order_condition_sql = ''' and buyer_phone in (%s) and sell_phone in (%s)''' % ((",".join(buy_phone_list)), (",".join(sell_phone_list)))
             elif sell_phone_list:
-                order_condition_sql = ''' where sell_phone in (%s)''' % (",".join(sell_phone_list))
+                order_condition_sql = ''' and sell_phone in (%s)''' % (",".join(sell_phone_list))
             else:
-                order_condition_sql = ''' where buyer_phone in (%s)''' % (",".join(buy_phone_list))
+                order_condition_sql = ''' and buyer_phone in (%s)''' % (",".join(buy_phone_list))
         else:
             order_condition_sql = ''
 
@@ -636,6 +636,7 @@ def personal_order_flow():
             left join
             (select id, type transfer_type from lh_pretty_client.le_second_hand_sell) t2
             on t1.sell_id = t2.id
+            where pay_type is not null
             '''
         order_flow_sql += order_condition_sql
         order_flow_df = pd.read_sql(order_flow_sql, conn_lh)
