@@ -356,12 +356,13 @@ def order_status():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        sql = '''select o.phone,o.pay_money,od.goods_name from trade_order_info o
+        sql = '''select o.phone,o.pay_money,od.goods_name,TIMESTAMPDIFF(second,o.create_time,now())/60 sub_time from trade_order_info o
         left join trade_order_item od on o.order_sn = od.order_sn
         where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
         order by o.create_time desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
+        datas.sort_values('sub_time', ascending=False, inplace=True)
         # datas = datas.to_dict("records")
         # logger.info(len(datas))
         phone_lists = datas["phone"].tolist()
