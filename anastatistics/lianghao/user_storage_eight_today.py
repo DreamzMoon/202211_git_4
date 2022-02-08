@@ -395,3 +395,5 @@ if __name__ == "__main__":
         run_end = time.time()
         logger.info(run_start - run_end)
         break
+
+    delete_yes_data()
