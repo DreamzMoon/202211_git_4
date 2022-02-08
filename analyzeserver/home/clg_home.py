@@ -444,13 +444,13 @@ def area_list():
             analyze_cursor.execute(province_sql, province_code)
             province_name = analyze_cursor.fetchone()[0]
             logger.info(province_name)
-            # 几个直辖市处理----前端限制不展示后两级只传省编码，服务端直接返回区数据
-            municipality_province_code = ['11', '12', '31', '50']
-            # 查直辖市下市辖区编码
-            if province_code in municipality_province_code:
-                municipality_city_sql = '''select code from province where province_code=%s'''
-                analyze_cursor.execute(municipality_city_sql, province_code)
-                city_code = analyze_cursor.fetchone()[0]
+            # # 几个直辖市处理----前端限制不展示后两级只传省编码，服务端直接返回区数据
+            # municipality_province_code = ['11', '12', '31', '50']
+            # # 查直辖市下市辖区编码
+            # if province_code in municipality_province_code:
+            #     municipality_city_sql = '''select code from city where province_code=%s'''
+            #     analyze_cursor.execute(municipality_city_sql, province_code)
+            #     city_code = analyze_cursor.fetchone()[0]
             if not city_code:
                 # 查找省对应城市
                 city_list_sql = '''select name from lh_analyze.city where province_code=%s''' % province_code
