@@ -117,6 +117,9 @@ def transfer_all():
                     flag = 0
 
                 logger.info(flag)
+                # logger.info(set(lh_phone)==set(select_phone))
+                # if set(lh_phone) == set(select_phone):
+                #     flag = 1
 
                 select_phone = ",".join(select_phone)
 
@@ -127,6 +130,7 @@ def transfer_all():
                         logger.info("flag")
                         # 采购
                         sql = '''select count(*) buy_order_count,sum(count) buy_total_count,sum(total_price) buy_total_price from lh_order where `status` = 1 and  del_flag = 0 and type in (1,4) and DATE_FORMAT(create_time, '%%Y%%m%%d') = CURRENT_DATE() and phone in (%s)''' %select_phone
+
                         cursor.execute(sql)
                         order_data = cursor.fetchone()
 
