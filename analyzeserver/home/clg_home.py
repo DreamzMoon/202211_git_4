@@ -318,7 +318,12 @@ def today_dynamic_goods():
             order by sub_time desc
             limit 3
         '''
-        shop_goods_data = pd.read_sql(shop_goods_sql, conn_clg).to_dict("records")
+        shop_goods_data = pd.read_sql(shop_goods_sql, conn_clg)
+        if shop_goods_data.shape[0] > 0:
+            shop_goods_data['sub_time'] = round(shop_goods_data['sub_time'], 0).astype(int)
+            shop_goods_data = shop_goods_data.to_dict("records")
+        else:
+            shop_goods_data = []
 
         return_data = {
             "shop_goods": shop_goods_data
@@ -364,22 +369,24 @@ def order_status():
         datas = pd.read_sql(sql, conn_clg)
         if datas.shape[0] > 0:
             datas['sub_time'] = round(datas['sub_time'], 0).astype(int)
-        datas.sort_values('sub_time', ascending=False, inplace=True)
+            datas.sort_values('sub_time', ascending=False, inplace=True)
         # datas = datas.to_dict("records")
         # logger.info(len(datas))
-        phone_lists = datas["phone"].tolist()
+            phone_lists = datas["phone"].tolist()
 
-        logger.info(phone_lists)
-        if not phone_lists:
-            return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null and `name`!='',name, if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
-            ",".join(phone_lists))
-        logger.info(sql)
-        user_data = pd.read_sql(sql, conn_analyze)
-        datas = datas.merge(user_data, on="phone", how="left")
-        logger.info(datas)
-        datas["username"].fillna("", inplace=True)
-        datas = datas.to_dict("records")
+            logger.info(phone_lists)
+            if not phone_lists:
+                return {"code": "0000", "status": "success", "msg": []}
+            sql = '''select phone,if(`name` is not null and `name`!='',name, if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+                ",".join(phone_lists))
+            logger.info(sql)
+            user_data = pd.read_sql(sql, conn_analyze)
+            datas = datas.merge(user_data, on="phone", how="left")
+            logger.info(datas)
+            datas["username"].fillna("", inplace=True)
+            datas = datas.to_dict("records")
+        else:
+            datas = []
 
         return {"code": "0000", "status": "success", "msg": datas}
 
