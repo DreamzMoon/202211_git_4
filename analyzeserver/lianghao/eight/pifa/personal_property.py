@@ -1459,57 +1459,83 @@ def personal_hold_total():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
         # 读取user_storage_value
-        user_storage_value_sql = '''select hold_phone, sum(transferred_count) transferred_count, sum(transferred_price) transferred_price from user_storage_eight group by hold_phone'''
+        user_storage_value_sql = '''select hold_phone, sum(transferred_count) transferred_count, sum(transferred_price) transferred_price from user_storage_eight{} group by hold_phone'''
 
         # 读取user_storage_eight_today表(每10分钟一次，更新最近的是)
         today_storage_sql = '''select a.hold_phone, a.transferred_count, a.transferred_price, a.no_tran_count, a.no_tran_price, a.hold_count, a.hold_price, a.tran_count, a.tran_price from lh_analyze.user_storage_eight_today a
-                    join (select hold_phone, max(addtime) time from lh_analyze.user_storage_eight_today group by hold_phone) b
-                    on a.hold_phone = b.hold_phone
-                    and a.addtime = b.time
-                '''
+            join (select hold_phone, max(addtime) time from lh_analyze.user_storage_eight_today group by hold_phone) b
+            on a.hold_phone = b.hold_phone
+            and a.addtime = b.time
+        '''
         # 读取转让中数据
         public_sql = '''
             select sell_phone hold_phone, sum(count) public_count,sum(total_price) public_price from le_sell where del_flag = 0 and `status` != 1 group by hold_phone
         '''
-        user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
-        today_storage_df = pd.read_sql(today_storage_sql, conn_analyze)
-        public_df = pd.read_sql(public_sql, conn_lh)
-
-        merge_df = pd.concat([user_storage_df, today_storage_df, public_df], axis=0, ignore_index=True)
-        group_df = merge_df.groupby('hold_phone').sum().reset_index()
         # 用户信息
         user_info_sql = '''
-        select if(`name` is not null,`name`,nickname) nickname, phone hold_phone, unionid, operate_id, operatename, parentid, parent_phone from crm_user where del_flag = 0 and phone != "" and phone is not null
+            select if(`name` is not null,`name`,nickname) nickname, phone hold_phone, unionid, operate_id, operatename, parentid, parent_phone from crm_user where del_flag = 0 and phone != "" and phone is not null
         '''
-        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
-        fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
-        fina_df['unionid'].fillna('', inplace=True)
-        fina_df['unionid'] = fina_df['unionid'].astype(str)
-        fina_df['parentid'].fillna('', inplace=True)
-        fina_df['parentid'] = fina_df['parentid'].astype(str)
-        # 去除小数点
-        fina_df['unionid'] = fina_df['unionid'].apply(lambda x: del_point(x))
-        fina_df['parentid'] = fina_df['parentid'].apply(lambda x: del_point(x))
-        # 条件匹配
+
+        # 关键词手机号列表
+        keyword_phone_list = []
+        # 标签手机号列表
+        tag_phone_list = []
+        # 条件拼接
+        user_condition = ''
+        # 是否有传条件判断
+        condition_count = 0
         if keyword != "":
-            fina_df = fina_df[
-                (fina_df['nickname'].str.contains(keyword)) |
-                (fina_df['unionid'].str.contains(keyword)) |
-                (fina_df['hold_phone'].str.contains(keyword))
-            ]
+            condition_count += 1
+            user_result = get_phone_by_keyword(keyword)
+            if user_result[0] == 1:
+                keyword_phone_list = user_result[1]
+            else:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
         if operateid != "":
-            fina_df = fina_df[fina_df['operate_id'] == operateid]
+            user_condition += ''' and operate_id=%s''' % operateid
         if parent != "":
-            fina_df = fina_df[
-                (fina_df['parentid'] == parent) |
-                (fina_df['parent_phone'] == parent)
-            ]
+            user_condition += ''' and (parentid={parent} or parent_phone={parent})'''.format(parent=parent)
         if tag_id != "":
+            condition_count += 1
             result = find_tag_user_phone(tag_id)
             logger.info(result[1])
             if not result[0]:
                 return {"code": "10000", "status": "failed", "msg": message["10000"]}
-            fina_df = fina_df[fina_df['hold_phone'].isin(result[1])]
+            tag_phone_list = result[1]
+
+        if condition_count > 0:  # 有进行关键词或标签筛选
+            if condition_count == 2:  # 有进行关键词和标签筛选，取手机号交集
+                query_phone_list = list(set(keyword_phone_list).intersection(set(tag_phone_list)))
+            else:  # 有进行关键词或标签筛选，取手机号
+                tag_phone_list.extend(keyword_phone_list)
+                query_phone_list = tag_phone_list
+            # 如果query_phone_list为空，直接返回
+            if len(query_phone_list) == 0:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
+            else:
+                user_condition += ''' and phone in (%s)''' % ','.join(query_phone_list)
+
+            user_info_sql += user_condition
+            user_info_df = pd.read_sql(user_info_sql, conn_analyze)
+            # 条件筛选的手机号列表
+            condition_phone_list = user_info_df['hold_phone'].tolist()
+
+            # 读取user_storage_value数据sql拼接
+            user_storage_value_sql = user_storage_value_sql.format(
+                ''' where hold_phone in (%s)''' % ','.join(condition_phone_list))
+            today_storage_sql += ''' where a.hold_phone in (%s)''' % ','.join(condition_phone_list)
+            public_sql += ''' having hold_phone in (%s)''' % ','.join(condition_phone_list)
+        else:  # 没有进行关键词或标签筛选
+            user_info_sql += user_condition
+            user_info_df = pd.read_sql(user_info_sql, conn_analyze)
+            user_storage_value_sql = user_storage_value_sql.format('')
+        user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
+        today_storage_df = pd.read_sql(today_storage_sql, conn_analyze)
+        public_df = pd.read_sql(public_sql, conn_lh)
+        merge_df = pd.concat([user_storage_df, today_storage_df, public_df], axis=0, ignore_index=True)
+        group_df = merge_df.groupby('hold_phone').sum().reset_index()
+
+        fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
 
         # 过滤条件
         fina_df = fina_df[
@@ -1551,6 +1577,7 @@ def personal_hold_total():
             ''' % ','.join(tag_phone_list)
             tag_df = pd.read_sql(tag_sql, conn_analyze)
             tag_df['unionid'] = tag_df['unionid'].astype(str)
+            cut_data['unionid'] = cut_data['unionid'].astype(str)
             cut_data = cut_data.merge(tag_df, how='left', on='unionid')
         else:
             cut_data['tag_name'] = []
