@@ -68,12 +68,14 @@ def get_city():
             return check_token_result
 
         pro_code = request.args.get("pro_code")
-
-        sql = '''select code,name from city where province_code = %s'''
-        cursor_analyze.execute(sql,(pro_code))
-        city_data = pd.DataFrame(cursor_analyze.fetchall())
-        city_data.columns = ["code","name"]
-        city_data = city_data.to_dict("records")
+        if pro_code:
+            sql = '''select code,name from city where province_code = %s'''
+            cursor_analyze.execute(sql,(pro_code))
+            city_data = pd.DataFrame(cursor_analyze.fetchall())
+            city_data.columns = ["code","name"]
+            city_data = city_data.to_dict("records")
+        else:
+            city_data = []
         return {"code":"0000","status":"success","msg":city_data}
 
     except Exception as e:
