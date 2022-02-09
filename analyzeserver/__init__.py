@@ -43,6 +43,8 @@ from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
 from analyzeserver.lianghao.eight.second.personal_property import secondppbp
 from analyzeserver.perfect_choose.le_type import letypebp
 from analyzeserver.home.clg_home import clghomebp
+from analyzeserver.clg.shop_tran import clgtranshopbp
+
 from analyzeserver.clg.transaction_analyze import transactionbp
 
 app = Flask(__name__,instance_relative_config=True)
@@ -103,7 +105,8 @@ app.register_blueprint(chaddrbp)
 app.register_blueprint(usertagbp)
 
 
-
+#诚聊购
+app.register_blueprint(clgtranshopbp)
 
 if __name__ == "__main__":
     # app.run()

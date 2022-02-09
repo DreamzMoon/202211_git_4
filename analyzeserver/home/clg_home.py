@@ -50,9 +50,15 @@ def person_top():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        sql = '''select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
-        and del_flag = 0
-        group by phone order by pay_total_money desc limit 3'''
+        sql = '''select phone,sum(pay_total_money) pay_total_money from (
+        select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
+        and del_flag = 0 and voucherMoneyType = 1
+        group by phone  
+        union all
+        select phone,sum(voucherPayMoney) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
+        and del_flag = 0 and voucherMoneyType = 2
+        group by phone) t group by phone order by pay_total_money desc limit 3
+        '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         # datas = datas.to_dict("records")
@@ -101,13 +107,29 @@ def data_center():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
+        # sql = '''
+        #     select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count from
+        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money from trade_order_info
+        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0) t1
+        #     left join
+        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+        #     on t1.order_sn=t2.order_sn
+        # '''
         sql = '''
-            select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count from 
-            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0) t1
-            left join
-            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
-            on t1.order_sn=t2.order_sn
+        select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
+        select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
+        select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
+        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()  
+        and trade_order_info.order_status in (3,4,5,6,10,15)
+        group by trade_order_info.user_id
+        union all 
+        select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
+        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()  
+        and trade_order_info.order_status in (3,4,5,6,10,15)
+        group by trade_order_info.user_id ) t group by user_id
+        ) t2
         '''
 
         data = (pd.read_sql(sql,conn_clg)).to_dict("records")
@@ -147,11 +169,19 @@ def product_top():
 
 
 
-        sql = '''select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
+        sql = '''select goods_name,sum(pay_total_money) pay_total_money from (
+        select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
         left join trade_order_item od on o.order_sn = od.order_sn
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
+        o.voucherMoneyType = 1
         group by od.goods_id
-        order by pay_total_money desc limit 3'''
+        union all 
+        select od.goods_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+        left join trade_order_item od on o.order_sn = od.order_sn
+        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
+        o.voucherMoneyType = 2
+        group by od.goods_id
+        ) t group by goods_name order by pay_total_money desc limit 3'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
@@ -191,10 +221,17 @@ def shop_top():
 
 
 
-        sql = '''select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
+        sql = '''select * from (
+        select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
         where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+        and o.voucherMoneyType = 1
         group by o.shop_id
-        order by pay_total_money desc limit 7'''
+        union all 
+        select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+        and o.voucherMoneyType = 2
+        group by o.shop_id
+        ) t group by shop_name order by pay_total_money desc limit 7'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
