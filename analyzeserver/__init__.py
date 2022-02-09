@@ -43,6 +43,7 @@ from analyzeserver.lianghao.eight.pifa.personal_property import pifappbp
 from analyzeserver.lianghao.eight.second.personal_property import secondppbp
 from analyzeserver.perfect_choose.le_type import letypebp
 from analyzeserver.home.clg_home import clghomebp
+from analyzeserver.clg.transaction_analyze import transactionbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -80,6 +81,9 @@ app.register_blueprint(platpfbp)
 app.register_blueprint(personpfbp)
 app.register_blueprint(daily_eight_pifabp)
 app.register_blueprint(pifappbp)
+
+# 诚聊够
+app.register_blueprint(transactionbp)
 
 # crm运营中心管理
 app.register_blueprint(operateconbp)
