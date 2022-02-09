@@ -399,10 +399,17 @@ def order_status():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-        sql = '''select o.phone,o.pay_money,od.goods_name,TIMESTAMPDIFF(second,o.create_time,now())/60 sub_time from trade_order_info o
-        left join trade_order_item od on o.order_sn = od.order_sn
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-        order by o.create_time desc limit 3'''
+        sql = '''
+            select phone, pay_money, goods_name, sub_time from
+            (select o.phone,o.pay_money,od.goods_name,TIMESTAMPDIFF(second,o.create_time,now())/60 sub_time from trade_order_info o
+            left join trade_order_item od on o.order_sn = od.order_sn
+            where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and o.voucherMoneyType=1
+            union all
+            select o.phone,o.voucherPayMoney pay_money,od.goods_name,TIMESTAMPDIFF(second,o.create_time,now())/60 sub_time from trade_order_info o
+            left join trade_order_item od on o.order_sn = od.order_sn
+            where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and o.voucherMoneyType=2) t
+            order by sub_time asc limit 3
+        '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         if datas.shape[0] > 0:
@@ -465,17 +472,36 @@ def area_list():
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
+        # area_list_sql = '''
+        #     select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from
+        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
+        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0{condition}) t1
+        #     left join
+        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+        #     on t1.order_sn=t2.order_sn
+        # '''
         area_list_sql = '''
-            select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
+            select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count), area_name from
+            (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
             (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0{condition}) t1
+            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
             left join
             (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
             on t1.order_sn=t2.order_sn
+            {group}
+            union all
+            select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
+            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, voucherPayMoney pay_money{area_name} from trade_order_info
+            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=2{condition}) t1
+            left join
+            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+            on t1.order_sn=t2.order_sn
+            {group}) t
+            group by area_name
         '''
+
         if not province_code and not city_code:
-            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='')
-            area_list_sql += ' group by consignee_province'
+            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='', group=' group by consignee_province, user_id')
         else:
             # 查找省名称
             province_sql = '''select name from lh_analyze.province where code=%s'''
@@ -496,8 +522,9 @@ def area_list():
                 city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
                 logger.info(city_name_list)
                 # 拼接sql
-                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city area_name', area_name=', consignee_city', condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)))
-                area_list_sql += ' group by consignee_city'
+                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city area_name', area_name=', consignee_city',
+                                                     condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)),
+                                                     group=' group by consignee_city, user_id')
             else:
                 # 查找市名称
                 city_sql = '''select name from lh_analyze.city where code=%s''' % city_code
@@ -512,8 +539,8 @@ def area_list():
                 # 拼接sql
                 area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county area_name', area_name=', consignee_county',
                                                      condition=' and consignee_province="%s" and consignee_city="%s" and consignee_county in (%s)' % (
-                                                     province_name, city_name, ','.join(region_name_list)))
-                area_list_sql += ' group by consignee_county'
+                                                     province_name, city_name, ','.join(region_name_list)),
+                                                     group=' group by consignee_county, user_id')
         logger.info(area_list_sql)
         area_list_df = pd.read_sql(area_list_sql, conn_clg)
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()

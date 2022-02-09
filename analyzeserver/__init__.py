@@ -84,9 +84,6 @@ app.register_blueprint(personpfbp)
 app.register_blueprint(daily_eight_pifabp)
 app.register_blueprint(pifappbp)
 
-# 诚聊够
-app.register_blueprint(transactionbp)
-
 # crm运营中心管理
 app.register_blueprint(operateconbp)
 
@@ -107,6 +104,7 @@ app.register_blueprint(usertagbp)
 
 #诚聊购
 app.register_blueprint(clgtranshopbp)
+app.register_blueprint(transactionbp)
 
 if __name__ == "__main__":
     # app.run()

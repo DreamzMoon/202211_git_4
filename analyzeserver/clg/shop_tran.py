@@ -27,7 +27,7 @@ import threading
 clgtranshopbp = Blueprint('clgtranshop', __name__, url_prefix='/clgtranshop')
 
 
-@clgtranshopbp.route("all",methods="POST")
+@clgtranshopbp.route("all",methods=["POST"])
 def clg_tran_shop_all():
     try:
         conn_clg = direct_get_conn(clg_mysql_conf)
