@@ -315,12 +315,13 @@ def today_dynamic_goods():
             left join
             (select order_sn, shop_name, TIMESTAMPDIFF(second,create_time,now())/60 sub_time from trade_order_info where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15)) t2
             on t1.order_sn=t2.order_sn
-            order by sub_time desc
+            order by sub_time asc
             limit 3
         '''
         shop_goods_data = pd.read_sql(shop_goods_sql, conn_clg)
         if shop_goods_data.shape[0] > 0:
             shop_goods_data['sub_time'] = round(shop_goods_data['sub_time'], 0).astype(int)
+            shop_goods_data.sort_values('sub_time', ascending=False, inplace=True)
             shop_goods_data = shop_goods_data.to_dict("records")
         else:
             shop_goods_data = []
@@ -480,6 +481,8 @@ def area_list():
         area_list_df = pd.read_sql(area_list_sql, conn_clg)
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
         area_list_df['proportion'] = area_list_df['proportion'].round(2)
+        # 按照订单数倒序排序
+        area_list_df.sort_values('order_count', ascending=False, inplace=True)
 
         count = area_list_df.shape[0]
         start_index = (page - 1) * size
