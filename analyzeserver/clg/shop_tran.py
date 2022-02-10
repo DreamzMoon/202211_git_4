@@ -49,11 +49,17 @@ def clg_tran_shop_all():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
+
+
         #店铺信息
         shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype,ggc.name cate_name from member_shop_info msi
         left join goods_goods_category ggc on msi.category_id = ggc.id
         where msi.del_flag = 0'''
         shop_data = pd.read_sql(shop_sql,conn_clg)
+
+
+        crm_sql = '''select unionid,nickname,`name`,phone from crm_user where del_flag = 0 '''
+        crm_data = pd.read_sql(crm_sql,conn_analyze)
 
         #订单情况 总的交易金额
         order_sql = '''
@@ -86,7 +92,7 @@ def clg_tran_shop_all():
              "voucherMoney": "ok_voucher"}).reset_index()
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
-        refund_order = tran_order[tran_order["order_status"].isin([11,12])]
+        refund_order = tran_order[tran_order["order_status"].isin([12])]
         refund_order.drop(["buy_num", "order_status"], axis=1, inplace=True)
         refund_data = refund_order.groupby(["shop_id"]).agg(
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
@@ -95,7 +101,7 @@ def clg_tran_shop_all():
 
 
         # # 已取消订单 已取消订单 已取消金额 已取消抵用金
-        cancel_order = tran_order[tran_order["order_status"].isin([7])]
+        cancel_order = tran_order[tran_order["order_status"].isin([7,11])]
         cancel_order.drop(["buy_num", "order_status"], axis=1, inplace=True)
         cancel_data = cancel_order.groupby(["shop_id"]).agg(
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
@@ -108,7 +114,27 @@ def clg_tran_shop_all():
         df_list.append(refund_data)
         df_list.append(cancel_data)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id'], how='outer'), df_list)
-        last_data = shop_data.merge(df_merged,how="left",on="shop_id")
+
+        #统计上面那一栏数量
+        all_data = {"shop_count": 0, "tran_count": 0, "tran_buy_count": 0, "tran_price": 0,
+                    "ok_count": 0, "ok_price": 0, "refund_count": 0, "refund_price": 0,
+                    "cancel_count": 0, "cancel_price": 0}
+        all_data["shop_count"] = shop_data.shape[0]
+        all_data["tran_count"] = int(df_merged["tran_count"].sum())
+        all_data["tran_buy_count"] = int(df_merged["tran_count"].sum())
+        all_data["tran_price"] = int(df_merged["tran_count"].sum())
+        all_data["ok_count"] = int(df_merged["tran_count"].sum())
+        all_data["ok_price"] = int(df_merged["tran_count"].sum())
+        all_data["refund_count"] = int(df_merged["tran_count"].sum())
+        all_data["refund_price"] = int(df_merged["tran_count"].sum())
+        all_data["cancel_count"] = int(df_merged["cancel_count"].sum())
+        all_data["cancel_pay"] = round(df_merged["cancel_pay"].sum(),2)
+
+        # last_data = shop_data.merge(df_merged,how="left",on="shop_id")
+
+        #这边可以按需拼接
+        shop_mes_data = shop_data.merge(crm_data,how="left",on="phone")
+        last_data = shop_mes_data.merge(df_merged, how="left", on="shop_id")
         return "1"
 
     except Exception as e:
