@@ -23,11 +23,12 @@ from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 from analyzeserver.common import *
 import threading
+from functools import reduce
 
 clgtranshopbp = Blueprint('clgtranshop', __name__, url_prefix='/clgtranshop')
 
 
-@clgtranshopbp.route("all",methods=["POST"])
+@clgtranshopbp.route("/all",methods=["POST"])
 def clg_tran_shop_all():
     try:
         conn_clg = direct_get_conn(clg_mysql_conf)
@@ -37,7 +38,7 @@ def clg_tran_shop_all():
         try:
             logger.info("env:%s" % ENV)
             token = request.headers["Token"]
-            user_id = request.args.get("user_id")
+            user_id = request.json.get("user_id")
 
             if not user_id and not token:
                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
@@ -49,40 +50,66 @@ def clg_tran_shop_all():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         #店铺信息
-        shop_sql = '''select msi.id,msi.name shop_name,spm.username,spm.phone,msi.shopType,ggc.name cate_name,msi.unionid from member_shop_info msi
-        left join shop_personnel_management spm on msi.id = spm.shopInfoId
+        shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype,ggc.name cate_name from member_shop_info msi
         left join goods_goods_category ggc on msi.category_id = ggc.id
-        where spm.usertype = 1 and spm.isFlag = 0 and msi.del_flag = 0'''
-
-
+        where msi.del_flag = 0'''
+        shop_data = pd.read_sql(shop_sql,conn_clg)
 
         #订单情况 总的交易金额
         order_sql = '''
-        select shop_id,order_shop_name,sum(count) count,sum(buy_num) buy_num,sum(pay_money) pay_money,sum(voucherMoney) voucherMoney,order_status from (
-        select shop_id,order_shop_name,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money,0 voucherMoney,order_status,trade_order_info.create_time from trade_order_info
-        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-        where trade_order_info.voucherMoneyType = 1
-        group by shop_id
-        UNION all
-        select shop_id,order_shop_name,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money,sum(voucherMoney) voucherMoney,order_status,trade_order_info.create_time from trade_order_info
-        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-        where trade_order_info.voucherMoneyType = 2
-        group by shop_id ) orders group by orders.shop_id
+        select shop_id,count(*) count,sum(buy_num) buy_num,
+        if(toi.voucherMoneyType = 1,sum(pay_money),sum(voucherPayMoney)) pay_money,
+        if(toi.voucherMoneyType = 1,0,sum(voucherMoney)) voucherMoney,order_status from trade_order_info toi
+        left join trade_order_item tod on toi.order_sn = tod.order_sn 
+        where toi.del_flag = 0
+        group by shop_id,order_status
         '''
 
-        # 交易订单
+        #总订单
         tran_order = pd.read_sql(order_sql,conn_clg)
 
-        # 有效订单
+        #交易订单 交易订单数量 交易商品数量 交易金额 交易抵用金
+        tran_data = tran_order.copy()
+        logger.info(tran_data)
+        tran_data.drop(["order_status"], axis=1, inplace=True)
+        tran_data = tran_order.groupby(["shop_id"]).agg({"count":"sum","buy_num":"sum","pay_money":"sum","voucherMoney":"sum"}).rename(columns=
+            {"count":"tran_count","buy_num":"tran_buy_count","pay_money":"tran_pay","voucherMoney":"tran_voucher"}).reset_index()
+
+        logger.info(tran_data)
+
+        # 有效订单 有效订单 有效金额 有效抵用金
         ok_order = tran_order[tran_order["order_status"].isin([3,4,5,6,10,15])]
+        ok_order.drop(["buy_num","order_status"],axis=1,inplace=True)
+        yes_data = ok_order.groupby(["shop_id"]).agg(
+            {"count": "sum",  "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
+            {"count": "ok_count", "pay_money": "ok_pay",
+             "voucherMoney": "ok_voucher"}).reset_index()
 
-        # 已退款订单
+        # 已退款订单 已退款订单 已退款金额 已退款抵用金
         refund_order = tran_order[tran_order["order_status"].isin([11,12])]
+        refund_order.drop(["buy_num", "order_status"], axis=1, inplace=True)
+        refund_data = refund_order.groupby(["shop_id"]).agg(
+            {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
+            {"count": "refund_count", "pay_money": "refund_pay",
+             "voucherMoney": "refund_voucher"}).reset_index()
 
-        # 已取消订单
-        cancel_order = tran_order[tran_order["order_status"]].isin([7])
 
-        # return {"code": "0000", "status": "success", "msg": datas}
+        # # 已取消订单 已取消订单 已取消金额 已取消抵用金
+        cancel_order = tran_order[tran_order["order_status"].isin([7])]
+        cancel_order.drop(["buy_num", "order_status"], axis=1, inplace=True)
+        cancel_data = cancel_order.groupby(["shop_id"]).agg(
+            {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
+            {"count": "cancel_count", "pay_money": "cancel_pay",
+             "voucherMoney": "cancel_voucher"}).reset_index()
+
+        df_list = []
+        df_list.append(tran_data)
+        df_list.append(yes_data)
+        df_list.append(refund_data)
+        df_list.append(cancel_data)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id'], how='outer'), df_list)
+        last_data = shop_data.merge(df_merged,how="left",on="shop_id")
+        return "1"
 
     except Exception as e:
         logger.exception(traceback.format_exc())
