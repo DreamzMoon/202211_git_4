@@ -35,20 +35,7 @@ def deal_person():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
 
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-            logger.info("token:%s" %token)
-            logger.info("user_id:%s" %user_id)
-            check_token_result = check_token(token, user_id)
-            logger.info(check_token_result)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
 
@@ -86,18 +73,7 @@ def deal_person():
 @lhpfhome8.route("deal/bus",methods=["GET"])
 def deal_business():
     try:
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -155,18 +131,7 @@ def deal_business():
 @lhpfhome8.route("order/datacenter",methods=["GET"])
 def order_data_center():
     try:
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -188,49 +153,13 @@ select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_
 @lhpfhome8.route('/today/dynamic/transaction', methods=["GET"])
 def today_dynamic_transaction():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_analyze or not conn_lh:
             return {"code": "10002", "status": "failer", "msg": message["10002"]}
 
-        # 八位
-        # sell_order_sql_8 = '''
-        #         select t1.sub_time, t1.phone, t2.pretty_type_name from
-        #         (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
-        #         where del_flag=0 and type in (1, 4) and (phone is not null or phone !='') and `status`=1
-        #         and DATE_FORMAT(pay_time,"%Y-%m-%d") = CURRENT_DATE
-        #         order by pay_time desc
-        #         limit 10
-        #         ) t1
-        #         left join
-        #         (select id, pretty_type_name from lh_pretty_client.le_second_hand_sell
-        #         where id in
-        #         (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1) and (phone is not null or phone !='') and `status`=1
-        #         and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
-        #         union all
-        #         select id, pretty_type_name from lh_pretty_client.le_sell
-        #         where id in
-        #         (select sell_id from lh_pretty_client.le_order where del_flag=0 and type in (1) and (phone is not null or phone !='') and `status`=1
-        #         and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE)
-        #         ) t2
-        #         on t1.sell_id = t2.id
-        #     '''
+
         sell_order_sql_8 = '''
             select t1.sub_time, t1.phone, t2.pretty_type_name from
             (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, phone, sell_id from lh_pretty_client.le_order
@@ -287,21 +216,7 @@ def today_dynamic_transaction():
 @lhpfhome8.route('/today/dynamic/publish', methods=["GET"])
 def today_dynamic_publish():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh or not conn_analyze:
@@ -311,23 +226,7 @@ def today_dynamic_publish():
         search_name_sql = '''
                 select phone, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from lh_analyze.crm_user where phone = "%s"
             '''
-        # 转卖 + 二手
-        # publish_order_sql = '''
-        # (select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-        # from lh_pretty_client.le_sell
-        # where del_flag=0 and (sell_phone is not null or sell_phone != '')
-        # and DATE_FORMAT(up_time,"%Y-%m-%d") = CURRENT_DATE
-        # order by up_time desc
-        # limit 10)
-        # union all
-        # (select TIMESTAMPDIFF(second,create_time,now())/60 sub_time, sell_phone phone, pretty_type_name
-        # from lh_pretty_client.le_second_hand_sell
-        # where del_flag=0 and (sell_phone is not null or sell_phone != '')
-        # and DATE_FORMAT(create_time,"%Y-%m-%d") = CURRENT_DATE
-        # order by create_time desc
-        # limit 10)
-        # order by sub_time
-        # limit 3'''
+
         publish_order_sql = '''
             select TIMESTAMPDIFF(second,up_time,now())/60 sub_time, sell_phone phone, pretty_type_name
             from lh_pretty_client.le_sell
@@ -353,11 +252,7 @@ def today_dynamic_publish():
         else:
             publish_list = []
 
-        # for pl in publish_list:
-        #     if pl["phone"]:
-        #         pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
-        #     if pl["username"]:
-        #         pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
+
 
         return_data = {
             "publish_dynamic": publish_list,
@@ -378,18 +273,7 @@ def today_dynamic_publish():
 def deal_top():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
                 select s.pretty_type_name,o.unit_price,o.count,o.total_price from le_order o

@@ -34,22 +34,6 @@ def deal_person():
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" %ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
-
 
         logger.info(conn_lh)
         #8位个人
@@ -85,18 +69,7 @@ def deal_person():
 @lhhomebp.route("deal/bus",methods=["GET"])
 def deal_business():
     try:
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
@@ -165,28 +138,7 @@ def data_center():
         filter_pay_type_7 = data[4]
         filter_pay_type_8 = data[5]
 
-        # filter_phone = json.loads(filter_phone)
-        # filter_pay_type_7 = json.loads(filter_pay_type_7)
-        # filter_pay_type_8 = json.loads(filter_pay_type_8)
 
-
-        # if filter_phone:
-        #     filter_phone = filter_phone[1: -1]
-        #     sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t1
-        #     union all
-        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" and phone not in (%s) group by phone) t2)t
-        #     ''' % (start_time, end_time, filter_phone, start_time, end_time, filter_phone)
-        # else:
-        #     sql = '''select sum(person_count) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from (
-        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t1
-        #     union all
-        #     select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
-        #     select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from le_order where del_flag = 0 and type in (1,4) and `status` = 1 and create_time >= "%s" and create_time <= "%s" group by phone) t2)t''' % (
-        #     start_time, end_time, start_time, end_time)
 
         condition_sql = ""
         if start_time and end_time:
@@ -243,20 +195,6 @@ def data_center():
 @lhhomebp.route("order/datacenter",methods=["GET"])
 def order_data_center():
     try:
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         sql='''select count(*) person_count,sum(total_money) total_money,sum(order_count) order_count,sum(total_count) total_count from(
 select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_count from lh_pretty_client.le_order where del_flag = 0 and type=4 and `status` = 1 and DATE_FORMAT(create_time,'%Y-%m-%d') = CURRENT_DATE() group by phone) t2'''
@@ -278,21 +216,7 @@ select phone,sum(total_price) total_money,count(*) order_count,sum(count) total_
 @lhhomebp.route('/today/dynamic/transaction', methods=["GET"])
 def today_dynamic_transaction():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -361,21 +285,7 @@ def today_dynamic_transaction():
 @lhhomebp.route('/today/dynamic/publish', methods=["GET"])
 def today_dynamic_publish():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh or not conn_analyze:
@@ -412,11 +322,7 @@ def today_dynamic_publish():
         else:
             publish_list = []
 
-        # for pl in publish_list:
-        #     if pl["phone"]:
-        #         pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
-        #     if pl["username"]:
-        #         pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
+
 
         return_data = {
             "publish_dynamic": publish_list,
@@ -436,20 +342,7 @@ def today_dynamic_publish():
 @lhhomebp.route('/search/activity/data', methods=["GET"])
 def search_activity_data():
     try:
-        try:
-            token = request.headers["Token"]
-            user_id = request.args["user_id"]
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_lh = direct_get_conn(analyze_mysql_conf)
         if not conn_lh:
