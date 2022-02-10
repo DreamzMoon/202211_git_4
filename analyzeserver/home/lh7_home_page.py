@@ -31,23 +31,6 @@ def deal_person():
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" %ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
-
-
         logger.info(conn_lh)
         #8位个人
         sql = '''select phone,sum(total_price) total_money from lh_pretty_client.lh_order where del_flag = 0 and `status`=1 and type in (1, 4) and DATE_FORMAT(create_time,"%Y%m%d") =CURRENT_DATE() group by phone order by total_money desc limit 3'''
@@ -82,18 +65,6 @@ def deal_business():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         # fifter_operate = ["测试", "乔二运营中心", "快了", "测试公司", "卡拉公司", "施鸿公司", "快乐公司123", "禄可集团杭州技术生产部", "王大锤", "福州高新区测试运营中心, 请勿选择"]
 
@@ -149,18 +120,6 @@ def deal_business():
 def data_center():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
         # cursor = conn_lh.cursor()
@@ -181,20 +140,6 @@ def data_center():
 def deal_top():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
 
         sql = '''select pretty_type_name,unit_price,sum(count) total_count,sum(total_price) total_price from (
         select s.pretty_type_name,o.unit_price,o.count,o.total_price from lh_order o
@@ -332,21 +277,6 @@ def today_data():
 @homebp.route('/today/dynamic/transaction', methods=["GET"])
 def today_dynamic_transaction():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         # conn_crm = direct_get_conn(crm_mysql_conf)
         conn_an = direct_get_conn(analyze_mysql_conf)
@@ -390,11 +320,6 @@ def today_dynamic_transaction():
         else:
             sell_list = []
 
-        # for sl in sell_list:
-        #     if sl["phone"]:
-        #         sl["phone"] = sl["phone"][0:4]+len(sl["phone"][4:])*"*"
-        #     if sl["username"]:
-        #         sl["username"] = sl["username"][0]+len(sl["username"][1:])*"*"
 
         return_data = {
             "sell_dynamic": sell_list,
@@ -415,22 +340,7 @@ def today_dynamic_transaction():
 @homebp.route('/today/dynamic/publish', methods=["GET"])
 def today_dynamic_publish():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
-        # conn_crm = direct_get_conn(crm_mysql_conf)
         conn_an = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
         if not conn_lh or not conn_an:
@@ -470,12 +380,6 @@ def today_dynamic_publish():
         else:
             publish_list = []
 
-        # for pl in publish_list:
-        #     if pl["phone"]:
-        #         pl["phone"] = pl["phone"][0:4]+len(pl["phone"][4:])*"*"
-        #     if pl["username"]:
-        #         pl["username"] = pl["username"][0]+len(pl["username"][1:])*"*"
-
         return_data = {
             "publish_dynamic": publish_list,
         }
@@ -494,25 +398,7 @@ def today_dynamic_publish():
 @homebp.route('/today/dynamic/newuser', methods=["GET"])
 def today_dynamic_newuser():
     try:
-        try:
-            logger.info(request.json)
-            # 参数个数错误
-            # if len(request.json) != 1:
-            #     return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         # conn_crm = direct_get_conn(crm_mysql_conf)
         conn_an = direct_get_conn(analyze_mysql_conf)
@@ -556,11 +442,7 @@ def today_dynamic_newuser():
         else:
             new_user_list = []
 
-        # for nl in new_user_list:
-        #     if nl["phone"]:
-        #         nl["phone"] = nl["phone"][0:4]+len(nl["phone"][4:])*"*"
-        #     if nl["username"]:
-        #         nl["username"] = nl["username"][0]+len(nl["username"][1:])*"*"
+
 
         return_data = {
             "new_user": new_user_list
