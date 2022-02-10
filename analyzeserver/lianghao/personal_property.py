@@ -82,7 +82,7 @@ def platform_data():
             if phone_result[0]:
                 tag_phone_list = phone_result[1]
             else:
-                return {"code": phone_result[1], message: message[phone_result[1]], "status": "failed"}
+                return {"code": phone_result[1], "message": message[phone_result[1]], "status": "failed"}
 
         # 查tag_phone_list
         select_phone = []
