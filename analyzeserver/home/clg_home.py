@@ -36,19 +36,7 @@ def person_top():
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" % ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         sql = '''select phone,sum(pay_total_money) pay_total_money from (
         select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
@@ -94,27 +82,7 @@ def data_center():
         conn_clg = direct_get_conn(clg_mysql_conf)
         if not conn_clg:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
-        try:
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-        # sql = '''
-        #     select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count from
-        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money from trade_order_info
-        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0) t1
-        #     left join
-        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
-        #     on t1.order_sn=t2.order_sn
-        # '''
         sql = '''
         select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
         select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
@@ -153,20 +121,6 @@ def product_top():
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" % ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
 
 
         sql = '''select goods_name,sum(pay_total_money) pay_total_money from (
@@ -205,21 +159,6 @@ def shop_top():
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" % ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
 
         sql = '''select * from (
         select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
@@ -250,21 +189,7 @@ def shop_top():
 @clghomebp.route('/today/dynamic/newuser', methods=["GET"])
 def today_dynamic_newuser():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         conn_an = direct_get_conn(analyze_mysql_conf)
         # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
@@ -301,11 +226,6 @@ def today_dynamic_newuser():
         else:
             new_user_list = []
 
-        # for nl in new_user_list:
-        #     if nl["phone"]:
-        #         nl["phone"] = nl["phone"][0:4]+len(nl["phone"][4:])*"*"
-        #     if nl["username"]:
-        #         nl["username"] = nl["username"][0]+len(nl["username"][1:])*"*"
 
         return_data = {
             "new_user": new_user_list
@@ -325,21 +245,7 @@ def today_dynamic_newuser():
 @clghomebp.route('/today/dynamic/goods', methods=["GET"])
 def today_dynamic_goods():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
 
         # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         conn_clg = direct_get_conn(clg_mysql_conf)
@@ -385,19 +291,7 @@ def order_status():
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" % ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
 
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         sql = '''
             select phone, pay_money, goods_name, sub_time from
@@ -446,24 +340,10 @@ def order_status():
 @clghomebp.route('/area/list', methods=["POST"])
 def area_list():
     try:
-        try:
-            logger.info(request.json)
-            token = request.headers["Token"]
-            user_id = request.json["user_id"]
-            province_code = request.json['province_code']
-            city_code = request.json['city_code']
-            page = request.json['page']
-            size = request.json['size']
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except Exception as e:
-            # 参数名错误
-            logger.error(e)
-            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        province_code = request.json['province_code']
+        city_code = request.json['city_code']
+        page = request.json['page']
+        size = request.json['size']
 
         # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         conn_clg = direct_get_conn(clg_mysql_conf)
@@ -472,14 +352,7 @@ def area_list():
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
-        # area_list_sql = '''
-        #     select count(distinct t1.user_id) person_count, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from
-        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
-        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0{condition}) t1
-        #     left join
-        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
-        #     on t1.order_sn=t2.order_sn
-        # '''
+
         area_list_sql = '''
             select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count), area_name from
             (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
@@ -577,21 +450,6 @@ def area_statis():
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-        try:
-            logger.info("env:%s" % ENV)
-            token = request.headers["Token"]
-            user_id = request.args.get("user_id")
-
-            if not user_id and not token:
-                return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-            check_token_result = check_token(token, user_id)
-            if check_token_result["code"] != "0000":
-                return check_token_result
-        except:
-            return {"code": "10004", "status": "failed", "msg": message["10004"]}
-
-
 
         sql = '''select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE() and o.order_status in (4,5,6,10,15) group by consignee_province'''
         logger.info(sql)
