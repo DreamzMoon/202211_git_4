@@ -49,7 +49,8 @@ def clg_tran_shop_all():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-
+        page = request.json.get("page")
+        size = request.json.get("size")
 
         #店铺信息
         shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype,ggc.name cate_name from member_shop_info msi
@@ -116,17 +117,15 @@ def clg_tran_shop_all():
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id'], how='outer'), df_list)
 
         #统计上面那一栏数量
-        all_data = {"shop_count": 0, "tran_count": 0, "tran_buy_count": 0, "tran_price": 0,
-                    "ok_count": 0, "ok_price": 0, "refund_count": 0, "refund_price": 0,
-                    "cancel_count": 0, "cancel_price": 0}
+        all_data = {}
         all_data["shop_count"] = shop_data.shape[0]
         all_data["tran_count"] = int(df_merged["tran_count"].sum())
-        all_data["tran_buy_count"] = int(df_merged["tran_count"].sum())
-        all_data["tran_price"] = int(df_merged["tran_count"].sum())
-        all_data["ok_count"] = int(df_merged["tran_count"].sum())
-        all_data["ok_price"] = int(df_merged["tran_count"].sum())
-        all_data["refund_count"] = int(df_merged["tran_count"].sum())
-        all_data["refund_price"] = int(df_merged["tran_count"].sum())
+        all_data["tran_buy_count"] = int(df_merged["tran_buy_count"].sum())
+        all_data["tran_pay"] = round(df_merged["tran_pay"].sum(),2)
+        all_data["ok_count"] = int(df_merged["ok_count"].sum())
+        all_data["ok_pay"] = round(df_merged["ok_pay"].sum(),2)
+        all_data["refund_count"] = int(df_merged["refund_count"].sum())
+        all_data["refund_pay"] = round(df_merged["refund_pay"].sum(),2)
         all_data["cancel_count"] = int(df_merged["cancel_count"].sum())
         all_data["cancel_pay"] = round(df_merged["cancel_pay"].sum(),2)
 
@@ -135,7 +134,7 @@ def clg_tran_shop_all():
         #这边可以按需拼接
         shop_mes_data = shop_data.merge(crm_data,how="left",on="phone")
         last_data = shop_mes_data.merge(df_merged, how="left", on="shop_id")
-        return "1"
+        return {"code":"0000","status":"success","data":all_data}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
