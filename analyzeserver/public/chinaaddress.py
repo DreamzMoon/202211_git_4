@@ -27,15 +27,15 @@ def get_pro():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         logger.info(request.args)
-        token = request.headers["Token"]
-        user_id = request.args.get("user_id")
-
-        if not user_id and not token:
-            return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-        check_token_result = check_token(token, user_id)
-        if check_token_result["code"] != "0000":
-            return check_token_result
+        # token = request.headers["Token"]
+        # user_id = request.args.get("user_id")
+        #
+        # if not user_id and not token:
+        #     return {"code": "10001", "status": "failed", "msg": message["10001"]}
+        #
+        # check_token_result = check_token(token, user_id)
+        # if check_token_result["code"] != "0000":
+        #     return check_token_result
 
         sql = '''select code,name from province'''
         pro_data = pd.read_sql(sql,conn_analyze)
@@ -57,15 +57,15 @@ def get_city():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor_analyze = conn_analyze.cursor()
         logger.info(request.json)
-        token = request.headers["Token"]
-        user_id = request.args.get("user_id")
-
-        if not user_id and not token:
-            return {"code": "10001", "status": "failed", "msg": message["10001"]}
-
-        check_token_result = check_token(token, user_id)
-        if check_token_result["code"] != "0000":
-            return check_token_result
+        # token = request.headers["Token"]
+        # user_id = request.args.get("user_id")
+        #
+        # if not user_id and not token:
+        #     return {"code": "10001", "status": "failed", "msg": message["10001"]}
+        #
+        # check_token_result = check_token(token, user_id)
+        # if check_token_result["code"] != "0000":
+        #     return check_token_result
 
         pro_code = request.args.get("pro_code")
         if pro_code:
