@@ -51,16 +51,20 @@ def clg_tran_shop_all():
 
         page = request.json.get("page")
         size = request.json.get("size")
+        keyword = request.json.get("keyword")
+
+
 
         #店铺信息
         shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype,ggc.name cate_name from member_shop_info msi
         left join goods_goods_category ggc on msi.category_id = ggc.id
         where msi.del_flag = 0'''
         shop_data = pd.read_sql(shop_sql,conn_clg)
+        logger.info("店铺数据读取完成")
 
-
-        crm_sql = '''select unionid,nickname,`name`,phone from crm_user where del_flag = 0 '''
+        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
         crm_data = pd.read_sql(crm_sql,conn_analyze)
+        logger.info("用户数据完成")
 
         #订单情况 总的交易金额
         order_sql = '''
@@ -71,18 +75,18 @@ def clg_tran_shop_all():
         where toi.del_flag = 0
         group by shop_id,order_status
         '''
-
         #总订单
         tran_order = pd.read_sql(order_sql,conn_clg)
+        logger.info("订单数据读取完成")
+
 
         #交易订单 交易订单数量 交易商品数量 交易金额 交易抵用金
         tran_data = tran_order.copy()
-        logger.info(tran_data)
         tran_data.drop(["order_status"], axis=1, inplace=True)
         tran_data = tran_order.groupby(["shop_id"]).agg({"count":"sum","buy_num":"sum","pay_money":"sum","voucherMoney":"sum"}).rename(columns=
             {"count":"tran_count","buy_num":"tran_buy_count","pay_money":"tran_pay","voucherMoney":"tran_voucher"}).reset_index()
 
-        logger.info(tran_data)
+        logger.info("交易订单数据处理完成")
 
         # 有效订单 有效订单 有效金额 有效抵用金
         ok_order = tran_order[tran_order["order_status"].isin([3,4,5,6,10,15])]
@@ -91,6 +95,7 @@ def clg_tran_shop_all():
             {"count": "sum",  "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "ok_count", "pay_money": "ok_pay",
              "voucherMoney": "ok_voucher"}).reset_index()
+        logger.info("有效订单数据处理完成")
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
         refund_order = tran_order[tran_order["order_status"].isin([12])]
@@ -99,6 +104,7 @@ def clg_tran_shop_all():
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "refund_count", "pay_money": "refund_pay",
              "voucherMoney": "refund_voucher"}).reset_index()
+        logger.info("退款订单数据处理完成")
 
 
         # # 已取消订单 已取消订单 已取消金额 已取消抵用金
@@ -108,6 +114,7 @@ def clg_tran_shop_all():
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "cancel_count", "pay_money": "cancel_pay",
              "voucherMoney": "cancel_voucher"}).reset_index()
+        logger.info("取消订单数据处理完成")
 
         df_list = []
         df_list.append(tran_data)
@@ -115,26 +122,46 @@ def clg_tran_shop_all():
         df_list.append(refund_data)
         df_list.append(cancel_data)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id'], how='outer'), df_list)
+        logger.info("数据合并汇总")
 
-        #统计上面那一栏数量
-        all_data = {}
-        all_data["shop_count"] = shop_data.shape[0]
-        all_data["tran_count"] = int(df_merged["tran_count"].sum())
-        all_data["tran_buy_count"] = int(df_merged["tran_buy_count"].sum())
-        all_data["tran_pay"] = round(df_merged["tran_pay"].sum(),2)
-        all_data["ok_count"] = int(df_merged["ok_count"].sum())
-        all_data["ok_pay"] = round(df_merged["ok_pay"].sum(),2)
-        all_data["refund_count"] = int(df_merged["refund_count"].sum())
-        all_data["refund_pay"] = round(df_merged["refund_pay"].sum(),2)
-        all_data["cancel_count"] = int(df_merged["cancel_count"].sum())
-        all_data["cancel_pay"] = round(df_merged["cancel_pay"].sum(),2)
-
-        # last_data = shop_data.merge(df_merged,how="left",on="shop_id")
 
         #这边可以按需拼接
         shop_mes_data = shop_data.merge(crm_data,how="left",on="phone")
+        shop_mes_data.fillna("",inplace=True)
+        logger.info(shop_mes_data.iloc[0])
+        if keyword:
+            shop_mes_data = shop_mes_data[(shop_mes_data["nickname"].str.contains(keyword))|(shop_mes_data["phone"].str.contains(keyword))|(shop_mes_data["unionid"].str.contains(keyword))]
+
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+
+        count = shop_mes_data.shape[0]
         last_data = shop_mes_data.merge(df_merged, how="left", on="shop_id")
-        return {"code":"0000","status":"success","data":all_data}
+
+        # 统计上面那一栏数量
+        all_data = {}
+        all_data["shop_count"] = last_data.shape[0]
+        all_data["tran_count"] = int(last_data["tran_count"].sum())
+        all_data["tran_buy_count"] = int(last_data["tran_buy_count"].sum())
+        all_data["tran_pay"] = round(last_data["tran_pay"].sum(), 2)
+        all_data["ok_count"] = int(last_data["ok_count"].sum())
+        all_data["ok_pay"] = round(last_data["ok_pay"].sum(), 2)
+        all_data["refund_count"] = int(last_data["refund_count"].sum())
+        all_data["refund_pay"] = round(last_data["refund_pay"].sum(), 2)
+        all_data["cancel_count"] = int(last_data["cancel_count"].sum())
+        all_data["cancel_pay"] = round(last_data["cancel_pay"].sum(), 2)
+        logger.info("求和")
+
+        if page and size:
+            last_data = last_data[code_page:code_size]
+        else:
+            last_data = last_data.copy()
+        last_data.fillna("",inplace=True)
+        last_data = last_data.to_dict("records")
+        data = {"all_data":all_data,"last_data":last_data}
+
+        return {"code":"0000","status":"success","data":data,"count":count}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
