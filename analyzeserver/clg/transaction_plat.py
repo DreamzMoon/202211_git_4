@@ -509,6 +509,7 @@ def plat_chart():
         merge_df_list.insert(0, fina_data)
         fina_data = reduce(lambda left, right: pd.merge(left, right, on='create_time', how='left'), merge_df_list)
         fina_data.fillna(0, inplace=True)
+        fina_data.rename(columns={"create_time": "day_time"}, inplace=True)
         # 价格元整
         for i in [column for column in fina_data.columns if 'money' in column]:
             fina_data[i] = fina_data[i].apply(lambda x: round(float(x), 2))
