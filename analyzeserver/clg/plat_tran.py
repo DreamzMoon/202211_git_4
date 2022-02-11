@@ -17,7 +17,7 @@ from analyzeserver.user.sysuser import check_token
 from functools import reduce
 
 
-transactionbp = Blueprint('transaction', __name__, url_prefix='/clg/transaction')
+clgtranplatbp = Blueprint('clgtranplat', __name__, url_prefix='/clgtranplat')
 
 def status_data(df):
     data = {}
@@ -45,7 +45,7 @@ def status_data(df):
     return data
 
 
-@transactionbp.route("/plat/all", methods=["POST"])
+@clgtranplatbp.route("/all", methods=["POST"])
 def plat_all():
     try:
         try:
@@ -244,10 +244,11 @@ def plat_all():
     finally:
         try:
             conn_clg.close()
+            conn_analyze.close()
         except:
             pass
 
-@transactionbp.route("/plat/chart", methods=["POST"])
+@clgtranplatbp.route("/chart", methods=["POST"])
 def plat_chart():
     try:
         try:
@@ -536,5 +537,6 @@ def plat_chart():
     finally:
         try:
             conn_clg.close()
+            conn_analyze.close()
         except:
             pass
