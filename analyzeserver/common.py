@@ -479,8 +479,8 @@ def match_time_type_data(data_df, request):
             # 自定义时间间隔
             sub_day = request.json['end_time'].day - request.json['start_time'].day + 1
             # 同比时间
-            custom_end_ratio = request.json['start_time'] + timedelta(days=-sub_day)
-            custom_start_ratio = request.json['end_time'] + timedelta(days=-sub_day)
+            custom_start_ratio = request.json['start_time'] + timedelta(days=-sub_day)
+            custom_end_ratio = request.json['end_time'] + timedelta(days=-sub_day)
             # 同比数据
             time_data_ration_df = data_df.loc[(data_df['create_time'] >= custom_start_ratio)
                                               & (data_df['create_time'] <= custom_end_ratio), :]
