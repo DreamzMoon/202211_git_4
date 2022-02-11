@@ -52,13 +52,14 @@ def clg_tran_shop_all():
         page = request.json.get("page")
         size = request.json.get("size")
         keyword = request.json.get("keyword")
-
-
+        # 只要年月日
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
 
         #店铺信息
-        shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype,ggc.name cate_name from member_shop_info msi
-        left join goods_goods_category ggc on msi.category_id = ggc.id
+        shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype from member_shop_info msi
         where msi.del_flag = 0'''
+
         shop_data = pd.read_sql(shop_sql,conn_clg)
         logger.info("店铺数据读取完成")
 
@@ -75,6 +76,18 @@ def clg_tran_shop_all():
         where toi.del_flag = 0
         group by shop_id,order_status
         '''
+
+        if start_time and end_time:
+            order_sql = '''
+                    select shop_id,count(*) count,sum(buy_num) buy_num,
+                    if(toi.voucherMoneyType = 1,sum(pay_money),sum(voucherPayMoney)) pay_money,
+                    if(toi.voucherMoneyType = 1,0,sum(voucherMoney)) voucherMoney,order_status from trade_order_info toi
+                    left join trade_order_item tod on toi.order_sn = tod.order_sn 
+                    where toi.del_flag = 0 and date_format(toi.create_time,"%%Y-%%m-%%d")>="%s" and date_format(toi.create_time,"%%Y-%%m-%%d")<="%s"
+                    group by shop_id,order_status
+                    ''' %(start_time,end_time)
+            logger.info(order_sql)
+
         #总订单
         tran_order = pd.read_sql(order_sql,conn_clg)
         logger.info("订单数据读取完成")
@@ -158,6 +171,7 @@ def clg_tran_shop_all():
         else:
             last_data = last_data.copy()
         last_data.fillna("",inplace=True)
+        # last_data.to_csv("e:/test222.csv", encoding='utf_8_sig')
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"last_data":last_data}
 

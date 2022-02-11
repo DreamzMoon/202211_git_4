@@ -160,17 +160,17 @@ def shop_top():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
 
-        sql = '''select * from (
-        select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-        and o.voucherMoneyType = 1
-        group by o.shop_id
-        union all 
-        select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-        and o.voucherMoneyType = 2
-        group by o.shop_id
-        ) t group by shop_name order by pay_total_money desc limit 7'''
+        sql = '''select shop_name,sum(pay_total_money) from (
+select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
+where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+and o.voucherMoneyType = 1
+group by o.shop_id
+union all 
+select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+and o.voucherMoneyType = 2
+group by o.shop_id
+) t group by shop_name order by pay_total_money desc limit 7'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
