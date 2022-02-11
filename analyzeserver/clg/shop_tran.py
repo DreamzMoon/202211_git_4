@@ -185,7 +185,6 @@ def clg_tran_shop_all():
             last_data = last_data.copy()
         last_data.fillna("",inplace=True)
         last_data.sort_values('tran_count', ascending=False, inplace=True)
-        # last_data.to_csv("e:/test222.csv", encoding='utf_8_sig')
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
 
