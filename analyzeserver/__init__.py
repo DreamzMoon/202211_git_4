@@ -45,9 +45,10 @@ from analyzeserver.perfect_choose.le_type import letypebp
 from analyzeserver.home.clg_home import clghomebp
 from analyzeserver.clg.shop_tran import clgtranshopbp
 
-from analyzeserver.clg.transaction_plat import transactionbp
+from analyzeserver.clg.plat_tran import clgtranplatbp
 from analyzeserver.clg.clg_list import clglistbp
 from analyzeserver.clg.good_tran import clgtrangoodbp
+from analyzeserver.clg.user_tran import clgtranuserbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -106,9 +107,10 @@ app.register_blueprint(usertagbp)
 
 #诚聊购
 app.register_blueprint(clgtranshopbp)
-app.register_blueprint(transactionbp)
+app.register_blueprint(clgtranplatbp)
 app.register_blueprint(clglistbp)
 app.register_blueprint(clgtrangoodbp)
+app.register_blueprint(clgtranuserbp)
 
 if __name__ == "__main__":
     # app.run()
