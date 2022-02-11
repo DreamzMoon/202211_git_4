@@ -45,7 +45,7 @@ from analyzeserver.perfect_choose.le_type import letypebp
 from analyzeserver.home.clg_home import clghomebp
 from analyzeserver.clg.shop_tran import clgtranshopbp
 
-from analyzeserver.clg.transaction_analyze import transactionbp
+from analyzeserver.clg.transaction_plat import transactionbp
 from analyzeserver.clg.clg_list import clglistbp
 
 app = Flask(__name__,instance_relative_config=True)
