@@ -50,10 +50,12 @@ def clg_shop():
         select msi.id shop_id,msi.name shop_name from member_shop_info msi
         where msi.del_flag = 0 order by shop_id 
         '''
-        cursor_clg.execute(sql)
-        shop_data = cursor_clg.fetchall()
+        # cursor_clg.execute(sql)
+        # shop_data = cursor_clg.fetchall()
 
-        return {"code":"0000","status":"success","msg":shop_data,"count":len(shop_data)}
+        shop_data = pd.read_sql(sql,conn_clg)
+        shop_data = shop_data.to_dict("records")
+        return {"code":"0000","status":"success","msg":shop_data}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
@@ -82,7 +84,7 @@ def clg_shop_type():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
 
-        type = {"1":"专营店","2":"普通店铺"}
+        type = [{"type_id":1,"type_name":"专营店"},{"type_id":2,"type_name":"普通店铺"}]
 
         return {"code":"0000","status":"success","msg":type}
 
