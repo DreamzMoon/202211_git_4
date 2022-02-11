@@ -160,7 +160,7 @@ def shop_top():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
 
-        sql = '''select shop_name,sum(pay_total_money) from (
+        sql = '''select shop_name,sum(pay_total_money) pay_total_money from (
 select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
 where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
 and o.voucherMoneyType = 1
