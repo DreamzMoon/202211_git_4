@@ -47,6 +47,7 @@ from analyzeserver.clg.shop_tran import clgtranshopbp
 
 from analyzeserver.clg.transaction_plat import transactionbp
 from analyzeserver.clg.clg_list import clglistbp
+from analyzeserver.clg.good_tran import clgtrangoodbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -107,6 +108,7 @@ app.register_blueprint(usertagbp)
 app.register_blueprint(clgtranshopbp)
 app.register_blueprint(transactionbp)
 app.register_blueprint(clglistbp)
+app.register_blueprint(clgtrangoodbp)
 
 if __name__ == "__main__":
     # app.run()
