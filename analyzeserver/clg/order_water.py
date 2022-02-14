@@ -50,11 +50,22 @@ def clg_tran_good_all():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         sql = '''
-        select o.order_sn,goods_id,goods_name,goods_sku_name,goods_price,buy_num,shop_id,shop_name,carrier_id,order_commission,phone,consignee_mobile,consignee_name,CONCAT(ifnull(consignee_country,""),IFNULL(consignee_province,""),IFNULL(consignee_city,""),IFNULL(consignee_county,""),ifnull(consignee_town,""),IFNULL(consignee_address,"")) address,if(o.voucherMoneyType=1,pay_money,voucherPayMoney) pay_money,if(o.voucherMoneyType=1,0,voucherMoney) voucherMoney,item_freight_money,order_status,o.create_time,ob.pay_type from trade_order_info o
+
+        select o.order_sn,"诚聊购订单" order_source,goods_id,goods_name,goods_sku_name,goods_price,buy_num,shop_id,shop_name,carrier_id,order_commission,phone,consignee_mobile,consignee_name,CONCAT(ifnull(consignee_country,""),IFNULL(consignee_province,""),IFNULL(consignee_city,""),IFNULL(consignee_county,""),ifnull(consignee_town,""),IFNULL(consignee_address,"")) address,if(o.voucherMoneyType=1,pay_money,voucherPayMoney) pay_money,if(o.voucherMoneyType=1,0,voucherMoney) voucherMoney,item_freight_money,order_status,o.create_time,ob.pay_type from trade_order_info o
+
         left join trade_order_item od on o.order_sn = od.order_sn
         left join trade_pay_bill ob on o.pay_sn = ob.id
         where o.del_flag = 0
         '''
+
+
+        order_data = pd.read_sql(sql,conn_clg)
+
+        user_sql = '''select name,nickname,phone,unionid from crm_user where del_flag = 0'''
+        pd.read_sql(user_sql)
+
+
+
 
         return "1"
         # return {"code":"0000","status":"success","data":data,"count":count}
