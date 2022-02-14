@@ -89,7 +89,7 @@ def clg_user_tran():
             "total_money": 0,
             "user_count": 0
         }
-        return_data = {
+        return_null_data = {
             "data": [],
             "summary": null_summary_data
         }
@@ -98,7 +98,7 @@ def clg_user_tran():
         if keyword != "":
             keyword_result = get_phone_by_keyword(keyword)
             if not keyword_result[0]:
-                return {"code": "0000", "status": "success", "msg": return_data, "count": 0}
+                return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
             keyword_phone_list = keyword_result[1]
         if len(keyword_phone_list) != 0: # 进行关键词搜索
             find_phone_sql = ''' and {table}phone in (%s)''' % ','.join(keyword_phone_list)
@@ -127,6 +127,8 @@ def clg_user_tran():
 
         merge_df = pay_money_df.merge(voucher_pay_df, how='outer', on=['phone', 'order_status'])
         merge_df.fillna(0, inplace=True)
+        if merge_df.shape[0] == 0:
+            return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
 
         merge_df['order_count'] = merge_df['pay_order_count'] + merge_df['voucher_order_count']
         merge_df['total_money'] = merge_df['pay_money'] + merge_df['voucher_pay_money']
@@ -146,24 +148,32 @@ def clg_user_tran():
 
         # 有效订单
         success_list = [3, 4, 5, 6, 10, 15]
-        success_df = merge_df[merge_df['order_status'].isin(success_list)].groupby('phone')[
-            'order_count', 'total_money', 'voucher_money'].sum().reset_index()
-        success_df.columns = ['phone', 'success_order_count', 'success_order_money', 'success_order_voucher_money']
+        success_df = merge_df.loc[merge_df['order_status'].isin(success_list), ['phone', 'order_count', 'total_money', 'voucher_money']]
+        if success_df.shape[0] > 0:
+            success_df = success_df.groupby('phone').agg({
+                'order_count': "sum", 'total_money': "sum", 'voucher_money': "sum"})
+        success_df.rename(columns={"order_count": "success_order_count", "total_money": "success_order_money",
+                                  "voucher_money": "success_order_voucher_money"}, inplace=True)
         df_list.append(success_df)
 
         # 已退款订单
-        refund_df = merge_df[merge_df['order_status'] == 12].groupby('phone')[
-            'order_count', 'refund_money', 'refund_voucher_money'].sum().reset_index()
+        refund_df = merge_df.loc[merge_df['order_status'] == 12, ['phone', 'order_count', 'refund_money', 'refund_voucher_money']]
+        if refund_df.shape[0] > 0:
+            refund_df = refund_df.groupby('phone').agg({
+            'order_count': 'sum', 'refund_money': 'sum', 'refund_voucher_money': 'sum'})
         refund_df.rename(columns={"order_count": "refund_order_count"}, inplace=True)
         df_list.append(refund_df)
 
         # 已取消订单
-        cancel_df = merge_df[merge_df['order_status'].isin([7, 11])].groupby('phone')[
-            'order_count', 'total_money', 'voucher_money'].sum().reset_index()
-        cancel_df.columns = ['phone', 'cancel_order_count', 'cancel_order_money', 'cancel_order_voucher_money']
+        cancel_df = merge_df.loc[merge_df['order_status'].isin([7, 11]), ['phone', 'order_count', 'total_money', 'voucher_money']]
+        if cancel_df.shape[0] > 0:
+            cancel_df = cancel_df.groupby('phone').agg({
+                'order_count': 'sum', 'total_money': 'sum', 'voucher_money': 'sum'})
+        cancel_df.rename(columns={"order_count": "cancel_order_count", "total_money": "cancel_order_money", "voucher_money": "cancel_order_voucher_money"}, inplace=True)
         df_list.append(cancel_df)
 
         fina_df= reduce(lambda left, right: pd.merge(left, right, on='phone', how='left'), df_list)
+
         fina_df.fillna(0, inplace=True)
         ignore_columns = ['phone', 'voucher_money', 'cancel_order_voucher_money', 'refund_voucher_money', 'success_order_voucher_money']
         summary_data = fina_df.loc[:, [column for column in fina_df.columns if not column in ignore_columns]].sum().to_dict()
