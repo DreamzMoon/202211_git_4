@@ -49,7 +49,7 @@ from analyzeserver.clg.plat_tran import clgtranplatbp
 from analyzeserver.clg.clg_list import clglistbp
 from analyzeserver.clg.good_tran import clgtrangoodbp
 from analyzeserver.clg.user_tran import clgtranuserbp
-from analyzeserver.clg.order_water import clgorderdbp
+from analyzeserver.clg.orderwater import clgorderdbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
