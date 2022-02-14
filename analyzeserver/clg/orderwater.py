@@ -69,7 +69,7 @@ def clg_tran_good_all():
         sql = '''
 
 
-        select o.order_sn,"诚聊购订单" order_source,goods_id,goods_name,goods_sku_name,goods_price,buy_num,shop_id,shop_name,carrier_id,order_commission,phone,consignee_mobile,consignee_name,CONCAT(ifnull(consignee_country,""),IFNULL(consignee_province,""),IFNULL(consignee_city,""),IFNULL(consignee_county,""),ifnull(consignee_town,""),IFNULL(consignee_address,"")) address,if(o.voucherMoneyType=1,pay_money,voucherPayMoney) pay_money,if(o.voucherMoneyType=1,0,voucherMoney) voucherMoney,item_freight_money,order_status,o.create_time,ob.pay_type from trade_order_info o
+        select o.order_sn,"诚聊购订单" order_source,goods_id,goods_name,goods_sku_name,goods_price,buy_num,shop_id,shop_name,carrier_id carry_unionid,order_commission,phone,consignee_mobile,consignee_name,CONCAT(ifnull(consignee_country,""),IFNULL(consignee_province,""),IFNULL(consignee_city,""),IFNULL(consignee_county,""),ifnull(consignee_town,""),IFNULL(consignee_address,"")) address,if(o.voucherMoneyType=1,pay_money,voucherPayMoney) pay_money,if(o.voucherMoneyType=1,0,voucherMoney) voucherMoney,item_freight_money,order_status,o.create_time,ob.pay_type from trade_order_info o
 
 
         left join trade_order_item od on o.order_sn = od.order_sn
@@ -101,10 +101,11 @@ def clg_tran_good_all():
         crm_user = pd.read_sql(user_sql,conn_analyze)
         crm_user["unionid"] = crm_user["unionid"].astype("object")
 
-        user_data = crm_user[["username","phone"]]
+        user_data = crm_user.rename(columns={"username":"username","phone":"phone","unionid":"buy_unionid"})
         order_data = order_data.merge(user_data,how="left",on="phone")
-        crm_user.rename(columns={"username":"carry_username","phone":"carry_phone","unionid":"unionid"},inplace=True)
-        order_data = order_data.merge(crm_user,how="left",on="unionid")
+        crm_user.rename(columns={"username":"carry_username","phone":"carry_phone","unionid":"carry_unionid"},inplace=True)
+        order_data = order_data.merge(crm_user,how="left",on="carry_unionid")
+
 
         if buy_keyword:
             order_data = order_data[(order_data["username"].str.contains(buy_keyword))|(order_data["phone"].str.contains(buy_keyword))]
