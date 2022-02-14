@@ -129,7 +129,7 @@ def clg_tran_good_all():
 
 
 
-        return {"code":"0000","status":"success","data":order_data,"count":count}
+        return {"code":"0000","status":"success","msg":order_data,"count":count}
 
 
     except Exception as e:
