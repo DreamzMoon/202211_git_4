@@ -113,7 +113,7 @@ def clgh_order_status():
 
         # 10/15都是完成状态
 
-        type = [
+        order_type = [
             {"id":1,"order_status":"创建订单"},{"id":2,"order_status":"待付款"},
             {"id":3,"order_status":"支付中"},{"id":4,"order_status":"待发货"},
             {"id":5,"order_status":"待收货"},{"id":6,"order_status":"确认收货(待评价)"},
@@ -122,7 +122,40 @@ def clgh_order_status():
             {"id":15,"order_status":"结算成功"}
                 ]
 
-        return {"code":"0000","status":"success","msg":type}
+        return {"code":"0000","status":"success","msg":order_type}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+@clglistbp.route("/pay/type",methods=["GET"])
+def clg_pay_type():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        # 10/15都是完成状态
+
+        pay_type = [
+            {"id":1,"pay_type":"支付宝"},{"id":2,"pay_type":"微信"},
+            {"id":3,"pay_type":"账户"},{"id":4,"pay_type":"微信内支付"},
+            {"id":5,"pay_type":"全抵用金支付"},{"id":6,"pay_type":"支付宝APP支付"},
+            {"id":7,"pay_type":"微信APP支付"}
+
+                ]
+
+        return {"code":"0000","status":"success","msg":pay_type}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
