@@ -70,7 +70,10 @@ def clg_tran_shop_all():
         shop_data = pd.read_sql(shop_sql,conn_clg)
         logger.info("店铺数据读取完成")
 
-        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
+        # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
+        # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' %(",".join(shop_data["phone"].tolist()))
+        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in %s''' %(shop_data["phone"].tolist())
+        logger.info(crm_sql)
         crm_data = pd.read_sql(crm_sql,conn_analyze)
         logger.info("用户数据完成")
 
@@ -171,7 +174,7 @@ def clg_tran_shop_all():
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id'], how='outer'), df_list)
         logger.info("数据合并汇总")
 
-        logger.info(shop_data)
+        # logger.info(shop_data)
         if shop_data.empty:
             return {"code":"0000","status":"success","msg":[],"count":0}
 
@@ -214,7 +217,7 @@ def clg_tran_shop_all():
 
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
-        logger.info(data)
+        # logger.info(data)
         return {"code":"0000","status":"success","msg":data,"count":count}
 
     except Exception as e:

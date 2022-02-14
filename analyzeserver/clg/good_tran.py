@@ -104,7 +104,7 @@ def clg_tran_good_all():
 
         #总订单
         tran_order = pd.read_sql(order_sql,conn_clg)
-        logger.info(tran_order)
+        # logger.info(tran_order)
         logger.info("订单数据读取完成")
 
         #下面由于pandas本本问题
@@ -121,7 +121,7 @@ def clg_tran_good_all():
             logger.info("indexindex")
             tran_data.drop(["index"],inplace=True,axis=1)
 
-        logger.info(tran_data)
+        # logger.info(tran_data)
         logger.info("交易订单数据处理完成")
 
 
@@ -138,7 +138,7 @@ def clg_tran_good_all():
             yes_data["goods_id"] = ""
         if "index" in yes_data:
             yes_data.drop(["index"],inplace=True,axis=1)
-        logger.info(yes_data)
+        # logger.info(yes_data)
         logger.info("有效订单数据处理完成")
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
@@ -155,7 +155,7 @@ def clg_tran_good_all():
             refund_data["goods_id"] = ""
         if "index" in refund_data:
             refund_data.drop(["index"],inplace=True,axis=1)
-        logger.info(refund_data)
+        # logger.info(refund_data)
         logger.info("退款订单数据处理完成")
 
 
@@ -172,7 +172,7 @@ def clg_tran_good_all():
             cancel_data["goods_id"] = ""
         if "index" in cancel_data:
             cancel_data.drop(["index"],inplace=True,axis=1)
-        logger.info(cancel_data)
+        # logger.info(cancel_data)
         logger.info("取消订单数据处理完成")
 
         df_list = []
@@ -181,8 +181,8 @@ def clg_tran_good_all():
         df_list.append(refund_data)
         df_list.append(cancel_data)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id','goods_id'], how='outer'), df_list)
-        logger.info("-------------------------")
-        logger.info(df_merged)
+        # logger.info("-------------------------")
+        # logger.info(df_merged)
         logger.info("数据合并汇总")
 
         logger.info(shop_data)
@@ -194,19 +194,19 @@ def clg_tran_good_all():
         shop_mes_data.fillna("",inplace=True)
         logger.info(shop_mes_data.iloc[0])
         if keyword:
-            shop_mes_data = shop_mes_data[(shop_mes_data["nickname"].str.contains(keyword))|(shop_mes_data["phone"].str.contains(keyword))|(shop_mes_data["unionid"].str.contains(keyword))]
+            shop_mes_data = shop_mes_data[(shop_mes_data["goods_name"].str.contains(keyword))|(shop_mes_data["phone"].str.contains(keyword))|(shop_mes_data["unionid"].str.contains(keyword))]
 
         if page and size:
             code_page = (page - 1) * size
             code_size = page * size
 
         count = shop_mes_data.shape[0]
-        logger.info("-----------------------------------")
-        logger.info(df_merged)
-        logger.info(shop_mes_data)
+        # logger.info("-----------------------------------")
+        # logger.info(df_merged)
+        # logger.info(shop_mes_data)
         last_data = shop_mes_data.merge(df_merged, how="left", on=["shop_id","goods_id"])
-        logger.info(last_data.shape)
-        logger.info(last_data)
+        # logger.info(last_data.shape)
+        # logger.info(last_data)
 
         # 统计上面那一栏数量
         all_data = {}
