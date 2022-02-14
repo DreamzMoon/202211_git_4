@@ -117,8 +117,8 @@ def clg_tran_good_all():
             tran_data["shop_id"] = ""
         if "goods_id" not in tran_data:
             tran_data["goods_id"] = ""
-        if "index" in tran_data:
-            tran_data.drop("index",inplace=True)
+        # if "index" in tran_data:
+        #     tran_data.drop("index",inplace=True)
 
         logger.info(tran_data)
         logger.info("交易订单数据处理完成")
@@ -135,8 +135,8 @@ def clg_tran_good_all():
             yes_data["shop_id"] = ""
         if "goods_id" not in yes_data:
             yes_data["goods_id"] = ""
-        if "index" in yes_data:
-            yes_data.drop("index", inplace=True)
+        # if "index" in yes_data:
+        #     yes_data.drop("index", inplace=True)
         logger.info(yes_data)
         logger.info("有效订单数据处理完成")
 
@@ -152,8 +152,8 @@ def clg_tran_good_all():
             refund_data["shop_id"] = ""
         if "goods_id" not in refund_data:
             refund_data["goods_id"] = ""
-        if "index" in refund_data:
-            refund_data.drop("index",inplace=True)
+        # if "index" in refund_data:
+        #     refund_data.drop("index",inplace=True)
         logger.info(refund_data)
         logger.info("退款订单数据处理完成")
 
@@ -169,8 +169,8 @@ def clg_tran_good_all():
             cancel_data["shop_id"] = ""
         if "goods_id" not in cancel_data:
             cancel_data["goods_id"] = ""
-        if "index" in cancel_data:
-            cancel_data.drop("index",inplace=True)
+        # if "index" in cancel_data:
+        #     cancel_data.drop("index",inplace=True)
         logger.info(cancel_data)
         logger.info("取消订单数据处理完成")
 
