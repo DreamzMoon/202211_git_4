@@ -109,7 +109,7 @@ def clg_user_tran():
         voucher_pay_sql += find_phone_sql.format(table='')
 
         if start_time and end_time:
-            time_sql = ''' and {table}create_time >=%s and {table}create_time<=%s''' % (start_time, end_time)
+            time_sql = ''' and {table}create_time >="%s" and {table}create_time<="%s"''' % (start_time, end_time)
         else:
             time_sql = ''
         goods_num_sql += time_sql.format(table='t1.')
