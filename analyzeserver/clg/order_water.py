@@ -28,7 +28,7 @@ from functools import reduce
 clgorderdbp = Blueprint('clgorder', __name__, url_prefix='/clgorder')
 
 
-@clgorderdbp.route("/",methods=["POST"])
+@clgorderdbp.route("/flow",methods=["POST"])
 def clg_tran_good_all():
     try:
         conn_clg = direct_get_conn(clg_mysql_conf)
@@ -50,6 +50,7 @@ def clg_tran_good_all():
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
         shop_id = request.json.get("shop_id")
+        order_status = request.json.get("order_status")
 
         sql = '''
 
