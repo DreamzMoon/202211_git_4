@@ -119,7 +119,6 @@ def clg_user_tran():
         goods_num_sql += ''' group by t1.phone'''
         pay_money_sql += status_group
         voucher_pay_sql += status_group
-        logger.info(goods_num_sql)
 
         # 读取数据
         goods_num = pd.read_sql(goods_num_sql, conn_clg)
