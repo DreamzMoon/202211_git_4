@@ -200,6 +200,7 @@ def clg_user_tran():
         cut_data.fillna('', inplace=True)
         for i in [column for column in cut_data.columns if 'money' in column]:
             cut_data[i] = cut_data[i].round(2)
+        cut_data.sort_values('order_count', ascending=False, inplace=True)
 
         return_data = {
             "summary_data": summary_data,
