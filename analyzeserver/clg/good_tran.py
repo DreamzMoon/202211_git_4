@@ -117,8 +117,9 @@ def clg_tran_good_all():
             tran_data["shop_id"] = ""
         if "goods_id" not in tran_data:
             tran_data["goods_id"] = ""
-        # if "index" in tran_data:
-        #     tran_data.drop("index",inplace=True)
+        if "index" in tran_data:
+            logger.info("indexindex")
+            # tran_data.drop("index",inplace=True)
 
         logger.info(tran_data)
         logger.info("交易订单数据处理完成")
