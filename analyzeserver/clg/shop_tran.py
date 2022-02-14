@@ -186,12 +186,13 @@ def clg_tran_shop_all():
             last_data = last_data[code_page:code_size]
         else:
             last_data = last_data.copy()
-        last_data.fillna("",inplace=True)
+
         last_data.sort_values('tran_count', ascending=False, inplace=True)
+        last_data.fillna("", inplace=True)
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
-
-        return {"code":"0000","status":"success","data":data,"count":count}
+        logger.info(data)
+        return {"code":"0000","status":"success","msg":data,"count":count}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
