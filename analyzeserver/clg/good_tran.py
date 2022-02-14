@@ -91,7 +91,8 @@ def clg_tran_good_all():
 
         condition = []
         if start_time and end_time:
-            condition.append(''' and date_format(toi.create_time,"%%Y-%%m-%%d")>="%s" and date_format(toi.create_time,"%%Y-%%m-%%d")<="%s" ''' %(start_time,end_time))
+            # condition.append(''' and date_format(toi.create_time,"%%Y-%%m-%%d")>="%s" and date_format(toi.create_time,"%%Y-%%m-%%d")<="%s" ''' %(start_time,end_time))
+            condition.append(''' and toi.create_time >="%s" and toi.create_time<="%s" ''' %(start_time,end_time))
         if shop_id:
             condition.append(''' and shop_id = %s ''' %shop_id)
 
@@ -152,6 +153,7 @@ def clg_tran_good_all():
         df_list.append(refund_data)
         df_list.append(cancel_data)
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['shop_id','goods_id'], how='outer'), df_list)
+        logger.info("-------------------------")
         logger.info(df_merged)
         logger.info("数据合并汇总")
 

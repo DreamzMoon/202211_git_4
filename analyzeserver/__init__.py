@@ -49,6 +49,7 @@ from analyzeserver.clg.plat_tran import clgtranplatbp
 from analyzeserver.clg.clg_list import clglistbp
 from analyzeserver.clg.good_tran import clgtrangoodbp
 from analyzeserver.clg.user_tran import clgtranuserbp
+from analyzeserver.clg.order_water import clgorderdbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -111,7 +112,7 @@ app.register_blueprint(clgtranplatbp)
 app.register_blueprint(clglistbp)
 app.register_blueprint(clgtrangoodbp)
 app.register_blueprint(clgtranuserbp)
-
+app.register_blueprint(clgorderdbp)
 if __name__ == "__main__":
     # app.run()
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)
