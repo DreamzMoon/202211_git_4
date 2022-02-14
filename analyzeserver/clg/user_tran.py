@@ -109,7 +109,7 @@ def clg_user_tran():
         voucher_pay_sql += find_phone_sql.format(table='')
 
         if start_time and end_time:
-            time_sql = ''' and {table}create_time >=%s and {table}create_time<=%s''' % (start_time, end_time)
+            time_sql = ''' and {table}create_time >="%s" and {table}create_time<="%s"''' % (start_time, end_time)
         else:
             time_sql = ''
         goods_num_sql += time_sql.format(table='t1.')
@@ -119,6 +119,7 @@ def clg_user_tran():
         goods_num_sql += ''' group by t1.phone'''
         pay_money_sql += status_group
         voucher_pay_sql += status_group
+        logger.info(goods_num_sql)
 
         # 读取数据
         goods_num = pd.read_sql(goods_num_sql, conn_clg)
