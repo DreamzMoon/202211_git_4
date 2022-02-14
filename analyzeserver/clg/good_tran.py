@@ -202,7 +202,7 @@ def clg_tran_good_all():
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
 
-        return {"code":"0000","status":"success","data":data,"count":count}
+        return {"code":"0000","status":"success","msg":data,"count":count}
 
     except Exception as e:
         logger.exception(traceback.format_exc())
