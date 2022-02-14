@@ -115,6 +115,8 @@ def clg_tran_shop_all():
             tran_data["shop_id"] = ""
         if "goods_id" not in tran_data:
             tran_data["goods_id"] = ""
+        if "index" in tran_data:
+            tran_data.drop("index",inplace=True)
         logger.info("交易订单数据处理完成")
 
         # 有效订单 有效订单 有效金额 有效抵用金
@@ -128,6 +130,8 @@ def clg_tran_shop_all():
             yes_data["shop_id"] = ""
         if "goods_id" not in yes_data:
             yes_data["goods_id"] = ""
+        if "index" in yes_data:
+            yes_data.drop("index", inplace=True)
         logger.info("有效订单数据处理完成")
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
@@ -141,6 +145,8 @@ def clg_tran_shop_all():
             refund_data["shop_id"] = ""
         if "goods_id" not in refund_data:
             refund_data["goods_id"] = ""
+        if "index" in refund_data:
+            refund_data.drop("index",inplace=True)
         logger.info("退款订单数据处理完成")
 
 
@@ -155,6 +161,8 @@ def clg_tran_shop_all():
             cancel_data["shop_id"] = ""
         if "goods_id" not in cancel_data:
             cancel_data["goods_id"] = ""
+        if "index" in cancel_data:
+            cancel_data.drop("index",inplace=True)
         logger.info("取消订单数据处理完成")
 
         df_list = []
