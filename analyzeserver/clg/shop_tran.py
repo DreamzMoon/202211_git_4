@@ -205,13 +205,15 @@ def clg_tran_shop_all():
         all_data["cancel_pay"] = round(last_data["cancel_pay"].sum(), 2)
         logger.info("求和")
 
+        last_data.sort_values('tran_count', ascending=False, inplace=True)
+        last_data.fillna("", inplace=True)
         if page and size:
             last_data = last_data[code_page:code_size]
         else:
             last_data = last_data.copy()
 
-        last_data.sort_values('tran_count', ascending=False, inplace=True)
-        last_data.fillna("", inplace=True)
+
+
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
         logger.info(data)
