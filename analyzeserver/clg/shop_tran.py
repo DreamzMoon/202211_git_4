@@ -89,7 +89,7 @@ def clg_tran_shop_all():
 
         condition = []
         if start_time and end_time:
-            condition.append(''' and date_format(toi.create_time,"%%Y-%%m-%%d")>="%s" and date_format(toi.create_time,"%%Y-%%m-%%d")<="%s" ''' % (start_time, end_time))
+            condition.append(''' and toi.create_time >="%s" and toi.create_time<="%s" ''' %(start_time,end_time))
         if shop_id:
             condition.append(''' and shop_id = %s ''' % shop_id)
 
