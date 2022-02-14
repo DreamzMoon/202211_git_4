@@ -205,7 +205,7 @@ def clg_user_tran():
             "summary_data": summary_data,
             "data": cut_data.to_dict("records")
         }
-        return {"code": "0000", "status": "success", "msg": return_data, "count": cut_data.shape[0]}
+        return {"code": "0000", "status": "success", "msg": return_data, "count": fina_df.shape[0]}
     except:
         logger.error(traceback.format_exc())
         return {"code": "10000", "status": "success", "msg": message["10000"]}
