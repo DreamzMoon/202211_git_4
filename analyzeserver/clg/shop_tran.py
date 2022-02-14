@@ -111,7 +111,10 @@ def clg_tran_shop_all():
         tran_data.drop(["order_status"], axis=1, inplace=True)
         tran_data = tran_order.groupby(["shop_id"]).agg({"count":"sum","buy_num":"sum","pay_money":"sum","voucherMoney":"sum"}).rename(columns=
             {"count":"tran_count","buy_num":"tran_buy_count","pay_money":"tran_pay","voucherMoney":"tran_voucher"}).reset_index()
-
+        if "shop_id" not in tran_data:
+            tran_data["shop_id"] = ""
+        if "goods_id" not in tran_data:
+            tran_data["goods_id"] = ""
         logger.info("交易订单数据处理完成")
 
         # 有效订单 有效订单 有效金额 有效抵用金
@@ -121,6 +124,10 @@ def clg_tran_shop_all():
             {"count": "sum",  "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "ok_count", "pay_money": "ok_pay",
              "voucherMoney": "ok_voucher"}).reset_index()
+        if "shop_id" not in yes_data:
+            yes_data["shop_id"] = ""
+        if "goods_id" not in yes_data:
+            yes_data["goods_id"] = ""
         logger.info("有效订单数据处理完成")
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
@@ -130,6 +137,10 @@ def clg_tran_shop_all():
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "refund_count", "pay_money": "refund_pay",
              "voucherMoney": "refund_voucher"}).reset_index()
+        if "shop_id" not in refund_data:
+            refund_data["shop_id"] = ""
+        if "goods_id" not in refund_data:
+            refund_data["goods_id"] = ""
         logger.info("退款订单数据处理完成")
 
 
@@ -140,6 +151,10 @@ def clg_tran_shop_all():
             {"count": "sum", "pay_money": "sum", "voucherMoney": "sum"}).rename(columns=
             {"count": "cancel_count", "pay_money": "cancel_pay",
              "voucherMoney": "cancel_voucher"}).reset_index()
+        if "shop_id" not in cancel_data:
+            cancel_data["shop_id"] = ""
+        if "goods_id" not in cancel_data:
+            cancel_data["goods_id"] = ""
         logger.info("取消订单数据处理完成")
 
         df_list = []
