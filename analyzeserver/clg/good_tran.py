@@ -73,7 +73,13 @@ def clg_tran_good_all():
         shop_data = pd.read_sql(shop_sql,conn_clg)
         logger.info("店铺数据读取完成")
 
-        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
+        serach_phone = list(set(shop_data["phone"].to_list()))
+        serach_phone.remove("___________")
+        # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
+        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % (
+            ",".join(serach_phone))
+
+        # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
         crm_data = pd.read_sql(crm_sql,conn_analyze)
         logger.info("用户数据完成")
 
