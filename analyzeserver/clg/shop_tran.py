@@ -82,8 +82,6 @@ def clg_tran_shop_all():
         if(toi.voucherMoneyType = 1,0,sum(voucherMoney)) voucherMoney,order_status from trade_order_info toi
         left join trade_order_item tod on toi.order_sn = tod.order_sn 
         where toi.del_flag = 0 
-        
-
         '''
         order_group_sql = ''' group by shop_id,order_status,toi.voucherMoneyType ) t group by shop_id,order_status'''
 
@@ -206,13 +204,13 @@ def clg_tran_shop_all():
         logger.info("求和")
 
         last_data.sort_values('tran_count', ascending=False, inplace=True)
-        last_data.fillna("", inplace=True)
+
         if page and size:
             last_data = last_data[code_page:code_size]
         else:
             last_data = last_data.copy()
 
-
+        last_data.fillna("", inplace=True)
 
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
