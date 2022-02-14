@@ -51,6 +51,7 @@ def clg_tran_good_all():
 
         shop_id = request.json.get("shop_id")
         order_status = request.json.get("order_status")
+        pay_type = request.json.get("pay_type")
 
         sql = '''
 
@@ -62,10 +63,12 @@ def clg_tran_good_all():
         '''
 
 
-        condition = []
         if shop_id:
-            sql = sql + ''' and shop_id = %s''' %shop_id
-
+            sql = sql + ''' and shop_id = %s ''' %shop_id
+        if order_status:
+            sql = sql + ''' and order_status = %s ''' %order_status
+        if pay_type:
+            sql = sql + ''' and ob.pay_type = %s ''' %pay_type
 
 
 
