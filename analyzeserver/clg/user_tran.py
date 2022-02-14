@@ -76,11 +76,29 @@ def clg_user_tran():
         # 状态分组sql
         status_group = ''' group by phone, order_status'''
 
+        # 空结果
+        null_summary_data = {
+            "cancel_order_count": 0,
+            "cancel_order_money": 0,
+            "goods_num": 0,
+            "order_count": 0,
+            "refund_money": 0,
+            "refund_order_count": 0,
+            "success_order_count": 0,
+            "success_order_money": 0,
+            "total_money": 0,
+            "user_count": 0
+        }
+        return_data = {
+            "data": [],
+            "summary": null_summary_data
+        }
+
         keyword_phone_list = []
         if keyword != "":
             keyword_result = get_phone_by_keyword(keyword)
             if not keyword_result[0]:
-                return '空'
+                return {"code": "0000", "status": "success", "msg": return_data, "count": 0}
             keyword_phone_list = keyword_result[1]
         if len(keyword_phone_list) != 0: # 进行关键词搜索
             find_phone_sql = ''' and {table}phone in (%s)''' % ','.join(keyword_phone_list)
@@ -147,22 +165,21 @@ def clg_user_tran():
 
         fina_df= reduce(lambda left, right: pd.merge(left, right, on='phone', how='left'), df_list)
         fina_df.fillna(0, inplace=True)
-        summary_data = fina_df.iloc[:, 1:].sum().to_dict()
+        ignore_columns = ['phone', 'voucher_money', 'cancel_order_voucher_money', 'refund_voucher_money', 'success_order_voucher_money']
+        summary_data = fina_df.loc[:, [column for column in fina_df.columns if not column in ignore_columns]].sum().to_dict()
         for i in [column for column, value in summary_data.items() if 'money' in column]:
             summary_data[i] = round(summary_data[i], 2)
+        summary_data['user_count'] = union_phone_df.shape[0]
 
         if page and size:
-            logger.info('fsdfasfsdfa')
             start_index = (page - 1) * size
             end_index = page * size
         else:
             start_index = ''
             end_index = ''
-
         # 用户信息
         user_info_sql = '''select unionid, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name, phone from lh_analyze.crm_user'''
-        if start_index and end_index:
-            logger.info('sdfasdfafsfsadfafdsf')
+        if start_index != '' and end_index != '':
             cut_data = fina_df[start_index:end_index]
         else:
             cut_data = fina_df.copy()
@@ -171,7 +188,8 @@ def clg_user_tran():
         user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         cut_data = cut_data.merge(user_info_df, how='left', on='phone')
         cut_data.fillna('', inplace=True)
-        logger.info(cut_data.shape)
+        for i in [column for column in cut_data.columns if 'money' in column]:
+            cut_data[i] = cut_data[i].round(2)
 
         return_data = {
             "summary_data": summary_data,
