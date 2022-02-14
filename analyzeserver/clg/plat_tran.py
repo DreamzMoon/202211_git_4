@@ -90,7 +90,7 @@ def plat_all():
             select sum(t2.buy_num) buy_num from trade_order_info t1
             left join trade_order_item t2
             on t1.order_sn=t2.order_sn
-            where t1.del_flag=0 and t1.phone is not null and t2.del_flag=0
+            where t1.del_flag=0 and t1.phone is not null and t1.phone != ""
         '''
         # 持有抵用金
         hold_voucher_money_sql = '''select sum(available_voucher_money) hold_voucher_money from member_user where del_flag=0'''
@@ -101,7 +101,7 @@ def plat_all():
         '''
         # 抵用金支付
         voucher_pay_sql = '''
-            select order_status, count(*) voucher_order_count, sum(voucherMoney) voucher_money, sum(voucherPayMoney) voucher_pay_money
+            select order_status, count(*) voucher_order_count, sum(voucherMoney) voucher_money, sum(voucherPayMoney) voucher_pay_money, sum(freight_money) voucher_freight_money
             from trade_order_info
             where del_flag=0 and voucherMoneyType=2
         '''
