@@ -487,18 +487,23 @@ def plat_chart():
         # 有效订单
         success_list = [3, 4, 5, 6, 10, 15]
         success_df = merge_df.loc[
-            merge_df['order_status'].isin(success_list), ['create_time', 'order_count', 'total_money',
-                                                          'voucher_money']].groupby(
+            merge_df['order_status'].isin(success_list), ['create_time', 'order_count', 'total_money','voucher_money']]
+        if success_df.shape[0] > 0:
+            success_df = success_df.groupby(
             'create_time').sum().reset_index().sort_values('create_time', ascending='False')
         success_df.columns = ['create_time', 'success_order_count', 'success_pay_money', 'success_voucher_money']
         merge_df_list.append(success_df)
         refund_df = merge_df.loc[
-            merge_df['order_status'] == 12, ['create_time', 'order_count', 'total_money', 'voucher_money']].groupby(
+            merge_df['order_status'] == 12, ['create_time', 'order_count', 'total_money', 'voucher_money']]
+        if refund_df.shape[0] > 0:
+            refund_df = refund_df.groupby(
             'create_time').sum().reset_index().sort_values('create_time', ascending='False')
         refund_df.columns = ['create_time', 'refund_order_count', 'refund_pay_money', 'refund_voucher_money']
         merge_df_list.append(refund_df)
         cancel_df = merge_df.loc[merge_df['order_status'].isin([7, 11]), ['create_time', 'order_count', 'total_money',
-                                                                          'voucher_money']].groupby(
+                                                                          'voucher_money']]
+        if cancel_df.shape[0] > 0:
+            cancel_df = cancel_df.groupby(
             'create_time').sum().reset_index().sort_values('create_time', ascending='False')
         cancel_df.columns = ['create_time', 'cancel_order_count', 'cancel_pay_money', 'cancel_voucher_money']
         merge_df_list.append(cancel_df)
