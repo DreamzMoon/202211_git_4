@@ -181,6 +181,8 @@ def clg_user_tran():
             summary_data[i] = round(summary_data[i], 2)
         summary_data['user_count'] = union_phone_df.shape[0]
 
+        fina_df.sort_values('order_count', ascending=False, inplace=True)
+
         if page and size:
             start_index = (page - 1) * size
             end_index = page * size
@@ -200,7 +202,7 @@ def clg_user_tran():
         cut_data.fillna('', inplace=True)
         for i in [column for column in cut_data.columns if 'money' in column]:
             cut_data[i] = cut_data[i].round(2)
-        cut_data.sort_values('order_count', ascending=False, inplace=True)
+
 
         return_data = {
             "summary_data": summary_data,
