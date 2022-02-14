@@ -27,6 +27,7 @@ from functools import reduce
 
 clglistbp = Blueprint('clglist', __name__, url_prefix='/clglist')
 
+# 店铺列表
 @clglistbp.route("/shop",methods=["GET"])
 def clg_shop():
     try:
@@ -64,7 +65,7 @@ def clg_shop():
         conn_clg.close()
 
 
-
+#店铺类型
 @clglistbp.route("/shoptype",methods=["GET"])
 def clg_shop_type():
     try:
@@ -91,3 +92,32 @@ def clg_shop_type():
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+
+#订单状态
+# @clglistbp.route("/order/status",methods=["GET"])
+# def clg_shop_type():
+#     try:
+#
+#         try:
+#             logger.info("env:%s" % ENV)
+#             token = request.headers["Token"]
+#             user_id = request.args.get("user_id")
+#
+#             if not user_id and not token:
+#                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#             check_token_result = check_token(token, user_id)
+#             if check_token_result["code"] != "0000":
+#                 return check_token_result
+#         except:
+#             return {"code": "10004", "status": "failed", "msg": message["10004"]}
+#
+#
+#         type = [{"type_id":1,"type_name":"专营店"},{"type_id":2,"type_name":"普通店铺"}]
+#
+#         return {"code":"0000","status":"success","msg":type}
+#
+#     except Exception as e:
+#         logger.exception(traceback.format_exc())
+#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
