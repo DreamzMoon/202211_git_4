@@ -204,7 +204,11 @@ def plat_all():
 
         # 商品数
         cursor_clg.execute(goods_num_sql)
-        goods_num = int(cursor_clg.fetchone()[0])
+        goods_num = cursor_clg.fetchone()[0]
+        if goods_num:
+            goods_num = int(goods_num)
+        else:
+            goods_num = 0
 
         # 持有中抵用金
         cursor_clg.execute(hold_voucher_money_sql)
@@ -222,7 +226,12 @@ def plat_all():
         # 今日数据
         # 商品数
         cursor_clg.execute(today_goods_num_sql)
-        today_goods_num = int(cursor_clg.fetchone()[0])
+        today_goods_num = cursor_clg.fetchone()[0]
+        if today_goods_num:
+            today_goods_num = int(today_goods_num)
+        else:
+            today_goods_num = 0
+        logger.info(today_goods_num)
 
         # 现金支付与抵用金支付
         today_pay_money_df = pd.read_sql(today_pay_money_sql, conn_clg)
