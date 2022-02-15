@@ -101,6 +101,9 @@ def clg_tran_good_all():
             phone_data = pd.read_sql(phone_sql,conn_analyze)
             result_phone = list(set(phone_data["phone"].to_list()))
             phone_list.extend(result_phone)
+
+        if '___________' in phone_list:
+            phone_list.remove('___________')
         phone_list = ",".join(list(set(phone_list)))
 
         user_sql = '''select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username,phone,unionid from crm_user where del_flag = 0 and phone in (%s) ''' % (phone_list)

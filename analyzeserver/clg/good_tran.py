@@ -195,6 +195,7 @@ def clg_tran_good_all():
 
         #这边可以按需拼接
         shop_mes_data = shop_data.merge(crm_data,how="left",on="phone")
+        shop_mes_data["unionid"] = shop_mes_data["unionid"].astype("object")
         shop_mes_data.fillna("",inplace=True)
         logger.info(shop_mes_data.iloc[0])
         if keyword:
