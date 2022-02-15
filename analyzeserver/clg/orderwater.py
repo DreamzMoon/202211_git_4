@@ -67,11 +67,7 @@ def clg_tran_good_all():
 
 
         sql = '''
-
-
         select o.order_sn,"诚聊购订单" order_source,goods_id,goods_name,goods_sku_name,goods_price,buy_num,shop_id,shop_name,carrier_id carry_unionid,order_commission,phone,consignee_mobile,consignee_name,CONCAT(ifnull(consignee_country,""),IFNULL(consignee_province,""),IFNULL(consignee_city,""),IFNULL(consignee_county,""),ifnull(consignee_town,""),IFNULL(consignee_address,"")) address,if(o.voucherMoneyType=1,pay_money,voucherPayMoney) pay_money,if(o.voucherMoneyType=1,0,voucherMoney) voucherMoney,item_freight_money,order_status,o.create_time,ob.pay_type from trade_order_info o
-
-
         left join trade_order_item od on o.order_sn = od.order_sn
         left join trade_pay_bill ob on o.pay_sn = ob.id
         where o.del_flag = 0
@@ -93,11 +89,22 @@ def clg_tran_good_all():
             sql = sql + ''' and o.create_time >="%s" and o.create_time<="%s" ''' % (start_time, end_time)
         logger.info(sql)
         order_data = pd.read_sql(sql,conn_clg)
-        # order_data["unionid"] = order_data["unionid"].astype("str")
         if order_data.empty:
             return {"code":"0000","status":"success","msg":[],"count":0}
 
-        user_sql = '''select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username,phone,unionid from crm_user where del_flag = 0 and phone != "" and phone is not null'''
+        phone_list = list(set(order_data["phone"].to_list()))
+        carry_unionid_list = ",".join(list(set(order_data[order_data["carry_unionid"].notna()]["carry_unionid"].to_list())))
+
+        #去crm查出手机号码
+        if carry_unionid_list:
+            phone_sql = '''select phone from crm_user where del_flag = 0 and unionid in (%s)''' %carry_unionid_list
+            phone_data = pd.read_sql(phone_sql,conn_analyze)
+            result_phone = list(set(phone_data["phone"].to_list()))
+            phone_list.extend(result_phone)
+        phone_list = ",".join(list(set(phone_list)))
+
+        user_sql = '''select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username,phone,unionid from crm_user where del_flag = 0 and phone in (%s) ''' % (phone_list)
+
         crm_user = pd.read_sql(user_sql,conn_analyze)
         crm_user["unionid"] = crm_user["unionid"].astype("object")
 
