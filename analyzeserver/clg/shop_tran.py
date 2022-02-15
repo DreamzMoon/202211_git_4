@@ -182,8 +182,8 @@ def clg_tran_shop_all():
 
         #这边可以按需拼接
         shop_mes_data = shop_data.merge(crm_data,how="left",on="phone")
+        shop_mes_data["unionid"] = shop_mes_data["unionid"].astype("object")
         shop_mes_data.fillna("",inplace=True)
-        shop_mes_data['unionid'] = shop_mes_data['unionid'].astype(str)
         logger.info(shop_mes_data.iloc[0])
         if keyword:
             shop_mes_data = shop_mes_data[(shop_mes_data["nickname"].str.contains(keyword))|(shop_mes_data["phone"].str.contains(keyword))|(shop_mes_data["unionid"].str.contains(keyword))]
