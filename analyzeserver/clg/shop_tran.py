@@ -61,7 +61,7 @@ def clg_tran_shop_all():
 
         #店铺信息
         shop_sql = '''select msi.id shop_id,msi.name shop_name,msi.phone,msi.shopType shoptype from member_shop_info msi
-        where msi.del_flag = 0'''
+        where msi.del_flag = 0 and msi.phone is not null and msi.phone != ""'''
         if shop_id:
             shop_sql = shop_sql + " and msi.id = %s" %shop_id
         if shoptype:
@@ -74,7 +74,7 @@ def clg_tran_shop_all():
         if '___________' in serach_phone:
             serach_phone.remove("___________")
         # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
-        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' %(",".join(serach_phone))
+        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
         logger.info(crm_sql)
         crm_data = pd.read_sql(crm_sql,conn_analyze)
         logger.info("用户数据完成")
@@ -116,8 +116,8 @@ def clg_tran_shop_all():
             {"count":"tran_count","buy_num":"tran_buy_count","pay_money":"tran_pay","voucherMoney":"tran_voucher"}).reset_index()
         if "shop_id" not in tran_data:
             tran_data["shop_id"] = ""
-        if "goods_id" not in tran_data:
-            tran_data["goods_id"] = ""
+        # if "goods_id" not in tran_data:
+        #     tran_data["goods_id"] = ""
         if "index" in tran_data:
             tran_data.drop(["index"],inplace=True,axis=1)
         logger.info("交易订单数据处理完成")
@@ -131,8 +131,8 @@ def clg_tran_shop_all():
              "voucherMoney": "ok_voucher"}).reset_index()
         if "shop_id" not in yes_data:
             yes_data["shop_id"] = ""
-        if "goods_id" not in yes_data:
-            yes_data["goods_id"] = ""
+        # if "goods_id" not in yes_data:
+        #     yes_data["goods_id"] = ""
         if "index" in yes_data:
             yes_data.drop(["index"],inplace=True,axis=1)
         logger.info("有效订单数据处理完成")
@@ -146,8 +146,8 @@ def clg_tran_shop_all():
              "voucherMoney": "refund_voucher"}).reset_index()
         if "shop_id" not in refund_data:
             refund_data["shop_id"] = ""
-        if "goods_id" not in refund_data:
-            refund_data["goods_id"] = ""
+        # if "goods_id" not in refund_data:
+        #     refund_data["goods_id"] = ""
         if "index" in refund_data:
             refund_data.drop(["index"],inplace=True,axis=1)
         logger.info("退款订单数据处理完成")
@@ -162,8 +162,8 @@ def clg_tran_shop_all():
              "voucherMoney": "cancel_voucher"}).reset_index()
         if "shop_id" not in cancel_data:
             cancel_data["shop_id"] = ""
-        if "goods_id" not in cancel_data:
-            cancel_data["goods_id"] = ""
+        # if "goods_id" not in cancel_data:
+        #     cancel_data["goods_id"] = ""
         if "index" in cancel_data:
             cancel_data.drop(["index"],inplace=True,axis=1)
         logger.info("取消订单数据处理完成")
@@ -217,7 +217,8 @@ def clg_tran_shop_all():
             last_data = last_data.copy()
 
         last_data.fillna("", inplace=True)
-
+        for i in [column for column in last_data.columns if 'pay' in column or 'voucher' in column]:
+            last_data[i] = last_data[i].round(2)
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
         # logger.info(data)
