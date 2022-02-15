@@ -93,7 +93,10 @@ def clg_tran_good_all():
             return {"code":"0000","status":"success","msg":[],"count":0}
 
         phone_list = list(set(order_data["phone"].to_list()))
-        carry_unionid_list = ",".join(list(set(order_data[order_data["carry_unionid"].notna()]["carry_unionid"].to_list())))
+        carry_unionid = order_data[order_data["carry_unionid"].notna()]["carry_unionid"]
+        carry_unionid = carry_unionid.astype(str)
+
+        carry_unionid_list = ",".join(list(set(carry_unionid.to_list())))
 
         #去crm查出手机号码
         if carry_unionid_list:
@@ -104,6 +107,9 @@ def clg_tran_good_all():
 
         if '___________' in phone_list:
             phone_list.remove('___________')
+        if None in phone_list:
+            phone_list.remove(None)
+
         phone_list = ",".join(list(set(phone_list)))
 
         user_sql = '''select if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username,phone,unionid from crm_user where del_flag = 0 and phone in (%s) ''' % (phone_list)

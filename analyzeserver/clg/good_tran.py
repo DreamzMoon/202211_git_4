@@ -142,7 +142,7 @@ def clg_tran_good_all():
             yes_data["goods_id"] = ""
         if "index" in yes_data:
             yes_data.drop(["index"],inplace=True,axis=1)
-        # logger.info(yes_data)
+        logger.info(yes_data)
         logger.info("有效订单数据处理完成")
 
         # 已退款订单 已退款订单 已退款金额 已退款抵用金
