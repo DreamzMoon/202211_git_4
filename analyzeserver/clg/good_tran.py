@@ -209,6 +209,7 @@ def clg_tran_good_all():
         # logger.info("-----------------------------------")
         # logger.info(df_merged)
         # logger.info(shop_mes_data)
+        df_merged.fillna(0, inplace=True)
         last_data = shop_mes_data.merge(df_merged, how="left", on=["shop_id","goods_id"])
         # logger.info(last_data.shape)
         # logger.info(last_data)
