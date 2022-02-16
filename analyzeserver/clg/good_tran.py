@@ -206,13 +206,8 @@ def clg_tran_good_all():
             code_size = page * size
 
         count = shop_mes_data.shape[0]
-        # logger.info("-----------------------------------")
-        # logger.info(df_merged)
-        # logger.info(shop_mes_data)
-        df_merged.fillna(0, inplace=True)
         last_data = shop_mes_data.merge(df_merged, how="left", on=["shop_id","goods_id"])
-        # logger.info(last_data.shape)
-        # logger.info(last_data)
+        last_data.fillna(0, inplace=True)
 
         # 统计上面那一栏数量
         all_data = {}
@@ -235,6 +230,8 @@ def clg_tran_good_all():
             last_data = last_data[code_page:code_size]
         else:
             last_data = last_data.copy()
+        for i in [column for column in last_data.columns if 'pay' in column or 'voucher' in column]:
+            last_data[i] = last_data[i].round(2)
         last_data.fillna("", inplace=True)
         last_data = last_data.to_dict("records")
         data = {"all_data":all_data,"data":last_data}
