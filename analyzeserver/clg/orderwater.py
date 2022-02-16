@@ -143,8 +143,8 @@ def clg_tran_good_all():
         order_data.fillna("",inplace=True)
         order_data = order_data.to_dict("records")
         for d in order_data:
-            if order_data["carry_unionid"]:
-                order_data["carry_unionid"] = int(order_data["carry_unionid"])
+            if d["carry_unionid"]:
+                d["carry_unionid"] = int(d["carry_unionid"])
 
 
         return {"code":"0000","status":"success","msg":order_data,"count":count}
