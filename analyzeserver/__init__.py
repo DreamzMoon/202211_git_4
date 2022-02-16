@@ -52,6 +52,7 @@ from analyzeserver.clg.user_tran import clgtranuserbp
 from analyzeserver.clg.orderwater import clgorderdbp
 
 from analyzeserver.user.auth_manage import  userauthbp
+from analyzeserver.log.export_log import exportbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -101,6 +102,7 @@ app.register_blueprint(clghomebp)
 
 # 日志
 app.register_blueprint(syslogbp)
+app.register_blueprint(exportbp)
 
 # 公共
 app.register_blueprint(uploadmodubp)
