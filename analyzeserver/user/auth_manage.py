@@ -22,10 +22,41 @@ from analyzeserver.user.sysuser import check_token
 
 userauthbp = Blueprint('userauth', __name__, url_prefix='/userauth')
 
+# 页面列表
+@userauthbp.route("/route/list")
+def route_list():
+    try:
+        token = request.headers["Token"]
+        user_id = request.args.get("user_id")
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_analyze:
+            return {"code": "10002", "status": "success", "msg": message["10002"]}
+    except:
+        logger.info(traceback.format_exc())
+    finally:
+        try:
+            conn_analyze.close()
+        except:
+            pass
+
 # 查
 @userauthbp.route("/check", methods=["GET"])
 def check_sys_user():
     try:
+        token = request.headers["Token"]
+        user_id = request.args.get("user_id")
+        if not user_id and not token:
+            return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+        check_token_result = check_token(token, user_id)
+        if check_token_result["code"] != "0000":
+            return check_token_result
         sys_user_sql = '''
             select id, username, phone, password, is_use, is_control_user, date_format(addtime, "%Y-%m-%d %H:%i:%S") addtime, date_format(uptime, "%Y-%m-%d %H:%i:%S") uptime from lh_analyze.sys_user
         '''
