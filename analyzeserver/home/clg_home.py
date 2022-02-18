@@ -354,7 +354,7 @@ def area_list():
 
 
         area_list_sql = '''
-            select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count), area_name from
+            select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count) total_count, area_name from
             (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
             (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
             where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
@@ -419,8 +419,9 @@ def area_list():
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
         area_list_df['proportion'] = area_list_df['proportion'].round(2)
         # 按照订单数倒序排序
-        area_list_df.sort_values('order_count', ascending=False, inplace=True)
-
+        logger.info(area_list_df)
+        area_list_df.sort_values(['order_count','total_count','total_money'], ascending=[False,False,False], inplace=True)
+        logger.info(area_list_df)
         count = area_list_df.shape[0]
         start_index = (page - 1) * size
         end_index = page * size
