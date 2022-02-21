@@ -412,7 +412,7 @@ def update_user_ascriptions():
                 datas = cursor.fetchall()
                 below_phone = [data[2] for data in datas]
 
-                if bus_parent_phone in below_phone:
+                if parent_phone in below_phone:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
 
 
