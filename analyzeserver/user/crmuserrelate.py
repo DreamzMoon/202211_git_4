@@ -394,24 +394,39 @@ def update_user_ascriptions():
         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
         if parent_phone:
             for unionid in unionid_lists:
+                logger.info(unionid)
+                # sql = '''
+                #             select * from (
+                #                 select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+                #                 (WITH RECURSIVE temp as (
+                #                 SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                #                 UNION ALL
+                #                 SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+                #                 )
+                #                 SELECT * FROM temp
+                #                 )a left join operationcenter b
+                #                 on a.id = b.unionid
+                #                 ) t where pid != %s and id != %s and phone is not null and phone !=""
+                #             ''' % (unionid, unionid, unionid)
                 sql = '''
-                            select * from (						
-                                select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
-                                (WITH RECURSIVE temp as (
-                                SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
-                                UNION ALL
-                                SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
-                                )
-                                SELECT * FROM temp
-                                )a left join operationcenter b
-                                on a.id = b.unionid
-                                ) t where pid != %s and id != %s and phone is not null and phone !=""
-                            ''' % (unionid, unionid, unionid)
-
+                                            select * from (						
+                                                select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
+                                                (WITH RECURSIVE temp as (
+                                                SELECT t.unionid id,t.parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
+                                                UNION ALL
+                                                SELECT t1.unionid id,t1.parentid pid,t1.phone, t1.nickname,t1.name FROM crm_user t1 INNER JOIN temp ON t1.parentid = temp.id
+                                                )
+                                                SELECT * FROM temp
+                                                )a left join operationcenter b
+                                                on a.id = b.unionid
+                                                ) t where  id != %s and phone is not null and phone !=""
+                                            ''' % (unionid, unionid)
+                logger.info(sql)
                 cursor.execute(sql)
                 datas = cursor.fetchall()
+                logger.info(datas)
                 below_phone = [data[2] for data in datas]
-
+                logger.info(below_phone)
                 if parent_phone in below_phone:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
 
@@ -420,7 +435,7 @@ def update_user_ascriptions():
             for unionid in unionid_lists:
                 sql = '''
                 select * from (						
-                    select a.*, if (crm =0, Null, b.operatenamedirect) operatenamedirect, b.id operate_direct_id from
+                    select a.*, if (crm =0, Null, b.operatename) operatenamedirect, b.id operate_direct_id from
                     (WITH RECURSIVE temp as (
                     SELECT t.unionid id,t.bus_parentid pid,t.phone,t.nickname,t.name FROM crm_user t WHERE unionid = %s
                     UNION ALL
@@ -429,8 +444,8 @@ def update_user_ascriptions():
                     SELECT * FROM temp
                     )a left join operationcenter b
                     on a.id = b.unionid
-                    ) t where pid != %s and id != %s and phone is not null and phone !=""
-                ''' %(unionid,unionid,unionid)
+                    ) t where  id != %s and phone is not null and phone !=""
+                ''' %(unionid,unionid)
 
                 cursor.execute(sql)
                 datas = cursor.fetchall()
@@ -531,7 +546,13 @@ def update_user_ascriptions():
             # 日志接入
             compare = []
             if operate_direct_id:
-                if int(operate_direct_id) != int(old_operate_direct_id):
+                if not old_operate_direct_id:
+                    sql = '''select operatename from operationcenter where id = %s''' % (operate_direct_id)
+                    cursor.execute(sql)
+                    operatena = cursor.fetchall()
+                    operate_direct_operatena = operatena[0][0]
+                    compare.append("运营中心由 %s 变更为 %s" % ("-", operate_direct_operatena))
+                elif int(operate_direct_id) != int(old_operate_direct_id):
                     sql = '''select operatename from operationcenter where id in (%s,%s)''' %(old_operate_direct_id,operate_direct_id)
                     cursor.execute(sql)
                     operatena = cursor.fetchall()
@@ -540,7 +561,13 @@ def update_user_ascriptions():
                     operate_direct_operatena = operatena[1][0]
                     compare.append("运营中心由 %s 变更为 %s" %(old_operate_direct_operatena,operate_direct_operatena))
             if operate_id:
-                if int(operate_id) != int(old_operate_id):
+                if not old_operate_id:
+                    sql = '''select operatename from operationcenter where id = %s''' % (operate_id)
+                    cursor.execute(sql)
+                    operatena = cursor.fetchall()
+                    operate_operatena = operatena[0][0]
+                    compare.append("运营中心由 %s 变更为 %s" % ("-", operate_operatena))
+                elif int(operate_id) != int(old_operate_id):
                     sql = '''select operatename from operationcenter where id in (%s,%s)''' % (old_operate_id, operate_id)
                     cursor.execute(sql)
                     operatena = cursor.fetchall()
@@ -548,10 +575,14 @@ def update_user_ascriptions():
                     operate_operatena = operatena[1][0]
                     compare.append("支持crm运营中心由 %s 变更为 %s" % (old_operate_operatena, operate_operatena))
             if parent_phone:
-                if int(parent_phone) != int(old_parent_phone):
+                if not old_parent_phone:
+                    compare.append("上级手机号码由 %s 变更为 %s" % ("-", parent_phone))
+                elif int(parent_phone) != int(old_parent_phone):
                     compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
             if bus_parent_phone:
-                if int(bus_parent_phone) != int(old_bus_parent_phone):
+                if not old_bus_parent_phone:
+                    compare.append("禄可商务上级的手机号码由 %s 变更为 %s" % ("-", old_bus_parent_phone))
+                elif int(bus_parent_phone) != int(old_bus_parent_phone):
                     compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
 
             if compare:
