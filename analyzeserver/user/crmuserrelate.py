@@ -419,8 +419,8 @@ def update_user_ascriptions():
                                                 SELECT * FROM temp
                                                 )a left join operationcenter b
                                                 on a.id = b.unionid
-                                                ) t where  id != %s and phone is not null and phone !=""
-                                            ''' % (unionid, unionid)
+                                                ) t where  phone is not null and phone !=""
+                                            ''' % (unionid)
                 logger.info(sql)
                 cursor.execute(sql)
                 datas = cursor.fetchall()
@@ -444,8 +444,8 @@ def update_user_ascriptions():
                     SELECT * FROM temp
                     )a left join operationcenter b
                     on a.id = b.unionid
-                    ) t where  id != %s and phone is not null and phone !=""
-                ''' %(unionid,unionid)
+                    ) t where  phone is not null and phone !=""
+                ''' %(unionid)
 
                 cursor.execute(sql)
                 datas = cursor.fetchall()
