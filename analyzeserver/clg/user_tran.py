@@ -197,6 +197,12 @@ def clg_user_tran():
         # # else:
         # cut_data = fina_df.copy()
         # user_info_sql += ''' where phone in (%s)''' % ','.join(cut_data['phone'].tolist())
+        if keyword != "":
+            keyword_result = get_phone_by_keyword(keyword)
+            if not keyword_result[0]:
+                return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
+            user_info_sql += ''' where phone in (%s)''' % ','.join(keyword_result[1])
+            logger.info(user_info_sql)
 
         user_info_df = pd.read_sql(user_info_sql, conn_analyze)
 
