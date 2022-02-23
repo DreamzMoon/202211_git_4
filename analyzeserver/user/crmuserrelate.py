@@ -744,6 +744,7 @@ def update_user_ascriptions():
             #判断是否要更新运营中心 如果unionid本身是运营中心的 就改推荐关系 如果本身不是运营中心的本身和下级原本归属运营中心的要批量修改
             bus_sql = '''select * from operationcenter where unionid = %s''' %unionid
             flag = cursor.execute(bus_sql)
+            logger.info(flag)
             # 如果没有找到
             if parent_phone and not flag:
                 update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"], bus_data["operate_id"],",".join(below_unionid),old_operate_id)
@@ -828,17 +829,24 @@ def update_user_ascriptions():
                     compare.append("上级手机号码由 %s 变更为 %s" %(old_parent_phone,parent_phone))
 
                 #把被改的unionid列出来
-                if flag:
-                    update_unionid = '''select unionid from crm_user where unionid in (%s) and operate_id = %s''' %(",".join(below_unionid),old_operate_id)
-                    update_unionid = pd.read_sql(update_unionid).to_list()
+                if not flag:
+                    logger.info("进来了")
+                    update_unionid_sql = '''select unionid from crm_user where unionid in (%s) and operate_id = %s''' %(",".join(below_unionid),old_operate_id)
+                    logger.info(update_unionid_sql)
+                    update_unionid_data = pd.read_sql(update_unionid_sql,conn)
+                    logger.info(update_unionid_data)
+                    # time.sleep(100)
                     if update_unionid:
-                        sql = '''select operatename from operationcenter where unionid in (%s,%s)''' % (unionid, parent_unionid)
+                        logger.info(update_unionid)
+                        sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (unionid, parent_unionid)
+                        logger.info(sql)
                         cursor.execute(sql)
                         operatena = cursor.fetchall()
+                        logger.info(operatena)
                         old_operate_operatena = operatena[0][0]
                         operate_operatena = operatena[1][0]
-                        compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (",".join(update_unionid),old_operate_operatena,operate_operatena))
-
+                        compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1],old_operate_operatena,operate_operatena))
+                        logger.info("ddd")
             if bus_parent_phone:
                 if not old_bus_parent_phone:
                     compare.append("禄可商务上级的手机号码由 %s 变更为 %s" % ("-", old_bus_parent_phone))
@@ -846,18 +854,19 @@ def update_user_ascriptions():
                     compare.append("禄可商务上级的手机号码由 %s 变更为 %s" %(old_bus_parent_phone,bus_parent_phone))
 
                 # 把被改的unionid列出来
-                if flag:
+                if not flag:
                     update_unionid = '''select unionid from crm_user where unionid in (%s) and operate_id = %s''' % (",".join(bus_below_unionid), old_operate_direct_id)
-                    update_unionid = pd.read_sql(update_unionid).to_list()
+                    update_unionid = pd.read_sql(update_unionid,conn)["unionid"].to_list()
                     if update_unionid:
-                        sql = '''select operatename from operationcenter where unionid in (%s,%s)''' % (unionid, bus_parent_unionid)
+                        sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (unionid, bus_parent_unionid)
                         cursor.execute(sql)
                         operatena = cursor.fetchall()
                         old_operate_operatena = operatena[0][0]
                         operate_operatena = operatena[1][0]
-                        compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (",".join(update_unionid), old_operate_operatena, operate_operatena))
+                        compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
 
             if compare:
+                logger.info(compare)
                 compare.insert(0,"该用户的unionid为:%s" %unionid)
                 all_compare.append(compare)
 
