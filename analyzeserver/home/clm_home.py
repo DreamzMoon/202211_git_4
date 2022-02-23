@@ -288,20 +288,35 @@ def area_list():
 @clmhomebp.route("area/statis")
 def area_statis():
     try:
-        # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
-        conn_clg = direct_get_conn(clg_mysql_conf)
-        logger.info(conn_clg)
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
-        cursor = conn_analyze.cursor()
+        conn_clm = direct_get_conn(crm_mysql_conf)
+        # sql = '''
+        #  select shop.`name`,address_province.PROVINCE_NAME,count(*) order_count from luke_marketing.orders
+        #     left join luke_marketing.shop on orders.shop_id = shop.id
+        #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+        #     left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+        #     left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+        #     where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') = CURRENT_DATE
+        #     group by luke_marketing.shop.`name`
+        #     HAVING luke_marketing.address_province.PROVINCE_NAME != ""
+		# 				order by order_count desc
+        # '''
 
-        # sql = '''select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE() and o.order_status in (4,5,6,10,15) group by consignee_province'''
         sql = '''
-            select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) group by consignee_province
+         select shop.`name`,address_province.PROVINCE_NAME pro_name,count(*) order_count from luke_marketing.orders 
+            left join luke_marketing.shop on orders.shop_id = shop.id
+            left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+            left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+            left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+            where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') >=date_sub(curdate(), interval 6 month)
+            group by luke_marketing.shop.`name`
+            HAVING luke_marketing.address_province.PROVINCE_NAME != ""
+						order by order_count desc
+        
         '''
-        logger.info(sql)
-        datas = pd.read_sql(sql, conn_clg)
-        datas = datas.to_dict("records")
 
+        logger.info(sql)
+        datas = pd.read_sql(sql, conn_clm)
+        datas = datas.to_dict("records")
 
         return {"code": "0000", "status": "success", "msg": datas}
 
@@ -309,5 +324,4 @@ def area_statis():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_clg.close()
-        conn_analyze.close()
+        conn_clm.close()
