@@ -28,25 +28,53 @@ clmhomebp = Blueprint('clmhome', __name__, url_prefix='/clmhome')
 def person_top():
     try:
         # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
-        conn_clg = direct_get_conn(clg_mysql_conf)
-        logger.info(conn_clg)
+        conn_crm = direct_get_conn(crm_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-
-        sql = ''''''
-
-        datas = pd.read_sql(sql, conn_clg)
-        phone_lists = datas["phone"].tolist()
-
+        if not conn_crm or not conn_analyze:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+        '''今日'''
+        # sql = '''
+        #     select t1.unionid, t2.phone, t1.total_money from
+        #     (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
+        #     where is_del=0 and `status` in (1,2,4,6)
+        #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
+        #     group by unionid
+        #     order by total_money desc
+        #     limit 9) t1
+        #     left join
+        #     (select unionid, phone from luke_marketing.user) t2
+        #     on t1.unionid=t2.unionid
+        # '''
+        '''近6个月'''
+        sql = '''
+            select t1.unionid, t2.phone, t1.total_money from
+            (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
+            where is_del=0 and `status` in (1,2,4,6)
+            and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+            group by unionid
+            order by total_money desc
+            limit 9) t1
+            left join
+            (select unionid, phone from luke_marketing.user) t2
+            on t1.unionid=t2.unionid
+        '''
+        datas = pd.read_sql(sql, conn_crm)
+        phone_lists = datas[(datas["phone"].notna()) & (datas["phone"] != '')]['phone'].tolist()
         logger.info(phone_lists)
-        if not phone_lists:
+        if datas.shape[0] == 0: # 如果数据为空
             return {"code": "0000", "status": "success", "msg": []}
-        sql = '''select phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
-            ",".join(phone_lists))
-        logger.info(sql)
-        user_data = pd.read_sql(sql, conn_analyze)
-        datas = datas.merge(user_data, on="phone", how="left")
-        logger.info(datas)
-        datas["username"].fillna("", inplace=True)
+        if len(phone_lists) == 0:
+            datas['nickname'] = ''
+            datas['phone'].fillna('', inplace=True)
+        else:
+            sql = '''select phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
+                ",".join(phone_lists))
+            logger.info(sql)
+            user_data = pd.read_sql(sql, conn_analyze)
+            datas = datas.merge(user_data, on="phone", how="left")
+            logger.info(datas)
+            datas["username"].fillna("", inplace=True)
+        datas.drop('unionid', axis=1, inplace=True)
         datas = datas.to_dict("records")
 
         return {"code": "0000", "status": "success", "msg": datas}
@@ -55,7 +83,7 @@ def person_top():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
     finally:
-        conn_clg.close()
+        conn_crm.close()
         conn_analyze.close()
 
 '''交易中心'''
@@ -97,7 +125,7 @@ def shop_top():
 
         '''今日'''
         # sql = '''
-        #     select t2.name, t1.total_money from
+        #     select t2.name shop_name, t1.total_money from
         #     (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
         #     where is_del=0 and `status` in (1,2,4,6)
         #     and from_unixtime(addtime, "%Y-%m-%d")>=current_date
@@ -110,7 +138,7 @@ def shop_top():
         # '''
         '''近6个月'''
         sql = '''
-            select t2.name, t1.total_money from
+            select t2.name shop_name, t1.total_money from
             (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
             where is_del=0 and `status` in (1,2,4,6)
             and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
