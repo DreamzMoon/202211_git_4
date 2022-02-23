@@ -177,9 +177,9 @@ def area_list():
         page = request.json['page']
         size = request.json['size']
 
-        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_clg = direct_get_conn(clg_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        if not conn_crm or not conn_analyze:
+        if not conn_clg or not conn_analyze:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
@@ -201,19 +201,6 @@ def area_list():
         #     on t1.order_sn=t2.order_sn
         #     {group}) t
         #     group by area_name
-        # '''
-        # area_list_sql = '''
-        #     select{area}
-        #     count(distinct orders.unionid) person_count, count(*) order_count, sum(orders.number) total_count, sum(orders.money)+sum(freight) total_money
-        #     from luke_marketing.orders
-        #     left join luke_marketing.shop on orders.shop_id = shop.id
-        #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
-        #     left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
-        #     left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
-        #     where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d')>=date_sub(curdate(), interval 1 month)
-        #     {condition}
-        #     group by {group}
-        #     having{having}
         # '''
         area_list_sql = '''
             select address_province.PROVINCE_NAME province_name, address_city.CITY_NAME city_name, address_area.AREA_NAME region_name,
@@ -327,7 +314,7 @@ def area_list():
         return {"code": "10000", "status": "success", "msg": message["10000"]}
     finally:
         try:
-            conn_crm.close()
+            conn_clg.close()
             conn_analyze.close()
         except:
             pass
@@ -350,7 +337,7 @@ def area_statis():
         # '''
 
         sql = '''
-            select shop.`name`,address_province.PROVINCE_NAME pro_name,count(*) order_count from luke_marketing.orders 
+         select address_province.PROVINCE_NAME consignee_province,count(*) count from luke_marketing.orders 
             left join luke_marketing.shop on orders.shop_id = shop.id
             left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
             left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
