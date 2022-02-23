@@ -34,7 +34,7 @@ def person_top():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         '''今日'''
         # sql = '''
-        #     select t1.unionid, t2.phone, t1.total_money from
+        #     select t1.unionid, t2.nickname clmname, t2.phone, t1.total_money from
         #     (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
         #     where is_del=0 and `status` in (1,2,4,6)
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
@@ -42,12 +42,12 @@ def person_top():
         #     order by total_money desc
         #     limit 9) t1
         #     left join
-        #     (select unionid, phone from luke_marketing.user) t2
+        #     (select unionid, nickname,phone from luke_marketing.user) t2
         #     on t1.unionid=t2.unionid
         # '''
         '''近6个月'''
         sql = '''
-            select t1.unionid, t2.phone, t1.total_money from
+            select t1.unionid, t2.nickname clmname, t2.phone, t1.total_money from
             (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
             where is_del=0 and `status` in (1,2,4,6)
             and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
@@ -55,7 +55,7 @@ def person_top():
             order by total_money desc
             limit 9) t1
             left join
-            (select unionid, phone from luke_marketing.user) t2
+            (select unionid, nickname, phone from luke_marketing.user) t2
             on t1.unionid=t2.unionid
         '''
         datas = pd.read_sql(sql, conn_crm)
@@ -64,7 +64,8 @@ def person_top():
         if datas.shape[0] == 0: # 如果数据为空
             return {"code": "0000", "status": "success", "msg": []}
         if len(phone_lists) == 0:
-            datas['nickname'] = ''
+            datas.rename(columns={"clmname": "username"}, inplace=True)
+            datas['username'].fillna('', inplace=True)
             datas['phone'].fillna('', inplace=True)
         else:
             sql = '''select phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username from crm_user where phone in ({})'''.format(
@@ -72,6 +73,9 @@ def person_top():
             logger.info(sql)
             user_data = pd.read_sql(sql, conn_analyze)
             datas = datas.merge(user_data, on="phone", how="left")
+            for index, values in datas.iterrows():
+                if not values['username'] or values['username'] == '':
+                    datas.loc[index, 'username'] = datas['clmname']
             logger.info(datas)
             datas["username"].fillna("", inplace=True)
         datas.drop('unionid', axis=1, inplace=True)
