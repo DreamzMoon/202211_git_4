@@ -177,9 +177,9 @@ def area_list():
         page = request.json['page']
         size = request.json['size']
 
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_crm = direct_get_conn(crm_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        if not conn_clg or not conn_analyze:
+        if not conn_crm or not conn_analyze:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
@@ -268,8 +268,10 @@ def area_list():
                 # 查找省对应城市
                 city_list_sql = '''select name from lh_analyze.city where province_code=%s''' % province_code
                 city_list_df = pd.read_sql(city_list_sql, conn_analyze)
-                city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
+                # city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
+                city_name_list = city_list_df['name'].tolist()
                 area_list_df = area_list_df[(area_list_df['province_name'] == province_name) & (area_list_df['city_name'].isin(city_name_list))]
+                logger.info(area_list_df.shape)
                 area_list_df.drop(['province_name', 'region_name'], axis=1, inplace=True)
                 area_list_df.rename(columns={"city_name": "area_name"}, inplace=True)
             else:
@@ -281,7 +283,8 @@ def area_list():
                 # 查找市对应区
                 region_list_sql = '''select name from lh_analyze.region where city_code=%s''' % city_code
                 region_list_df = pd.read_sql(region_list_sql, conn_analyze)
-                region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
+                # region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
+                region_name_list = region_list_df['name'].tolist()
                 area_list_df = area_list_df[(area_list_df['province_name'] == province_name)
                                             & (area_list_df['city_name'] == city_name)
                                             & (area_list_df['region_name'].isin(region_name_list))]
@@ -298,7 +301,6 @@ def area_list():
         # 按照订单数倒序排序
         logger.info(area_list_df)
         area_list_df.sort_values(['order_count','total_count','total_money'], ascending=[False,False,False], inplace=True)
-        logger.info(area_list_df)
         count = area_list_df.shape[0]
         start_index = (page - 1) * size
         end_index = page * size
@@ -314,7 +316,7 @@ def area_list():
         return {"code": "10000", "status": "success", "msg": message["10000"]}
     finally:
         try:
-            conn_clg.close()
+            conn_crm.close()
             conn_analyze.close()
         except:
             pass
