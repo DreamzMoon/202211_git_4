@@ -179,7 +179,8 @@ def clg_user_tran():
         summary_data = fina_df.loc[:, [column for column in fina_df.columns if not column in ignore_columns]].sum().to_dict()
         for i in [column for column, value in summary_data.items() if 'money' in column]:
             summary_data[i] = round(summary_data[i], 2)
-        summary_data['user_count'] = union_phone_df.shape[0]
+        # summary_data['user_count'] = union_phone_df.shape[0]
+        # summary_data['user_count'] = union_phone_df.shape[0]
 
         # fina_df.sort_values('order_count', ascending=False, inplace=True)
 
@@ -209,9 +210,9 @@ def clg_user_tran():
         fina_df["name"].fillna("",inplace=True)
         fina_df["phone"].fillna("",inplace=True)
         fina_df.fillna(0, inplace=True)
-
+        summary_data['user_count'] = fina_df.shape[0]
         # fina_df.fillna(0,inplace=True)
-        logger.info(fina_df.iloc[0])
+        # logger.info(fina_df.iloc[0])
         # fina_df.to_csv("e:/user_tran222.csv")
         fina_df.sort_values('order_count', ascending=False, inplace=True)
 
