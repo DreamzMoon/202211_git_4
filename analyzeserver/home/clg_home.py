@@ -163,19 +163,21 @@ def product_top():
         # group by od.goods_id
         # ) t group by goods_name order by pay_total_money desc limit 3'''
         sql = '''
-            select goods_name,sum(pay_total_money) pay_total_money from (
-            select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
+            select goods_goods_info.goods_name,ooo.pay_total_money from (
+						select goods_id,sum(pay_total_money) pay_total_money from (
+            select od.goods_id,sum(o.pay_money) pay_total_money from trade_order_info o
             left join trade_order_item od on o.order_sn = od.order_sn
             where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
             o.voucherMoneyType = 1
             group by od.goods_id
             union all 
-            select od.goods_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+            select od.goods_id,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
             left join trade_order_item od on o.order_sn = od.order_sn
             where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
             o.voucherMoneyType = 2
             group by od.goods_id
-            ) t group by goods_name order by pay_total_money desc limit 3
+            ) t group by goods_id order by pay_total_money desc limit 3
+						) ooo left join goods_goods_info on ooo.goods_id = goods_goods_info.goods_id
         '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
@@ -212,17 +214,21 @@ def shop_top():
         #     and o.voucherMoneyType = 2
         #     group by o.shop_id
         #     ) t group by shop_name order by pay_total_money desc limit 7'''
-        sql = '''select shop_name,sum(pay_total_money) pay_total_money from (
-                select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
-                where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-                and o.voucherMoneyType = 1
-                group by o.shop_id
-                union all 
-                select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
-                where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-                and o.voucherMoneyType = 2
-                group by o.shop_id
-                ) t group by shop_name order by pay_total_money desc limit 7'''
+        sql = '''						select ms.name,sum(pay_total_money) pay_total_money from (
+select o.shop_id,sum(o.pay_money) pay_total_money from trade_order_info o
+where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+and o.voucherMoneyType = 1
+group by o.shop_id
+union all 
+select o.shop_id,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+and o.voucherMoneyType = 2
+group by o.shop_id
+) t 
+left join
+(select id, name from member_shop_info where del_flag=0) ms
+on t.shop_id = ms.id
+group by shop_id order by pay_total_money desc limit 7'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
