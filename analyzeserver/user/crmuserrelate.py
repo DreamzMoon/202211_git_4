@@ -767,11 +767,11 @@ def update_user_ascriptions():
             update_store_vasho_sql = '''update user_storage_value_hour '''
 
             #8
-            update_daily_82_sql = '''user_daily_order_82 '''
-            update_daily_p2_sql = '''user_daily_order_p8 '''
-            update_daily_eight_sql = '''user_storage_eight '''
-            update_daily_eighth_sql = '''user_storage_eight_hour '''
-            update_daily_eightt_sql = '''user_storage_eight_today '''
+            update_daily_82_sql = '''update user_daily_order_82 '''
+            update_daily_p2_sql = '''update user_daily_order_p8 '''
+            update_daily_eight_sql = '''update user_storage_eight '''
+            update_daily_eighth_sql = '''update user_storage_eight_hour '''
+            update_daily_eightt_sql = '''update user_storage_eight_today '''
 
             update_where = ''' where unionid = %s''' %unionid
 

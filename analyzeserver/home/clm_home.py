@@ -202,6 +202,19 @@ def area_list():
         #     {group}) t
         #     group by area_name
         # '''
+        # area_list_sql = '''
+        #     select{area}
+        #     count(distinct orders.unionid) person_count, count(*) order_count, sum(orders.number) total_count, sum(orders.money)+sum(freight) total_money
+        #     from luke_marketing.orders
+        #     left join luke_marketing.shop on orders.shop_id = shop.id
+        #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+        #     left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+        #     left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+        #     where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d')>=date_sub(curdate(), interval 1 month)
+        #     {condition}
+        #     group by {group}
+        #     having{having}
+        # '''
         area_list_sql = '''
             select address_province.PROVINCE_NAME province_name, address_city.CITY_NAME city_name, address_area.AREA_NAME region_name,
             orders.unionid, orders.number total_count, orders.money, orders.freight
@@ -326,20 +339,21 @@ def area_list():
 def area_statis():
     try:
         conn_clm = direct_get_conn(crm_mysql_conf)
-        # sql = '''
-        #  select shop.`name`,address_province.PROVINCE_NAME,count(*) order_count from luke_marketing.orders
-        #     left join luke_marketing.shop on orders.shop_id = shop.id
-        #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
-        #     left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
-        #     left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
-        #     where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') = CURRENT_DATE
-        #     group by luke_marketing.shop.`name`
-        #     HAVING luke_marketing.address_province.PROVINCE_NAME != ""
-		# 				order by order_count desc
-        # '''
 
         sql = '''
-         select address_province.PROVINCE_NAME consignee_province,count(*) count from luke_marketing.orders 
+        select address_province.PROVINCE_NAME pro_name,count(*) count from luke_marketing.orders 
+            left join luke_marketing.shop on orders.shop_id = shop.id
+            left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+            left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+            left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+            where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') = CURRENT_DATE
+            group by luke_marketing.shop.`name`
+            HAVING luke_marketing.address_province.PROVINCE_NAME != ""
+            order by count desc
+        '''
+
+        sql = '''
+            select address_province.PROVINCE_NAME pro_name,count(*) count from luke_marketing.orders 
             left join luke_marketing.shop on orders.shop_id = shop.id
             left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
             left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
@@ -347,7 +361,7 @@ def area_statis():
             where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') >=date_sub(curdate(), interval 1 month)
             group by luke_marketing.shop.`name`
             HAVING luke_marketing.address_province.PROVINCE_NAME != ""
-            order by order_count desc
+            order by count desc
         '''
 
         logger.info(sql)
