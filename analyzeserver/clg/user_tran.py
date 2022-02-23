@@ -181,7 +181,7 @@ def clg_user_tran():
             summary_data[i] = round(summary_data[i], 2)
         summary_data['user_count'] = union_phone_df.shape[0]
 
-        fina_df.sort_values('order_count', ascending=False, inplace=True)
+        # fina_df.sort_values('order_count', ascending=False, inplace=True)
 
         if page and size:
             start_index = (page - 1) * size
@@ -191,18 +191,34 @@ def clg_user_tran():
             end_index = ''
         # 用户信息
         user_info_sql = '''select unionid, if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name, phone from lh_analyze.crm_user'''
+        # # if start_index != '' and end_index != '':
+        # #     cut_data = fina_df[start_index:end_index]
+        # # else:
+        # cut_data = fina_df.copy()
+        # user_info_sql += ''' where phone in (%s)''' % ','.join(cut_data['phone'].tolist())
+
+        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
+
+        # cut_data = cut_data.merge(user_info_df, how='left', on='phone')
+        fina_df.fillna(0, inplace=True)
+        for i in [column for column in fina_df.columns if 'money' in column]:
+            fina_df[i] = fina_df[i].round(2)
+        fina_df = user_info_df.merge(fina_df, how='left', on='phone')
+
+        fina_df["unionid"].fillna("",inplace=True)
+        fina_df["name"].fillna("",inplace=True)
+        fina_df["phone"].fillna("",inplace=True)
+        fina_df.fillna(0, inplace=True)
+
+        # fina_df.fillna(0,inplace=True)
+        logger.info(fina_df.iloc[0])
+        # fina_df.to_csv("e:/user_tran222.csv")
+        fina_df.sort_values('order_count', ascending=False, inplace=True)
+
         if start_index != '' and end_index != '':
             cut_data = fina_df[start_index:end_index]
         else:
             cut_data = fina_df.copy()
-        user_info_sql += ''' where phone in (%s)''' % ','.join(cut_data['phone'].tolist())
-
-        user_info_df = pd.read_sql(user_info_sql, conn_analyze)
-        cut_data = cut_data.merge(user_info_df, how='left', on='phone')
-        cut_data.fillna('', inplace=True)
-        for i in [column for column in cut_data.columns if 'money' in column]:
-            cut_data[i] = cut_data[i].round(2)
-
 
         return_data = {
             "summary_data": summary_data,
