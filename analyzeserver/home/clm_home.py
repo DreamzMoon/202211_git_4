@@ -45,7 +45,7 @@ def person_top():
         #     (select unionid, nickname,phone from luke_marketing.user) t2
         #     on t1.unionid=t2.unionid
         # '''
-        '''近6个月'''
+        '''近1个月'''
         sql = '''
             select t1.unionid, t2.nickname clmname, t2.phone, t1.total_money from
             (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
@@ -73,11 +73,14 @@ def person_top():
             logger.info(sql)
             user_data = pd.read_sql(sql, conn_analyze)
             datas = datas.merge(user_data, on="phone", how="left")
-            for index, values in datas.iterrows():
-                if not values['username'] or values['username'] == '':
-                    datas.loc[index, 'username'] = datas['clmname']
-            logger.info(datas)
             datas["username"].fillna("", inplace=True)
+            for index, values in datas.iterrows():
+                logger.info(values['username'])
+                if not values['username'] or values['username'] == '':
+                    logger.info('11111')
+                    datas.loc[index, 'username'] = values['clmname']
+            logger.info(datas)
+            datas.drop('clmname', axis=1, inplace=True)
         datas.drop('unionid', axis=1, inplace=True)
         datas = datas.to_dict("records")
 
@@ -103,7 +106,7 @@ def data_center():
         #     where is_del=0 and `status` in (1,2,4,6)
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
         # '''
-        '''近6个月'''
+        '''近1个月'''
         sql = '''
             select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(money)+sum(freight) total_money from luke_marketing.orders
             where is_del=0 and `status` in (1,2,4,6)
@@ -140,7 +143,7 @@ def shop_top():
         #     (select id, name from luke_marketing.shop) t2
         #     on t1.shop_id=t2.id
         # '''
-        '''近6个月'''
+        '''近1个月'''
         sql = '''
             select t2.name shop_name, t1.total_money from
             (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
