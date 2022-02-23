@@ -38,14 +38,24 @@ def person_top():
         cursor = conn_analyze.cursor()
 
 
-        sql = '''select phone,sum(pay_total_money) pay_total_money from (
-        select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
-        and del_flag = 0 and voucherMoneyType = 1
-        group by phone  
-        union all
-        select phone,sum(voucherPayMoney) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
-        and del_flag = 0 and voucherMoneyType = 2
-        group by phone) t group by phone order by pay_total_money desc limit 3
+        # sql = '''select phone,sum(pay_total_money) pay_total_money from (
+        # select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
+        # and del_flag = 0 and voucherMoneyType = 1
+        # group by phone
+        # union all
+        # select phone,sum(voucherPayMoney) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d") = CURRENT_DATE and order_status in (4,5,6,10,15)
+        # and del_flag = 0 and voucherMoneyType = 2
+        # group by phone) t group by phone order by pay_total_money desc limit 3
+        # '''
+        sql = '''
+            select phone,sum(pay_total_money) pay_total_money from (
+            select phone,sum(pay_money) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and order_status in (4,5,6,10,15)
+            and del_flag = 0 and voucherMoneyType = 1
+            group by phone
+            union all
+            select phone,sum(voucherPayMoney) pay_total_money from trade_order_info where DATE_FORMAT(create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and order_status in (4,5,6,10,15)
+            and del_flag = 0 and voucherMoneyType = 2
+            group by phone) t group by phone order by pay_total_money desc limit 3
         '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
@@ -83,21 +93,37 @@ def data_center():
         if not conn_clg:
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
 
+        # sql = '''
+        # select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
+        # select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
+        # select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
+        # left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        # where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()
+        # and trade_order_info.order_status in (3,4,5,6,10,15)
+        # group by trade_order_info.user_id
+        # union all
+        # select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
+        # left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        # where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()
+        # and trade_order_info.order_status in (3,4,5,6,10,15)
+        # group by trade_order_info.user_id ) t group by user_id
+        # ) t2
+        # '''
         sql = '''
-        select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
-        select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
-        select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
-        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-        where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()  
-        and trade_order_info.order_status in (3,4,5,6,10,15)
-        group by trade_order_info.user_id
-        union all 
-        select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
-        left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-        where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")=CURRENT_DATE()  
-        and trade_order_info.order_status in (3,4,5,6,10,15)
-        group by trade_order_info.user_id ) t group by user_id
-        ) t2
+            select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
+            select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
+            select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
+            left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+            where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+            and trade_order_info.order_status in (3,4,5,6,10,15)
+            group by trade_order_info.user_id
+            union all 
+            select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
+            left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+            where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+            and trade_order_info.order_status in (3,4,5,6,10,15)
+            group by trade_order_info.user_id ) t group by user_id
+            ) t2
         '''
 
         data = (pd.read_sql(sql,conn_clg)).to_dict("records")
@@ -123,19 +149,34 @@ def product_top():
         cursor = conn_analyze.cursor()
 
 
-        sql = '''select goods_name,sum(pay_total_money) pay_total_money from (
-        select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
-        left join trade_order_item od on o.order_sn = od.order_sn
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
-        o.voucherMoneyType = 1
-        group by od.goods_id
-        union all 
-        select od.goods_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
-        left join trade_order_item od on o.order_sn = od.order_sn
-        where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
-        o.voucherMoneyType = 2
-        group by od.goods_id
-        ) t group by goods_name order by pay_total_money desc limit 3'''
+        # sql = '''select goods_name,sum(pay_total_money) pay_total_money from (
+        # select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
+        # left join trade_order_item od on o.order_sn = od.order_sn
+        # where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and
+        # o.voucherMoneyType = 1
+        # group by od.goods_id
+        # union all
+        # select od.goods_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+        # left join trade_order_item od on o.order_sn = od.order_sn
+        # where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and
+        # o.voucherMoneyType = 2
+        # group by od.goods_id
+        # ) t group by goods_name order by pay_total_money desc limit 3'''
+        sql = '''
+            select goods_name,sum(pay_total_money) pay_total_money from (
+            select od.goods_name,sum(o.pay_money) pay_total_money from trade_order_info o
+            left join trade_order_item od on o.order_sn = od.order_sn
+            where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
+            o.voucherMoneyType = 1
+            group by od.goods_id
+            union all 
+            select od.goods_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+            left join trade_order_item od on o.order_sn = od.order_sn
+            where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 and 
+            o.voucherMoneyType = 2
+            group by od.goods_id
+            ) t group by goods_name order by pay_total_money desc limit 3
+        '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
@@ -160,17 +201,28 @@ def shop_top():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
 
+        # sql = '''select shop_name,sum(pay_total_money) pay_total_money from (
+        #     select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
+        #     where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0
+        #     and o.voucherMoneyType = 1
+        #     group by o.shop_id
+        #     union all
+        #     select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+        #     where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0
+        #     and o.voucherMoneyType = 2
+        #     group by o.shop_id
+        #     ) t group by shop_name order by pay_total_money desc limit 7'''
         sql = '''select shop_name,sum(pay_total_money) pay_total_money from (
-select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
-where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-and o.voucherMoneyType = 1
-group by o.shop_id
-union all 
-select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
-where DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
-and o.voucherMoneyType = 2
-group by o.shop_id
-) t group by shop_name order by pay_total_money desc limit 7'''
+                select o.shop_name,sum(o.pay_money) pay_total_money from trade_order_info o
+                where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+                and o.voucherMoneyType = 1
+                group by o.shop_id
+                union all 
+                select o.shop_name,sum(o.voucherPayMoney) pay_total_money from trade_order_info o
+                where DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) and o.del_flag = 0 
+                and o.voucherMoneyType = 2
+                group by o.shop_id
+                ) t group by shop_name order by pay_total_money desc limit 7'''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
@@ -245,9 +297,6 @@ def today_dynamic_newuser():
 @clghomebp.route('/today/dynamic/goods', methods=["GET"])
 def today_dynamic_goods():
     try:
-
-
-        # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         conn_clg = direct_get_conn(clg_mysql_conf)
         if not conn_clg:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
@@ -286,12 +335,10 @@ def today_dynamic_goods():
 @clghomebp.route("order/status",methods=["GET"])
 def order_status():
     try:
-        # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         conn_clg = direct_get_conn(clg_mysql_conf)
         logger.info(conn_clg)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
-
 
         sql = '''
             select phone, pay_money, goods_name, sub_time from
@@ -345,33 +392,50 @@ def area_list():
         page = request.json['page']
         size = request.json['size']
 
-        # conn_clg = ssh_get_conn(clg_ssh_conf,clg_mysql_conf)
         conn_clg = direct_get_conn(clg_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         if not conn_clg or not conn_analyze:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
-
+        # area_list_sql = '''
+        #     select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count) total_count, area_name from
+        #     (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from
+        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
+        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
+        #     left join
+        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+        #     on t1.order_sn=t2.order_sn
+        #     {group}
+        #     union all
+        #     select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from
+        #     (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, voucherPayMoney pay_money{area_name} from trade_order_info
+        #     where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=2{condition}) t1
+        #     left join
+        #     (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
+        #     on t1.order_sn=t2.order_sn
+        #     {group}) t
+        #     group by area_name
+        # '''
         area_list_sql = '''
-            select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count) total_count, area_name from
-            (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
-            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
-            left join
-            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
-            on t1.order_sn=t2.order_sn
-            {group}
-            union all
-            select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
-            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, voucherPayMoney pay_money{area_name} from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")=current_date and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=2{condition}) t1
-            left join
-            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")=current_date group by order_sn) t2
-            on t1.order_sn=t2.order_sn
-            {group}) t
-            group by area_name
-        '''
+                    select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count) total_count, area_name from
+                    (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
+                    (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
+                    where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
+                    left join
+                    (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) group by order_sn) t2
+                    on t1.order_sn=t2.order_sn
+                    {group}
+                    union all
+                    select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
+                    (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, voucherPayMoney pay_money{area_name} from trade_order_info
+                    where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=2{condition}) t1
+                    left join
+                    (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) group by order_sn) t2
+                    on t1.order_sn=t2.order_sn
+                    {group}) t
+                    group by area_name
+                '''
 
         if not province_code and not city_code:
             area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='', group=' group by consignee_province, user_id')
@@ -452,7 +516,10 @@ def area_statis():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         cursor = conn_analyze.cursor()
 
-        sql = '''select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE() and o.order_status in (4,5,6,10,15) group by consignee_province'''
+        # sql = '''select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d") = CURRENT_DATE() and o.order_status in (4,5,6,10,15) group by consignee_province'''
+        sql = '''
+            select consignee_province,count(*) count from trade_order_info o where del_flag = 0 and DATE_FORMAT(o.create_time,"%Y-%m_%d")>=date_sub(curdate(), interval 6 month) and o.order_status in (4,5,6,10,15) group by consignee_province
+        '''
         logger.info(sql)
         datas = pd.read_sql(sql, conn_clg)
         datas = datas.to_dict("records")
