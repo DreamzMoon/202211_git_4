@@ -177,9 +177,9 @@ def area_list():
         page = request.json['page']
         size = request.json['size']
 
-        conn_clg = direct_get_conn(clg_mysql_conf)
+        conn_crm = direct_get_conn(crm_mysql_conf)
         conn_analyze = direct_get_conn(analyze_mysql_conf)
-        if not conn_clg or not conn_analyze:
+        if not conn_crm or not conn_analyze:
             return {"code": "10002", "status": "failed", "message": message["10002"]}
         analyze_cursor = conn_analyze.cursor()
 
@@ -202,51 +202,89 @@ def area_list():
         #     {group}) t
         #     group by area_name
         # '''
+        # area_list_sql = '''
+        #     select{area}
+        #     count(distinct orders.unionid) person_count, count(*) order_count, sum(orders.number) total_count, sum(orders.money)+sum(freight) total_money
+        #     from luke_marketing.orders
+        #     left join luke_marketing.shop on orders.shop_id = shop.id
+        #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+        #     left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+        #     left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+        #     where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d')>=date_sub(curdate(), interval 1 month)
+        #     {condition}
+        #     group by {group}
+        #     having{having}
+        # '''
         area_list_sql = '''
-            select count(distinct user_id) person_count, sum(order_count) order_count, sum(total_money) total_money, sum(total_count) total_count, area_name from
-            (select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
-            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, pay_money{area_name} from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=1{condition}) t1
-            left join
-            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) group by order_sn) t2
-            on t1.order_sn=t2.order_sn
-            {group}
-            union all
-            select t1.user_id, count(*) order_count, sum(t1.pay_money) total_money, sum(t2.buy_num) total_count{t_area_name} from 
-            (select order_sn, user_id, date_format(create_time, "%Y-%m-%d") create_time, voucherPayMoney pay_money{area_name} from trade_order_info
-            where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) and order_status in (3,4,5,6,10,15) and del_flag=0 and voucherMoneyType=2{condition}) t1
-            left join
-            (select order_sn, sum(buy_num) buy_num from trade_order_item where date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month) group by order_sn) t2
-            on t1.order_sn=t2.order_sn
-            {group}) t
-            group by area_name
+            select address_province.PROVINCE_NAME province_name, address_city.CITY_NAME city_name, address_area.AREA_NAME region_name,
+            orders.unionid, orders.number total_count, orders.money, orders.freight
+            from luke_marketing.orders 
+            left join luke_marketing.shop on orders.shop_id = shop.id
+            left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
+            left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
+            left join luke_marketing.address_province on address_province.PROVINCE_CODE = address_city.PROVINCE_CODE
+            where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') >=date_sub(curdate(), interval 1 month)
         '''
-
+        area_list_df = pd.read_sql(area_list_sql, conn_crm)
+        area_list_df = area_list_df[area_list_df['province_name'].notna()]
+        area_list_df['total_money'] = area_list_df['money'] + area_list_df['freight']
+        area_list_df.drop(['money', 'freight'], axis=1, inplace=True)
+        # if not province_code and not city_code:
+        #     area_list_sql = area_list_sql.format(area=' address_province.PROVINCE_NAME area_name,',
+        #                                          condition='',
+        #                                          group='area_name',
+        #                                          having=' area_name is not null')
+        # else:
+        #     # 查找省名称
+        #     province_sql = '''select name from lh_analyze.province where code=%s'''
+        #     analyze_cursor.execute(province_sql, province_code)
+        #     province_name = analyze_cursor.fetchone()[0]
+        #     if not city_code:
+        #         # 查找省对应城市
+        #         city_list_sql = '''select name from lh_analyze.city where province_code=%s''' % province_code
+        #         city_list_df = pd.read_sql(city_list_sql, conn_analyze)
+        #         city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
+        #         logger.info(city_name_list)
+        #         # 拼接sql
+        #         area_list_sql = area_list_sql.format(area=' address_city.CITY_NAME area_name,',
+        #                                              condition=' and address_province.PROVINCE_NAME="%s" and address_city.CITY_NAME in (%s)' % (province_name, ','.join(city_name_list)),
+        #                                              group='area_name',
+        #                                              having=' area_name is not null')
+        #     else:
+        #         # 查找市名称
+        #         city_sql = '''select name from lh_analyze.city where code=%s''' % city_code
+        #         analyze_cursor.execute(city_sql)
+        #         city_name = analyze_cursor.fetchone()[0]
+        #         logger.info(city_name)
+        #         # 查找市对应区
+        #         region_list_sql = '''select name from lh_analyze.region where city_code=%s''' % city_code
+        #         region_list_df = pd.read_sql(region_list_sql, conn_analyze)
+        #         region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
+        #         logger.info(region_name_list)
+        #         # 拼接sql
+        #         area_list_sql = area_list_sql.format(area=' address_city.CITY_NAME area_name,',
+        #                                              condition=' and address_province.PROVINCE_NAME="%s" and address_city.CITY_NAME="%s" and address_area.AREA_NAME in (%s)' % (
+        #                                              province_name, city_name, ','.join(region_name_list)),
+        #                                              group='area_name',
+        #                                              having=' area_name is not null')
+        # logger.info(area_list_sql)
+        # area_list_df = pd.read_sql(area_list_sql, conn_crm)
         if not province_code and not city_code:
-            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='', group=' group by consignee_province, user_id')
+            area_list_df.drop(['city_name', 'region_name'], axis=1, inplace=True)
+            area_list_df.rename(columns={"province_name": "area_name"}, inplace=True)
         else:
-            # 查找省名称
+        # 查找省名称
             province_sql = '''select name from lh_analyze.province where code=%s'''
             analyze_cursor.execute(province_sql, province_code)
             province_name = analyze_cursor.fetchone()[0]
-            logger.info(province_name)
-            # # 几个直辖市处理----前端限制不展示后两级只传省编码，服务端直接返回区数据
-            # municipality_province_code = ['11', '12', '31', '50']
-            # # 查直辖市下市辖区编码
-            # if province_code in municipality_province_code:
-            #     municipality_city_sql = '''select code from city where province_code=%s'''
-            #     analyze_cursor.execute(municipality_city_sql, province_code)
-            #     city_code = analyze_cursor.fetchone()[0]
             if not city_code:
                 # 查找省对应城市
                 city_list_sql = '''select name from lh_analyze.city where province_code=%s''' % province_code
                 city_list_df = pd.read_sql(city_list_sql, conn_analyze)
                 city_name_list = ["'%s'" % city for city in city_list_df['name'].tolist()]
-                logger.info(city_name_list)
-                # 拼接sql
-                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city area_name', area_name=', consignee_city',
-                                                     condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)),
-                                                     group=' group by consignee_city, user_id')
+                area_list_df = area_list_df[(area_list_df['province_name'] == province_name) & (area_list_df['city_name'].isin(city_name_list))]
+                area_list_df.drop(['province_name', 'region_name'], axis=1, inplace=True)
+                area_list_df.rename(columns={"city_name": "area_name"}, inplace=True)
             else:
                 # 查找市名称
                 city_sql = '''select name from lh_analyze.city where code=%s''' % city_code
@@ -257,14 +295,17 @@ def area_list():
                 region_list_sql = '''select name from lh_analyze.region where city_code=%s''' % city_code
                 region_list_df = pd.read_sql(region_list_sql, conn_analyze)
                 region_name_list = ["'%s'" % region for region in region_list_df['name'].tolist()]
-                logger.info(region_name_list)
-                # 拼接sql
-                area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county area_name', area_name=', consignee_county',
-                                                     condition=' and consignee_province="%s" and consignee_city="%s" and consignee_county in (%s)' % (
-                                                     province_name, city_name, ','.join(region_name_list)),
-                                                     group=' group by consignee_county, user_id')
-        logger.info(area_list_sql)
-        area_list_df = pd.read_sql(area_list_sql, conn_clg)
+                area_list_df = area_list_df[(area_list_df['province_name'] == province_name)
+                                            & (area_list_df['city_name'] == city_name)
+                                            & (area_list_df['region_name'].isin(region_name_list))]
+                area_list_df.drop(['province_name', 'city_name'], axis=1, inplace=True)
+                area_list_df.rename(columns={"region_name": "area_name"}, inplace=True)
+        # 人数统计
+        area_person_count_df = pd.DataFrame(area_list_df.groupby('area_name')['unionid'].nunique()).reset_index().rename(columns={"unionid": "person_count"})
+        area_list_df = area_list_df.groupby('area_name').agg(
+            {"total_count": "sum", "total_money": "sum", "area_name": "count"}).rename(columns={"area_name": "order_count"}).reset_index()
+        area_list_df = area_list_df.merge(area_person_count_df, how='left', on='area_name')
+
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
         area_list_df['proportion'] = area_list_df['proportion'].round(2)
         # 按照订单数倒序排序
@@ -286,7 +327,7 @@ def area_list():
         return {"code": "10000", "status": "success", "msg": message["10000"]}
     finally:
         try:
-            conn_clg.close()
+            conn_crm.close()
             conn_analyze.close()
         except:
             pass
@@ -309,7 +350,7 @@ def area_statis():
         # '''
 
         sql = '''
-         select shop.`name`,address_province.PROVINCE_NAME pro_name,count(*) order_count from luke_marketing.orders 
+            select shop.`name`,address_province.PROVINCE_NAME pro_name,count(*) order_count from luke_marketing.orders 
             left join luke_marketing.shop on orders.shop_id = shop.id
             left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
             left join luke_marketing.address_city on address_city.CITY_CODE = address_area.CITY_CODE
@@ -317,8 +358,7 @@ def area_statis():
             where luke_marketing.orders.is_del = 0 and luke_marketing.orders.`status` in (1,2,4,6) and FROM_UNIXTIME(luke_marketing.orders.addtime,'%Y-%m-%d') >=date_sub(curdate(), interval 1 month)
             group by luke_marketing.shop.`name`
             HAVING luke_marketing.address_province.PROVINCE_NAME != ""
-						order by order_count desc
-        
+            order by order_count desc
         '''
 
         logger.info(sql)
