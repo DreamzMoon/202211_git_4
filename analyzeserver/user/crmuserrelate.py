@@ -751,7 +751,7 @@ def update_user_ascriptions():
 
             old_data = old_data.to_dict("records")[0]
             logger.info(old_data)
-            time.sleep(10)
+            # time.sleep(10)
             old_parent_phone = old_data["parent_phone"]
             old_bus_parent_phone = old_data["bus_parent_phone"]
             old_operate_id = old_data["operate_id"]
@@ -793,8 +793,7 @@ def update_user_ascriptions():
                     logger.info("该unionis没有运营中心 元数据")
                     update_unionid_sql = '''select unionid from crm_user where (operate_id is null or operate_id = "") and unionid in (%s)''' % (",".join(all_below_unionid[i]))
                     update_unionid = pd.read_sql(update_unionid_sql, conn)["unionid"].to_list()
-                    # logger.info(update_unionid)
-                    # time.sleep(20)
+
                     if update_unionid:
                         logger.info("有要改的")
                         sql = '''select operatename from crm_user where unionid in (%s)''' % (parent_unionid)
@@ -803,6 +802,7 @@ def update_user_ascriptions():
                         operate_operatena = operatena[0][0]
 
                         # compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], "-", operate_operatena))
+
                         compare.append("本级和下级部分用户支持crm运营中心由原先的运营中心： %s 变更为： %s" % ( "-", operate_operatena))
                         update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (
                         bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],
@@ -824,6 +824,7 @@ def update_user_ascriptions():
                         operatena = cursor.fetchall()
                         old_operate_operatena = operatena[0][0]
                         operate_operatena = operatena[1][0]
+
                         # compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
                         compare.append("本级和下级部分用户禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (old_operate_operatena, operate_operatena))
 
@@ -837,6 +838,7 @@ def update_user_ascriptions():
                         cursor.execute(sql)
                         operatena = cursor.fetchall()
                         operate_operatena = operatena[0][0]
+
                         compare.append("本级和下级部分用户 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % ( "", operate_operatena))
                         # compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], "", operate_operatena))
 
@@ -913,8 +915,8 @@ def update_user_ascriptions():
                 cursor.execute(update_crm)
                 logger.info("执行成功")
 
-            logger.info(update_operate)
-            logger.info(update_operate_sql)
+            # logger.info(update_operate)
+            # logger.info(update_operate_sql)
 
             # 修改运营中心
             if update_operate:
@@ -923,7 +925,7 @@ def update_user_ascriptions():
 
             if update_operate_sql:
                 logger.info(update_operate_sql)
-                time.sleep(10)
+                # time.sleep(10)
                 cursor.execute(update_operate_sql)
 
             # 日志接入
