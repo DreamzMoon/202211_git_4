@@ -1557,6 +1557,7 @@ def personal_hold_total():
             else:
                 user_condition += ''' and phone in (%s)''' % ','.join(query_phone_list)
 
+        if user_condition != '':
             user_info_sql += user_condition
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
             # 条件筛选的手机号列表
@@ -1574,9 +1575,12 @@ def personal_hold_total():
         user_storage_df = pd.read_sql(user_storage_value_sql, conn_analyze)
         today_storage_df = pd.read_sql(today_storage_sql, conn_analyze)
         public_df = pd.read_sql(public_sql, conn_lh)
-        merge_df = pd.concat([user_storage_df, today_storage_df, public_df], axis=0, ignore_index=True)
-        group_df = merge_df.groupby('hold_phone').sum().reset_index()
 
+        merge_df = pd.concat([user_storage_df, today_storage_df], axis=0, ignore_index=True)
+        merge_df = merge_df.merge(public_df, how='outer', on='hold_phone')
+        merge_df.fillna(0, inplace=True)
+
+        group_df = merge_df.groupby('hold_phone').sum().reset_index()
         fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
 
         # 过滤条件
@@ -1628,17 +1632,11 @@ def personal_hold_total():
         # 填补空值
         cut_data.fillna('', inplace=True)
         # 数值圆整
-        cut_data['hold_price'] = cut_data['hold_price'].astype(float)
-        cut_data['no_tran_price'] = cut_data['no_tran_price'].astype(float)
-        cut_data['public_price'] = cut_data['public_price'].astype(float)
-        cut_data['tran_price'] = cut_data['tran_price'].astype(float)
-        cut_data['transferred_price'] = cut_data['transferred_price'].astype(float)
-
-        cut_data['hold_price'] = cut_data['hold_price'].apply(lambda x: round(x, 2))
-        cut_data['no_tran_price'] = cut_data['no_tran_price'].apply(lambda x: round(x, 2))
-        cut_data['public_price'] = cut_data['public_price'].apply(lambda x: round(x, 2))
-        cut_data['tran_price'] = cut_data['tran_price'].apply(lambda x: round(x, 2))
-        cut_data['transferred_price'] = cut_data['transferred_price'].apply(lambda x: round(x, 2))
+        for column in [columns for columns in cut_data.columns if 'price' in columns]:
+            cut_data[column] = cut_data[column].astype(float)
+            cut_data[column] = cut_data[column].apply(lambda x: round(x, 2))
+        cut_data['unionid'] = cut_data['unionid'].replace("nan", '')
+        cut_data['unionid'] = cut_data['unionid'].apply(lambda x: del_point(x))
 
         return_data = {
             "title_data": title_data,

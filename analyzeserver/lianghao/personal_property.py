@@ -1570,7 +1570,6 @@ def personal_hold_total():
             else:
                 user_condition += ''' and phone in (%s)''' % ','.join(query_phone_list)
 
-
         if user_condition != '':
             user_info_sql += user_condition
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
@@ -1592,6 +1591,7 @@ def personal_hold_total():
         merge_df = pd.concat([user_storage_df, today_storage_df], axis=0, ignore_index=True)
         merge_df = merge_df.merge(public_df, how='outer', on='hold_phone')
         merge_df.fillna(0, inplace=True)
+
         group_df = merge_df.groupby('hold_phone').sum().reset_index()
         fina_df = group_df.merge(user_info_df, how='left', on='hold_phone')
 
