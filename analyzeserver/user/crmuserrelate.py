@@ -674,6 +674,7 @@ def update_user_ascriptions():
 
             logger.info(parent_unionid)
             for unionid in unionid_lists:
+                logger.info(unionid)
                 sql = '''
                     select * from (						
                         select a.*, if (crm =0, Null, b.operatename) operatename, b.id operateid from
@@ -689,6 +690,7 @@ def update_user_ascriptions():
                     ''' % (unionid)
                 cursor.execute(sql)
                 datas = cursor.fetchall()
+                logger.info(datas)
                 below_unionid = [str(data[0]) for data in datas]
                 if parent_unionid in below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
@@ -719,16 +721,18 @@ def update_user_ascriptions():
                     on a.id = b.unionid
                     ) t where  phone is not null and phone !=""
                 ''' %(unionid)
-
+                logger.info(unionid)
                 cursor.execute(sql)
                 datas = cursor.fetchall()
+                logger.info(datas)
                 bus_below_unionid = [str(data[0]) for data in datas]
 
                 if bus_parent_unionid in bus_below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
-                all_bus_below_unionid.append(bus_parent_unionid)
+                all_bus_below_unionid.append(bus_below_unionid)
 
-
+        logger.info(all_below_unionid)
+        logger.info(all_bus_below_unionid)
 
         all_compare = []
         #原用户数据 用户对比旧数据
