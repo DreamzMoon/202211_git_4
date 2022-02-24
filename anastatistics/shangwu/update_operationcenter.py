@@ -108,7 +108,7 @@ def insert_operatecenter():
                         new_region_data = region_data[region_data["name"].str.contains(area_datas[i]["name"])]
                         if new_region_data.shape[0] == 0:
                             break
-                        data["region"] = new_region_data["code"].values[0]
+                        data["region_code"] = new_region_data["code"].values[0]
                     elif i == 1:
                         logger.info(area_datas[i]["name"])
                         if area_datas[i]["name"] == "市辖区":
@@ -124,17 +124,17 @@ def insert_operatecenter():
                             new_city_data = cursor_analyze.fetchone()
                             if not new_city_data:
                                 break
-                            data["city"] = new_city_data[2]
+                            data["city_code"] = new_city_data[2]
                         else:
                             new_city_data = city_data[city_data["name"].str.contains(area_datas[i]["name"])]
                             if new_city_data.shape[0] == 0:
                                 break
-                            data["city"] = new_city_data["code"].values[0]
+                            data["city_code"] = new_city_data["code"].values[0]
                     elif i == 2:
                         new_pro_data = pro_data[pro_data["name"].str.contains(area_datas[i]["name"])]
                         if new_pro_data.shape[0] == 0:
                             break
-                        data["province"] = new_pro_data["code"].values[0]
+                        data["province_code"] = new_pro_data["code"].values[0]
                     else:
                         pass
                 except:
