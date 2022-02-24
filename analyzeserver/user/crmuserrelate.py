@@ -648,6 +648,10 @@ def update_user_ascriptions():
         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
         below_unionid = []
         bus_below_unionid = []
+
+        all_below_unionid = []
+        all_bus_below_unionid = []
+
         user_data = []
         bus_user_data = []
         parent_unionid = ""
@@ -686,10 +690,9 @@ def update_user_ascriptions():
                 cursor.execute(sql)
                 datas = cursor.fetchall()
                 below_unionid = [str(data[0]) for data in datas]
-                logger.info(below_unionid)
                 if parent_unionid in below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
-                below_unionid.append(str(parent_unionid))
+                all_below_unionid.append(below_unionid)
 
         if bus_parent_phone:
             user_sql = '''select * from crm_user where phone = %s''' % (bus_parent_phone)
@@ -723,13 +726,13 @@ def update_user_ascriptions():
 
                 if bus_parent_unionid in bus_below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
-                #把自己append进来
-                bus_below_unionid.append(str(bus_parent_unionid))
+                all_bus_below_unionid.append(bus_parent_unionid)
+
 
 
         all_compare = []
         #原用户数据 用户对比旧数据
-        for unionid in unionid_lists:
+        for i,unionid in enumerate(unionid_lists):
             compare = []
 
             flag = 0
@@ -757,7 +760,7 @@ def update_user_ascriptions():
                 # 把被改的unionid列出来
                 if not flag:
                     update_unionid_sql = '''select unionid from crm_user where operate_id = %s and unionid in (%s)''' % (
-                    old_operate_id, ",".join(below_unionid))
+                    old_operate_id, ",".join(all_below_unionid[i]))
                     update_unionid = pd.read_sql(update_unionid_sql, conn)["unionid"].to_list()
 
                     if update_unionid:
@@ -777,7 +780,7 @@ def update_user_ascriptions():
 
             if bus_parent_phone and not flag:
                 update_unionid = '''select unionid from crm_user where unionid in (%s) and operate_id = %s''' % (
-                ",".join(bus_below_unionid), old_operate_direct_id)
+                ",".join(all_bus_below_unionid[i]), old_operate_direct_id)
                 update_unionid = pd.read_sql(update_unionid, conn)["unionid"].to_list()
                 if update_unionid:
                     sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (
