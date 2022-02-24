@@ -74,3 +74,52 @@ group by shop_id'''
     finally:
         conn_clm.close()
         conn_analyze.close()
+
+
+@clmtranbp.route("/user",methods=["POST"])
+def clm_tran_user_all():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 6:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            # token校验
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            keyword = request.json['keyword']
+            start_time = request.json["start_time"]
+            end_time = request.json["end_time"]
+            page = request.json['page']
+            size = request.json['size']
+        except Exception as e:
+            # 参数名错误
+            logger.error(e)
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+        # 数据库连接
+        conn_crm = direct_get_conn(crm_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        if not conn_analyze or not conn_crm:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+
+        user_order_sql = '''
+            select unionid, number, pay_money,
+        '''
+    except:
+        logger.info(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_crm.close()
+            conn_analyze.close()
+        except:
+            pass
