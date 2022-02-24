@@ -58,10 +58,10 @@ def insert_operatecenter():
         conn_an = pd_conn(analyze_mysql_conf)
 
         # area_id = new_data_df["area"].to_list()
-        new_data_df["province"] = ""
-        new_data_df["city"] = ""
-        new_data_df["region"] = ""
-        new_data_df["town"] = ""
+        new_data_df["province_code"] = ""
+        new_data_df["city_code"] = ""
+        new_data_df["region_code"] = ""
+        new_data_df["town_code"] = ""
 
 
         # 省市区
