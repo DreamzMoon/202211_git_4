@@ -646,8 +646,6 @@ def update_user_ascriptions():
         unionid_lists = request.json.get("unionid_lists")
 
         # 如果要改上级的话 需要看有没有递归 判断要修改的手机号码是不是在下级里面
-        below_unionid = []
-        bus_below_unionid = []
 
         all_below_unionid = []
         all_bus_below_unionid = []
@@ -758,8 +756,6 @@ def update_user_ascriptions():
             old_operate_direct_id = old_data["operate_direct_id"]
 
 
-
-
             #判断是否要更新运营中心 如果unionid本身是运营中心的 就改推荐关系 如果本身不是运营中心的本身和下级原本归属运营中心的要批量修改
             bus_sql = '''select * from operationcenter where unionid = %s''' %unionid
             flag = cursor.execute(bus_sql)
@@ -772,16 +768,17 @@ def update_user_ascriptions():
                 # 把被改的unionid列出来
 
                 if old_operate_id:
+                    logger.info(all_below_unionid[i])
                     update_unionid_sql = '''select unionid from crm_user where operate_id = %s and unionid in (%s)''' % (old_operate_id, ",".join(all_below_unionid[i]))
                     update_unionid = pd.read_sql(update_unionid_sql, conn)["unionid"].to_list()
-
+                    logger.info(update_unionid)
                     if update_unionid:
                         sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (unionid, parent_unionid)
                         cursor.execute(sql)
                         operatena = cursor.fetchall()
                         old_operate_operatena = operatena[0][0]
                         operate_operatena = operatena[1][0]
-
+                        logger.info(operate_operatena)
                         compare.append("本级和下级部分用户 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (old_operate_operatena, operate_operatena))
                         # compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
                         update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (
@@ -816,10 +813,11 @@ def update_user_ascriptions():
             if bus_parent_phone and not flag:
                 if old_operate_direct_id:
                     update_unionid = '''select unionid from crm_user where unionid in (%s) and operate_direct_id = %s''' % (",".join(all_bus_below_unionid[i]), old_operate_direct_id)
+                    logger.info(update_unionid)
                     update_unionid = pd.read_sql(update_unionid, conn)["unionid"].to_list()
+                    logger.info(update_unionid)
                     if update_unionid:
-                        sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (
-                        unionid, bus_parent_unionid)
+                        sql = '''select operatename from crm_user where unionid in (%s,%s)''' % (unionid, bus_parent_unionid)
                         cursor.execute(sql)
                         operatena = cursor.fetchall()
                         old_operate_operatena = operatena[0][0]
@@ -828,8 +826,9 @@ def update_user_ascriptions():
                         # compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
                         compare.append("本级和下级部分用户禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (old_operate_operatena, operate_operatena))
 
-                    update_operate = '''update crm_user set operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s where unionid in (%s) and operate_direct_id = %s''' % (direct_bus_data["operatenamedirect"], direct_bus_data["direct_bus_phone"], direct_bus_data["direct_leader"], direct_bus_data["direct_leader_unionid"],direct_bus_data["operate_direct_id"], ",".join(all_bus_below_unionid[i]),old_operate_direct_id)
-                    # cursor.execute(update_operate)
+                        update_operate = '''update crm_user set operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s where unionid in (%s) and operate_direct_id = %s''' % (direct_bus_data["operatenamedirect"], direct_bus_data["direct_bus_phone"], direct_bus_data["direct_leader"], direct_bus_data["direct_leader_unionid"],direct_bus_data["operate_direct_id"], ",".join(all_bus_below_unionid[i]),old_operate_direct_id)
+                        logger.info(update_operate)
+                        # cursor.execute(update_operate)
                 else:
                     update_unionid = '''select unionid from crm_user where unionid in (%s) and (operate_direct_id is null or operate_direct_id = "")''' % (",".join(all_bus_below_unionid[i]))
                     update_unionid = pd.read_sql(update_unionid, conn)["unionid"].to_list()
@@ -842,11 +841,11 @@ def update_user_ascriptions():
                         compare.append("本级和下级部分用户 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % ( "", operate_operatena))
                         # compare.append("以下用户:%s 禄可商务运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], "", operate_operatena))
 
-                    update_operate = '''update crm_user set operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s where unionid in (%s) and (operate_direct_id is null or operate_direct_id = "")''' % (
-                    direct_bus_data["operatenamedirect"], direct_bus_data["direct_bus_phone"],
-                    direct_bus_data["direct_leader"], direct_bus_data["direct_leader_unionid"],
-                    direct_bus_data["operate_direct_id"], ",".join(all_bus_below_unionid[i]))
-                    # cursor.execute(update_operate)
+                        update_operate = '''update crm_user set operatenamedirect = "%s",direct_bus_phone= "%s",direct_leader = "%s",direct_leader_unionid = "%s",operate_direct_id = %s where unionid in (%s) and (operate_direct_id is null or operate_direct_id = "")''' % (
+                        direct_bus_data["operatenamedirect"], direct_bus_data["direct_bus_phone"],
+                        direct_bus_data["direct_leader"], direct_bus_data["direct_leader_unionid"],
+                        direct_bus_data["operate_direct_id"], ",".join(all_bus_below_unionid[i]))
+                        # cursor.execute(update_operate)
 
             # 更新crm
             update_crm = '''update crm_user '''
@@ -915,17 +914,12 @@ def update_user_ascriptions():
                 cursor.execute(update_crm)
                 logger.info("执行成功")
 
-            # logger.info(update_operate)
-            # logger.info(update_operate_sql)
 
             # 修改运营中心
             if update_operate:
-                logger.info(update_operate)
                 cursor.execute(update_operate)
 
             if update_operate_sql:
-                logger.info(update_operate_sql)
-                # time.sleep(10)
                 cursor.execute(update_operate_sql)
 
             # 日志接入
