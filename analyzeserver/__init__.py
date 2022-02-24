@@ -55,6 +55,7 @@ from analyzeserver.user.auth_manage import  userauthbp
 from analyzeserver.log.export_log import exportbp
 
 from analyzeserver.home.clm_home import clmhomebp
+from analyzeserver.clm.shop_tran import clmtranshopbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -122,6 +123,7 @@ app.register_blueprint(clgorderdbp)
 
 # 诚聊卖
 app.register_blueprint(clmhomebp)
+app.register_blueprint(clmtranshopbp)
 
 app.register_blueprint(userauthbp)
 if __name__ == "__main__":
