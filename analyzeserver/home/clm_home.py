@@ -35,7 +35,7 @@ def person_top():
         '''今日'''
         # sql = '''
         #     select t1.unionid, t2.nickname clmname, t2.phone, t1.total_money from
-        #     (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
+        #     (select unionid, sum(pay_money) total_money from luke_marketing.orders
         #     where is_del=0 and pay_status=2
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
         #     group by unionid
@@ -48,7 +48,7 @@ def person_top():
         '''近1个月'''
         sql = '''
             select t1.unionid, t2.nickname clmname, t2.phone, t1.total_money from
-            (select unionid, sum(money)+sum(freight) total_money from luke_marketing.orders
+            (select unionid, sum(pay_money) total_money from luke_marketing.orders
             where is_del=0 and pay_status=2
             and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month)
             group by unionid
@@ -102,13 +102,13 @@ def data_center():
             return {"code": "10002", "status": "failed", "msg": message["10002"]}
         '''今日'''
         # sql = '''
-        #     select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(money)+sum(freight) total_money from luke_marketing.orders
+        #     select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(pay_money) total_money from luke_marketing.orders
         #     where is_del=0 and pay_status=2
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
         # '''
         '''近1个月'''
         sql = '''
-            select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(money)+sum(freight) total_money from luke_marketing.orders
+            select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(pay_money) total_money from luke_marketing.orders
             where is_del=0 and pay_status=2
             and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month)
         '''
@@ -133,7 +133,7 @@ def shop_top():
         '''今日'''
         # sql = '''
         #     select t2.name shop_name, t1.total_money from
-        #     (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
+        #     (select shop_id, sum(pay_money) total_money from luke_marketing.orders
         #     where is_del=0 and pay_status=2
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
         #     group by shop_id
@@ -146,7 +146,7 @@ def shop_top():
         '''近1个月'''
         sql = '''
             select t2.name shop_name, t1.total_money from
-            (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
+            (select shop_id, sum(pay_money) total_money from luke_marketing.orders
             where is_del=0 and pay_status=2
             and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month)
             group by shop_id
@@ -218,7 +218,7 @@ def area_list():
         '''今日'''
         # area_list_sql = '''
         #     select address_province.PROVINCE_NAME province_name, address_city.CITY_NAME city_name, address_area.AREA_NAME region_name,
-        #     orders.unionid, orders.number total_count, orders.money, orders.freight
+        #     orders.unionid, orders.number total_count, orders.pay_money total_money
         #     from luke_marketing.orders
         #     left join luke_marketing.shop on orders.shop_id = shop.id
         #     left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
@@ -229,7 +229,7 @@ def area_list():
         '''近1个月'''
         area_list_sql = '''
             select address_province.PROVINCE_NAME province_name, address_city.CITY_NAME city_name, address_area.AREA_NAME region_name,
-            orders.unionid, orders.number total_count, orders.money, orders.freight
+            orders.unionid, orders.number total_count, orders.pay_money total_money
             from luke_marketing.orders
             left join luke_marketing.shop on orders.shop_id = shop.id
             left join luke_marketing.address_area on address_area.AREA_CODE = shop.area
@@ -239,8 +239,6 @@ def area_list():
         '''
         area_list_df = pd.read_sql(area_list_sql, conn_crm)
         area_list_df = area_list_df[area_list_df['province_name'].notna()]
-        area_list_df['total_money'] = area_list_df['money'] + area_list_df['freight']
-        area_list_df.drop(['money', 'freight'], axis=1, inplace=True)
         # if not province_code and not city_code:
         #     area_list_sql = area_list_sql.format(area=' address_province.PROVINCE_NAME area_name,',
         #                                          condition='',
