@@ -742,9 +742,16 @@ def daily_ser_value():
 
         logger.info(count_sql)
 
+        # order_sql = ''' order by day_time desc,hold_count desc '''
+        # limit_sql = ''' limit %s,%s''' %((page-1)*size,size)
+        # sql = sql + order_sql + limit_sql
         order_sql = ''' order by day_time desc,hold_count desc '''
-        limit_sql = ''' limit %s,%s''' %((page-1)*size,size)
-        sql = sql + order_sql + limit_sql
+        if page and size:
+            limit_sql = ''' limit %s,%s''' % ((page - 1) * size, size)
+            sql = sql + order_sql + limit_sql
+        else:
+            sql = sql + order_sql
+
         logger.info(sql)
         value_data = pd.read_sql(sql,conn_an)
 
