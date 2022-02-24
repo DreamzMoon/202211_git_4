@@ -713,7 +713,18 @@ def update_user_ascriptions():
 
             update_operate_sql = ""
             update_operate = ""
-            # 如果没有找到
+
+            update_user_daily_order_82_sql = ""
+            update_user_daily_order_data_sql = ""
+            update_user_daily_order_p8_sql = ""
+            update_user_storage_eight_sql = ""
+            update_user_storage_eight_hour_sql = ""
+            update_user_storage_eight_today_sql = ""
+            update_user_storage_value_sql = ""
+            update_user_storage_value_hour_sql = ""
+
+
+            # 如果没有找到 crm_user关系修改
             if parent_phone and not flag:
                 # 把被改的unionid列出来
                 if old_operate_id:
@@ -757,6 +768,40 @@ def update_user_ascriptions():
 
                         # cursor.execute(update_operate_sql)
 
+
+            #统计表的运营关系修改
+
+            if parent_phone and not flag:
+                # 把被改的unionid列出来
+                if old_operate_id:
+                    logger.info(all_below_unionid[i])
+                    update_unionid_sql = '''select unionid from crm_user where operate_id = %s and unionid in (%s)''' % (old_operate_id, ",".join(all_below_unionid[i]))
+                    update_unionid = pd.read_sql(update_unionid_sql, conn)["unionid"].to_list()
+                    if update_unionid:
+                        update_user_daily_order_82_sql = '''update user_daily_order_82 set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_daily_order_data_sql = '''update user_daily_order_data set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_daily_order_p8_sql = '''update user_daily_order_p8 set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_eight_sql = '''update user_storage_eight set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_eight_hour_sql = '''update user_storage_eight_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_eight_today_sql = '''update user_storage_eight_today set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_value_sql = '''update user_storage_value set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                else:
+                    logger.info("该unionis没有运营中心 元数据")
+                    update_unionid_sql = '''select unionid from crm_user where (operate_id is null or operate_id = "") and unionid in (%s)''' % ( ",".join(all_below_unionid[i]))
+                    update_unionid = pd.read_sql(update_unionid_sql, conn)["unionid"].to_list()
+                    if update_unionid:
+                        # update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]))
+                        update_user_daily_order_82_sql = '''update user_daily_order_82 set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_daily_order_data_sql = '''update user_daily_order_data set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_daily_order_p8_sql = '''update user_daily_order_p8 set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_eight_sql = '''update user_storage_eight set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_eight_hour_sql = '''update user_storage_eight_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_eight_today_sql = '''update user_storage_eight_today set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_value_sql = '''update user_storage_value set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
 
             # 更新crm
             update_crm = '''update crm_user '''
@@ -804,6 +849,8 @@ def update_user_ascriptions():
                 update_daily_eighth_sql = update_daily_eighth_sql + " set " + statistic_condition_sql + update_where
                 update_daily_eightt_sql = update_daily_eightt_sql + " set " + statistic_condition_sql + update_where
 
+                logger.info(update_store_vas_sql)
+
                 cursor.execute(update_daily_order_sql)
                 cursor.execute(update_store_vas_sql)
                 cursor.execute(update_store_vasto_sql)
@@ -824,9 +871,26 @@ def update_user_ascriptions():
             # 修改运营中心
             if update_operate:
                 cursor.execute(update_operate)
-
             if update_operate_sql:
                 cursor.execute(update_operate_sql)
+            if update_user_daily_order_82_sql:
+                cursor.execute(update_user_daily_order_82_sql)
+            if update_user_daily_order_data_sql:
+                cursor.execute(update_user_daily_order_data_sql)
+            if update_user_daily_order_p8_sql:
+                cursor.execute(update_user_daily_order_p8_sql)
+            if update_user_storage_eight_sql:
+                cursor.execute(update_user_storage_eight_sql)
+            if update_user_storage_eight_hour_sql:
+                cursor.execute(update_user_storage_eight_hour_sql)
+            if update_user_storage_eight_today_sql:
+                cursor.execute(update_user_storage_eight_today_sql)
+            if update_user_storage_value_sql:
+                cursor.execute(update_user_storage_value_sql)
+            if update_user_storage_value_hour_sql:
+                cursor.execute(update_user_storage_value_hour_sql)
+
+
 
             # 日志接入
             # compare = []
