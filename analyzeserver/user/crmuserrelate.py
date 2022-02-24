@@ -875,20 +875,29 @@ def update_user_ascriptions():
                 cursor.execute(update_operate_sql)
             if update_user_daily_order_82_sql:
                 cursor.execute(update_user_daily_order_82_sql)
+                logger.info("update_user_daily_order_82_sql执行成功")
             if update_user_daily_order_data_sql:
                 cursor.execute(update_user_daily_order_data_sql)
+                logger.info("update_user_daily_order_data_sql执行成功")
             if update_user_daily_order_p8_sql:
                 cursor.execute(update_user_daily_order_p8_sql)
+                logger.info("update_user_daily_order_p8_sql执行成功")
             if update_user_storage_eight_sql:
                 cursor.execute(update_user_storage_eight_sql)
+                logger.info("update_user_storage_eight_sql执行成功")
             if update_user_storage_eight_hour_sql:
                 cursor.execute(update_user_storage_eight_hour_sql)
+                logger.info("update_user_storage_eight_hour_sql执行成功")
             if update_user_storage_eight_today_sql:
                 cursor.execute(update_user_storage_eight_today_sql)
+                logger.info("update_user_storage_eight_today_sql执行成功")
             if update_user_storage_value_sql:
+                logger.info(update_user_storage_value_sql)
                 cursor.execute(update_user_storage_value_sql)
+                logger.info("update_user_storage_value_sql执行成功")
             if update_user_storage_value_hour_sql:
                 cursor.execute(update_user_storage_value_hour_sql)
+                logger.info("update_user_storage_value_hour_sql执行成功")
 
 
 
