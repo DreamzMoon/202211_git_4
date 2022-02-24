@@ -4,7 +4,7 @@
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
-# @File : shop_tran.py
+# @File : transfer.py
 
 import sys
 
