@@ -135,7 +135,7 @@ def shop_top():
             select t2.name shop_name, t1.total_money from
             (select shop_id, sum(money) + sum(freight) total_money from luke_marketing.orders
             where is_del=0 and `status` in (1,2,4,6)
-            and from_unixtime(addtime, "%Y-%m-%d")>=current_date
+            and from_unixtime(addtime, "%Y-%m-%d")=current_date
             group by shop_id
             order by total_money desc
             limit 9) t1
