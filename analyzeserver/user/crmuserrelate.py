@@ -722,6 +722,7 @@ def update_user_ascriptions():
             update_user_storage_eight_today_sql = ""
             update_user_storage_value_sql = ""
             update_user_storage_value_hour_sql = ""
+            update_user_storage_value_today_sql = ""
 
 
             # 如果没有找到 crm_user关系修改
@@ -786,7 +787,7 @@ def update_user_ascriptions():
                         update_user_storage_eight_today_sql = '''update user_storage_eight_today set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
                         update_user_storage_value_sql = '''update user_storage_value set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
                         update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
-                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
+                        update_user_storage_value_today_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
                 else:
                     logger.info("该unionis没有运营中心 元数据")
                     update_unionid_sql = '''select unionid from crm_user where (operate_id is null or operate_id = "") and unionid in (%s)''' % ( ",".join(all_below_unionid[i]))
@@ -801,7 +802,7 @@ def update_user_ascriptions():
                         update_user_storage_eight_today_sql = '''update user_storage_eight_today set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
                         update_user_storage_value_sql = '''update user_storage_value set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
                         update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
-                        update_user_storage_value_hour_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
+                        update_user_storage_value_today_sql = '''update user_storage_value_hour set operatename = "%s",leader_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"], bus_data["leader_unionid"],bus_data["operate_id"], ",".join(all_below_unionid[i]))
 
             # 更新crm
             update_crm = '''update crm_user '''
@@ -898,6 +899,8 @@ def update_user_ascriptions():
             if update_user_storage_value_hour_sql:
                 cursor.execute(update_user_storage_value_hour_sql)
                 logger.info("update_user_storage_value_hour_sql执行成功")
+            if update_user_storage_value_today_sql:
+                cursor.execute(update_user_storage_value_today_sql)
 
 
 
