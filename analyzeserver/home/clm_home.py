@@ -320,11 +320,10 @@ def area_list():
         area_list_df = area_list_df.groupby('area_name').agg(
             {"total_count": "sum", "total_money": "sum", "area_name": "count"}).rename(columns={"area_name": "order_count"}).reset_index()
         area_list_df = area_list_df.merge(area_person_count_df, how='left', on='area_name')
-
+        # 占比（订单数）
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
         area_list_df['proportion'] = area_list_df['proportion'].round(2)
         # 按照订单数倒序排序
-        logger.info(area_list_df)
         area_list_df.sort_values(['order_count','total_count','total_money'], ascending=[False,False,False], inplace=True)
         count = area_list_df.shape[0]
         start_index = (page - 1) * size
