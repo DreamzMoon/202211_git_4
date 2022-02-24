@@ -81,7 +81,7 @@ def person_top():
                     datas.loc[index, 'username'] = values['clmname']
             logger.info(datas)
             datas.drop('clmname', axis=1, inplace=True)
-        datas.drop('unionid', axis=1, inplace=True)
+        # datas.drop('unionid', axis=1, inplace=True)
         datas = datas.to_dict("records")
 
         return {"code": "0000", "status": "success", "msg": datas}
