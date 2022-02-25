@@ -409,9 +409,9 @@ def clm_orderflow_all():
             where is_del=0
         '''
         if start_addtime and end_addtime:
-            base_order_sql += ''' and ddtime>={start_time} and addtime<={end_time}'''.format(start_time=start_addtime, end_time=end_addtime)
+            base_order_sql += ''' and ddtime>="{start_time}" and addtime<="{end_time}"'''.format(start_time=start_addtime, end_time=end_addtime)
         if start_paytime and end_paytime:
-            base_order_sql += ''' and paytime>={start_time} and paytime<={end_time}'''.format(start_time=start_paytime, end_time=end_paytime)
+            base_order_sql += ''' and paytime>="{start_time}" and paytime<="{end_time}"'''.format(start_time=start_paytime, end_time=end_paytime)
         if order_sn != '':
             base_order_sql += ''' and order_sn=%s''' % order_sn
         if shop_id != '':
