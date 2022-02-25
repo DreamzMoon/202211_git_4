@@ -485,7 +485,7 @@ def area_list():
         '''
 
         if not province_code and not city_code:
-            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='', group=' group by consignee_province, user_id')
+            area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_province area_name',area_name=', consignee_province', condition='', group=' group by consignee_province, create_time')
         else:
             # 查找省名称
             province_sql = '''select name from lh_analyze.province where code=%s'''
@@ -508,7 +508,7 @@ def area_list():
                 # 拼接sql
                 area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_city area_name', area_name=', consignee_city',
                                                      condition=' and consignee_province= "%s" and consignee_city in (%s)' % (province_name, ','.join(city_name_list)),
-                                                     group=' group by consignee_city, user_id')
+                                                     group=' group by consignee_city, create_time')
             else:
                 # 查找市名称
                 city_sql = '''select name from lh_analyze.city where code=%s''' % city_code
@@ -524,7 +524,7 @@ def area_list():
                 area_list_sql = area_list_sql.format(t_area_name=', t1.consignee_county area_name', area_name=', consignee_county',
                                                      condition=' and consignee_province="%s" and consignee_city="%s" and consignee_county in (%s)' % (
                                                      province_name, city_name, ','.join(region_name_list)),
-                                                     group=' group by consignee_county, user_id')
+                                                     group=' group by consignee_county, create_time')
         logger.info(area_list_sql)
         area_list_df = pd.read_sql(area_list_sql, conn_clg)
         area_list_df['proportion'] = area_list_df['order_count'] / area_list_df['order_count'].sum()
