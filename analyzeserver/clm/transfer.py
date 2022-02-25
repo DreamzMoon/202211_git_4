@@ -435,6 +435,8 @@ def clm_orderflow_all():
         else:
             user_order_df = pd.read_sql(base_order_sql, conn_crm)
             unionid_list = [str(unionid) for unionid in set(user_order_df['unionid'].tolist())]
+            if len(unionid_list) == 0:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
             user_info_sql += ''' and unionid in (%s)''' % ','.join(unionid_list)
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
         # 合并用户信息与订单信息
