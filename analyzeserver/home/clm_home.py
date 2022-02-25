@@ -107,11 +107,20 @@ def data_center():
         #     and from_unixtime(addtime, "%Y-%m-%d")=current_date
         # '''
         '''近1个月'''
+        # sql = '''
+        #     select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(pay_money) total_money from luke_marketing.orders
+        #     where is_del=0 and pay_status=2
+        #     and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month)
+        # '''
+
         sql = '''
-            select count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(pay_money) total_money from luke_marketing.orders
-            where is_del=0 and pay_status=2
-            and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month)
+        select sum(person_count) person_count,sum(shop_count) shop_count,sum(order_count) order_count,sum(total_money) total_money from (
+select from_unixtime(addtime, "%Y-%m-%d") day_time,count(distinct unionid) person_count, count(distinct shop_id) shop_count, count(*) order_count, sum(pay_money) total_money from luke_marketing.orders
+where is_del=0 and pay_status=2
+and from_unixtime(addtime, "%Y-%m-%d")>=date_sub(curdate(), interval 1 month) group by day_time
+) t
         '''
+
         data = pd.read_sql(sql,conn_crm).to_dict("records")
         return {"code":"0000","status":"success","msg":data}
 
