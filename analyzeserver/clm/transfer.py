@@ -419,7 +419,7 @@ def clm_orderflow_all():
         if pay_types != '':
             base_order_sql += ''' and pay_types=%s''' % pay_types
         if order_status != '':
-            base_order_sql += ''' and pay_types=%s''' % order_status
+            base_order_sql += ''' and order_status=%s''' % order_status
         # 购买人
         if buyer_info != '':
             buyer_resutl = get_phone_by_keyword(buyer_info)
