@@ -109,22 +109,43 @@ def data_center():
         # group by trade_order_info.user_id ) t group by user_id
         # ) t2
         # '''
+        # sql = '''
+        #     select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
+        #     select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
+        #     select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
+        #     left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        #     where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+        #     and trade_order_info.order_status in (3,4,5,6,10,15)
+        #     group by trade_order_info.user_id
+        #     union all
+        #     select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
+        #     left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+        #     where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+        #     and trade_order_info.order_status in (3,4,5,6,10,15)
+        #     group by trade_order_info.user_id ) t group by user_id
+        #     ) t2
+        # '''
+
+        #按天统计重复统计人
         sql = '''
-            select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
-            select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
-            select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
-            left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-            where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
-            and trade_order_info.order_status in (3,4,5,6,10,15)
-            group by trade_order_info.user_id
-            union all 
-            select trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
-            left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
-            where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
-            and trade_order_info.order_status in (3,4,5,6,10,15)
-            group by trade_order_info.user_id ) t group by user_id
-            ) t2
+        select sum(person_count) person_count,sum(order_count) order_count,sum(total_count) total_count,sum(total_money) total_money from (
+select count(*) person_count,sum(count) order_count,sum(buy_num) total_count,sum(pay_money) total_money from (
+select date_format(trade_order_info.create_time, "%Y-%m-%d") day_time,trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(pay_money) pay_money from trade_order_info
+left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+where trade_order_info.voucherMoneyType = 1 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+and trade_order_info.order_status in (3,4,5,6,10,15)
+group by trade_order_info.user_id,day_time
+union all 
+select date_format(trade_order_info.create_time, "%Y-%m-%d") day_time,trade_order_info.user_id,count(*) count,sum(buy_num) buy_num,sum(voucherPayMoney) pay_money from trade_order_info
+left join trade_order_item on trade_order_info.order_sn = trade_order_item.order_sn
+where trade_order_info.voucherMoneyType = 2 and date_format(trade_order_info.create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 month)
+and trade_order_info.order_status in (3,4,5,6,10,15)
+group by trade_order_info.user_id,day_time ) 
+t group by user_id
+) t2
+        
         '''
+
 
         data = (pd.read_sql(sql,conn_clg)).to_dict("records")
         return {"code":"0000","status":"success","msg":data}
