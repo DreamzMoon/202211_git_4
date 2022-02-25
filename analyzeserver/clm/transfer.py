@@ -84,7 +84,7 @@ def clg_tran_shop_all():
                 if i == 0:
                     shop_sql = shop_sql + " where " + condition[i]
                 else:
-                    shop_sql = shop_sql + condition[i]
+                    shop_sql = shop_sql + " and " + condition[i]
         logger.info(shop_sql)
         shop_data = pd.read_sql(shop_sql, conn_clm)
         logger.info("店铺数据读取完成")
@@ -93,10 +93,13 @@ def clg_tran_shop_all():
         if "" in serach_phone:
             serach_phone.remove("")
         logger.info(serach_phone)
-        crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
-        crm_data = pd.read_sql(crm_sql, conn_analyze)
-        logger.info("用户数据完成")
-
+        if serach_phone:
+            crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
+            crm_data = pd.read_sql(crm_sql, conn_analyze)
+            logger.info("用户数据完成")
+        else:
+            crm_data = [{"unionid":"","nickname":"","phone":""}]
+            crm_data = pd.DataFrame(crm_data)
 
         user_data = shop_data.merge(crm_data,on="phone",how="left")
 
@@ -147,10 +150,12 @@ def clg_tran_shop_all():
         form_order_data = reduce(lambda left, right: pd.merge(left, right, on='shop_id', how='left'), df_list)
         form_order_data.fillna(0,inplace=True)
 
+        user_data.fillna("",inplace=True)
         form_data = user_data.merge(form_order_data,how="left",on="shop_id")
-
+        form_data.fillna(0, inplace=True)
         #关键词
-        form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword)) | (form_data["unionid"].str.contains(keyword)) ]
+        if keyword:
+            form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword)) | (form_data["unionid"].str.contains(keyword)) ]
 
         count = form_data.shape[0]
 
