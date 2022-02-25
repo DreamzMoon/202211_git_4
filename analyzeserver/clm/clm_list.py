@@ -95,7 +95,7 @@ def manage():
 
 
 @clmlisttbp.route("shop/type",methods=["GET"])
-def manage():
+def shop_type():
     try:
 
         try:
@@ -123,7 +123,7 @@ def manage():
 
 
 @clmlisttbp.route("wx/status",methods=["GET"])
-def manage():
+def wx_status():
     try:
         try:
             token = request.headers["Token"]
@@ -157,7 +157,7 @@ def manage():
 
 
 @clmlisttbp.route("zfb/status",methods=["GET"])
-def manage():
+def zfb_status():
     try:
         try:
             token = request.headers["Token"]
@@ -190,7 +190,7 @@ def manage():
 
 
 @clmlisttbp.route("shop/status",methods=["GET"])
-def manage():
+def shop_status():
     try:
         try:
             token = request.headers["Token"]

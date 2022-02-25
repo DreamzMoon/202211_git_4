@@ -48,20 +48,51 @@ def clg_tran_shop_all():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
 
-
+        page = request.json.get("page")
+        size = request.json.get("size")
+        keyword = request.json.get("keyword")
+        shop_id = request.json.get("shop_id")
+        cate_id = request.json.get("cate_id")
+        shop_type = request.json.get("shop_type")
+        start_time = request.json.get("start_time")
+        end_time = request.json.get("end_time")
+        wx_status = request.json.get("wx_status")
+        zfb_status = request.json.get("zfb_status")
+        shop_status = request.json.get("shop_status")
 
         #店铺信息
-        shop_sql = '''select shop.id shop_id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status,user.capacity,alipaystatus,wechatstatus from luke_marketing.shop shop
+        shop_sql = '''select shop.id shop_id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status,if(user.capacity = 1,1,2) capacity,alipaystatus,wechatstatus from luke_marketing.shop shop
             left join luke_lukebus.user user on shop.phone = user.phone
             left join luke_marketing.shop_category sc on shop.cate_id = sc.cate_id'''
+        logger.info(shop_id)
+        condition = []
+        if str(shop_id) and str(shop_id)!="None":
+            condition.append(''' shop.id = %s ''' %shop_id)
+        if str(cate_id) and str(cate_id)!="None":
+            condition.append(''' sc.cate_id = %s ''' %cate_id)
+        if str(shop_type) and str(shop_type)!="None":
+            condition.append(''' shop.types = %s ''' %shop_type)
+        if str(wx_status) and str(wx_status)!="None":
+            condition.append(''' wechatstatus = %s ''' %wx_status)
+        if str(zfb_status) and str(zfb_status)!="None":
+            condition.append(''' alipaystatus = %s ''' %zfb_status)
+        if str(shop_status) and str(shop_status)!="None":
+            condition.append(''' shop_status = %s ''' %shop_status)
 
+        if condition:
+            for i in range(0,len(condition)):
+                if i == 0:
+                    shop_sql = shop_sql + " where " + condition[i]
+                else:
+                    shop_sql = shop_sql + condition[i]
+        logger.info(shop_sql)
         shop_data = pd.read_sql(shop_sql, conn_clm)
         logger.info("店铺数据读取完成")
 
         serach_phone = list(set(shop_data["phone"].to_list()))
         if "" in serach_phone:
             serach_phone.remove("")
-
+        logger.info(serach_phone)
         crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
         crm_data = pd.read_sql(crm_sql, conn_analyze)
         logger.info("用户数据完成")
@@ -71,6 +102,9 @@ def clg_tran_shop_all():
 
         #订单情况
         order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
+        if start_time and end_time:
+            order_sql = order_sql + ''' FROM_UNIXTIME(addtime,'%Y-%m-%d %H:%i:%s') >= "%s" and FROM_UNIXTIME(addtime,'%Y-%m-%d %H:%i:%s')<="%s"''' %(start_time,end_time)
+
         order_data = pd.read_sql(order_sql,conn_clm)
 
         logger.info(order_data.iloc[0])
@@ -114,6 +148,10 @@ def clg_tran_shop_all():
         form_order_data.fillna(0,inplace=True)
 
         form_data = user_data.merge(form_order_data,how="left",on="shop_id")
+
+        #关键词
+        form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword)) | (form_data["unionid"].str.contains(keyword)) ]
+
         count = form_data.shape[0]
 
         all_data = {}
@@ -129,13 +167,16 @@ def clg_tran_shop_all():
         all_data["nopay_count"] = int(form_data["nopay_count"].sum())
         all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
 
+        form_data.sort_values('count', ascending=False, inplace=True)
+        if page and size:
+            code_page = (page - 1) * size
+            code_size = page * size
+            form_data = form_data[code_page:code_size]
         form_data = form_data.to_dict("records")
-
         data = {
             "all_data":all_data,
             "form_data":form_data
         }
-
 
         return {"code":"0000","status":"success","msg":data,"count":count}
     except Exception as e:
