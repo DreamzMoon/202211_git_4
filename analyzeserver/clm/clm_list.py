@@ -218,3 +218,60 @@ def shop_status():
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+# 支付方式
+@clmlisttbp.route("pay/status",methods=["GET"])
+def pay_status():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        type = [
+             {"id":0,"name":"未知"},
+             {"id":1,"name":"微信支付"},
+             {"id":2,"name":"支付宝支付"},
+             {"id":3,"name":"余额支付"},
+         ]
+        return {"code":"0000","status":"success","msg":type}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+
+# 订单状态
+@clmlisttbp.route("order/status",methods=["GET"])
+def order_status():
+    try:
+        try:
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        type = [
+             {"id":1,"name":"待支付"},
+             {"id":2,"name":"已支付"},
+             {"id":3,"name":"已退款"},
+         ]
+        return {"code":"0000","status":"success","msg":type}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
