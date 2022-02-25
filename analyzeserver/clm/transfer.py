@@ -51,23 +51,93 @@ def clg_tran_shop_all():
 
 
         #店铺信息
-        shop_sql = '''select shop.id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status from shop 
-        left join shop_category sc on shop.cate_id = sc.cate_id'''
+        shop_sql = '''select shop.id shop_id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status,user.capacity,alipaystatus,wechatstatus from luke_marketing.shop shop
+            left join luke_lukebus.user user on shop.phone = user.phone
+            left join luke_marketing.shop_category sc on shop.cate_id = sc.cate_id'''
+
         shop_data = pd.read_sql(shop_sql, conn_clm)
         logger.info("店铺数据读取完成")
+
         serach_phone = list(set(shop_data["phone"].to_list()))
+        if "" in serach_phone:
+            serach_phone.remove("")
+
         crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
         crm_data = pd.read_sql(crm_sql, conn_analyze)
         logger.info("用户数据完成")
 
+
+        user_data = shop_data.merge(crm_data,on="phone",how="left")
+
         #订单情况
-        order_sql = '''select shop_id,pay_money,pay_status,pay_types,count(*) count from orders where is_del = 0
-group by shop_id'''
-        order_data = pd.read_sql(order_sql)
+        order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
+        order_data = pd.read_sql(order_sql,conn_clm)
+
+        logger.info(order_data.iloc[0])
+
+        #交易金额 交易数量
+        tran_all_data = order_data.groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "count", "pay_money": "pay_money"}).reset_index()
+
+        #余额收款
+        tran_packet_data = order_data[order_data["pay_types"] == 3].groupby(["shop_id"]).agg({"pay_money":"sum"}).rename(columns={"pay_money": "packet_pay_money"}).reset_index()
+        logger.info(tran_packet_data)
+
+        #支付宝收款
+        tran_zfb_data = order_data[order_data["pay_types"] == 2].groupby(["shop_id"]).agg({"pay_money": "sum"}).rename(columns={"pay_money": "zfb_pay_money"}).reset_index()
+        logger.info(tran_zfb_data)
+
+        #微信收款
+        tran_wx_data = order_data[order_data["pay_types"] == 1].groupby(["shop_id"]).agg({"pay_money": "sum"}).rename(columns={"pay_money": "wx_pay_money"}).reset_index()
+        logger.info(tran_wx_data)
 
 
+        #有效订单
+        ok_order_data = order_data[order_data["pay_status"] == 2].groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "ok_count", "pay_money": "ok_pay_money"}).reset_index()
+
+        # 已退款订单
+        refund_order_data = order_data[order_data["pay_status"] == 3].groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "refund_count", "pay_money": "refund_pay_money"}).reset_index()
+
+        # 待支付
+        nopay_order_data = order_data[order_data["pay_status"] == 1].groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "nopay_count", "pay_money": "no_pay_money"}).reset_index()
 
 
+        #订单数据合并
+        df_list = []
+        df_list.append(tran_all_data)
+        df_list.append(tran_packet_data)
+        df_list.append(tran_zfb_data)
+        df_list.append(tran_wx_data)
+        df_list.append(ok_order_data)
+        df_list.append(refund_order_data)
+        df_list.append(nopay_order_data)
+        form_order_data = reduce(lambda left, right: pd.merge(left, right, on='shop_id', how='left'), df_list)
+        form_order_data.fillna(0,inplace=True)
+
+        form_data = user_data.merge(form_order_data,how="left",on="shop_id")
+        count = form_data.shape[0]
+
+        all_data = {}
+        all_data["shop_count"] = int(form_data["shop_id"].count())
+        all_data["ok_wechatstatus"] = form_data[form_data["wechatstatus"] == 6].shape[0]
+        all_data["ok_alipaystatus"] = form_data[form_data["alipaystatus"] == 6].shape[0]
+        all_data["count"] = int(form_data["count"].sum())
+        all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
+        all_data["ok_count"] = int(form_data["ok_count"].sum())
+        all_data["ok_pay_money"] = round(float(form_data["ok_pay_money"].sum()),2)
+        all_data["refund_count"] = int(form_data["refund_count"].sum())
+        all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
+        all_data["nopay_count"] = int(form_data["nopay_count"].sum())
+        all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
+
+        form_data = form_data.to_dict("records")
+
+        data = {
+            "all_data":all_data,
+            "form_data":form_data
+        }
+
+
+        return {"code":"0000","status":"success","msg":data,"count":count}
     except Exception as e:
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
