@@ -287,11 +287,18 @@ def clm_tran_user_all():
             where is_del=0
         '''
         if keyword != '':
-            keyword_result = get_phone_by_keyword(keyword)
-            if not keyword_result[0]:
-                return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
-            keyword_phone_list = keyword_result[1]
-            user_info_sql += ''' and phone in (%s)''' % ','.join(keyword_phone_list)
+            # keyword_result = get_phone_by_keyword(keyword)
+            # if not keyword_result[0]:
+            #     return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
+            # keyword_phone_list = keyword_result[1]
+            # user_info_sql += ''' and phone in (%s)''' % ','.join(keyword_phone_list)
+            user_info_sql = '''
+                                    select * from (
+                                    select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname
+                                     from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t 
+                                    where  (t.nickname like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
+                                    ''' % (
+            keyword, keyword, keyword, keyword, keyword, keyword, keyword)
 
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
             unionid_list = [str(unionid) for unionid in user_info_df['unionid'].tolist()]
