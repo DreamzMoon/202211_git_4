@@ -294,11 +294,11 @@ def clm_tran_user_all():
             # keyword_phone_list = keyword_result[1]
             # user_info_sql += ''' and phone in (%s)''' % ','.join(keyword_phone_list)
             user_info_sql = '''
-                                    select * from (
-                                    select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name
-                                     from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t 
-                                    where  (t.name like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
-                                    ''' % (
+                select * from (
+                select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name
+                 from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t
+                where  (t.name like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
+            ''' % (
             keyword, keyword, keyword, keyword, keyword, keyword, keyword)
 
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
@@ -388,7 +388,8 @@ def clm_tran_user_all():
         except:
             pass
 
-# 订单流水
+
+#订单流水
 @clmtranbp.route("/orderflow",methods=["POST"])
 def clm_orderflow_all():
     try:
