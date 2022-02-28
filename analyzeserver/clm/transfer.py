@@ -180,7 +180,7 @@ def clg_tran_shop_all():
         form_data = form_data.to_dict("records")
         data = {
             "all_data":all_data,
-            "form_data":form_data
+            "data":form_data
         }
 
         return {"code":"0000","status":"success","msg":data,"count":count}

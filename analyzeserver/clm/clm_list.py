@@ -81,7 +81,7 @@ def manage():
         except:
             return {"code": "10004", "status": "failed", "msg": message["10004"]}
         sql = '''
-        select cate_id,cate_name from shop_category where is_del = 0 
+        select cate_id,cate_name from luke_marketing.shop_category where is_del = 0 
         '''
         shop_data = pd.read_sql(sql,conn_clm)
         shop_data = shop_data.to_dict("records")
