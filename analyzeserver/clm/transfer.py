@@ -132,7 +132,7 @@ def clg_tran_shop_all():
         logger.info(order_sql)
         order_data = pd.read_sql(order_sql,conn_clm)
 
-        logger.info(order_data.iloc[0])
+        logger.info(order_data)
 
         #交易金额 交易数量
         tran_all_data = order_data.groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "count", "pay_money": "pay_money"}).reset_index()
