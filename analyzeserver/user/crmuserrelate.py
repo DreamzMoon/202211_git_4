@@ -941,6 +941,15 @@ def update_user_ascriptions():
 
         return {"code": "0000", "msg": "更新成功", "status": "success"}
     except Exception as e:
+        logger.info(e)
+        if e:
+            try:
+                error = str(e)
+                logger.info(error)
+                if error.find("Try increasing @@cte_max_recursion_depth to a larger value"):
+                    return {"code": "11035", "status": "failed", "msg":message["11035"]}
+            except:
+                pass
         conn.rollback()
         logger.exception(traceback.format_exc())
         # 参数名错误
