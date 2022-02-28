@@ -349,6 +349,7 @@ def clm_tran_user_all():
 
         # 合并所有订单
         fina_df = reduce(lambda left, right: pd.merge(left, right, on='unionid', how='outer'), df_list)
+        logger.info(fina_df)
         fina_df['name'].fillna('', inplace=True)
         fina_df['phone'].fillna('', inplace=True)
         fina_df.fillna(0, inplace=True)
