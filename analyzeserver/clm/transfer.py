@@ -89,7 +89,7 @@ def clg_tran_shop_all():
             if str(dianpu_type) == "1":
                 condition.append(''' capacity = %s ''' %dianpu_type)
             else:
-                condition.append(''' capacity != 1 ''')
+                condition.append(''' (capacity != 1 or  user.capacity = "" or user.capacity is null) ''')
         if str(wx_status) and str(wx_status)!="None":
             condition.append(''' wechatstatus = %s ''' %wx_status)
         if str(zfb_status) and str(zfb_status)!="None":
