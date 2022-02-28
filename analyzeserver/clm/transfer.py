@@ -123,7 +123,7 @@ def clg_tran_shop_all():
         #订单情况
         order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
         if start_time and end_time:
-            order_sql = order_sql + ''' FROM_UNIXTIME(addtime,'%Y-%m-%d %H:%i:%s') >= "%s" and FROM_UNIXTIME(addtime,'%Y-%m-%d %H:%i:%s')<="%s"''' %(start_time,end_time)
+            order_sql = order_sql + ''' FROM_UNIXTIME(addtime,'%%Y-%%m-%%d %%H:%%i:%%s') >= "%s" and FROM_UNIXTIME(addtime,'%%Y-%%m-%%d %%H:%%i:%%s')<="%s"''' %(start_time,end_time)
 
         order_data = pd.read_sql(order_sql,conn_clm)
 

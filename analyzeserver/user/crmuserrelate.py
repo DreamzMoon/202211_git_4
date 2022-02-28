@@ -686,7 +686,7 @@ def update_user_ascriptions():
                 if "None" in below_unionid:
                     below_unionid.remove("None")
                 logger.info(below_unionid)
-                if parent_unionid in below_unionid:
+                if str(parent_unionid) in below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
                 all_below_unionid.append(below_unionid)
 
