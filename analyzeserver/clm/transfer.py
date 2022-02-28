@@ -85,7 +85,10 @@ def clg_tran_shop_all():
             condition.append(''' shop.types = %s ''' %shop_type)
         # 商家类型 运营 普通
         if str(dianpu_type) and str(dianpu_type)!="None":
-            condition.append(''' capacity = %s ''' %dianpu_type)
+            if dianpu_type == 1:
+                condition.append(''' capacity = %s ''' %dianpu_type)
+            else:
+                condition.append(''' capacity != 1 ''')
         if str(wx_status) and str(wx_status)!="None":
             condition.append(''' wechatstatus = %s ''' %wx_status)
         if str(zfb_status) and str(zfb_status)!="None":
