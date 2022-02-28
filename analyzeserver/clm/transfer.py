@@ -294,9 +294,9 @@ def clm_tran_user_all():
             # user_info_sql += ''' and phone in (%s)''' % ','.join(keyword_phone_list)
             user_info_sql = '''
                                     select * from (
-                                    select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname
+                                    select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) name
                                      from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t 
-                                    where  (t.nickname like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
+                                    where  (t.name like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
                                     ''' % (
             keyword, keyword, keyword, keyword, keyword, keyword, keyword)
 
@@ -349,8 +349,9 @@ def clm_tran_user_all():
 
         # 合并所有订单
         fina_df = reduce(lambda left, right: pd.merge(left, right, on='unionid', how='outer'), df_list)
-        logger.info(fina_df.info())
-        logger.info(fina_df)
+        # logger.info(fina_df.info())
+        # logger.info(fina_df)
+        # fina_df.to_csv("e:/123321.csv")
 
         fina_df['name'].fillna('', inplace=True)
         fina_df['phone'].fillna('', inplace=True)
