@@ -55,7 +55,7 @@ def clg_tran_shop_all():
         shop_id = request.json.get("shop_id")
         # 经营分类
         cate_id = request.json.get("cate_id")
-        # 商家类型
+        # 店铺类型
         shop_type = request.json.get("shop_type")
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
@@ -63,7 +63,7 @@ def clg_tran_shop_all():
         zfb_status = request.json.get("zfb_status")
         shop_status = request.json.get("shop_status")
 
-        # 店铺类型
+        # 商家类型
         dianpu_type = request.json.get("dianpu_type")
 
 
