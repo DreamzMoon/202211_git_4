@@ -27,6 +27,7 @@ from functools import reduce
 
 clmlisttbp = Blueprint('clmlist', __name__, url_prefix='/clmlist')
 
+# 店铺列表
 @clmlisttbp.route("shop",methods=["GET"])
 def clg_shop():
     try:
@@ -93,7 +94,7 @@ def manage():
     finally:
         conn_clm.close()
 
-
+# 商家类型
 @clmlisttbp.route("shop/type",methods=["GET"])
 def shop_type():
     try:
@@ -120,6 +121,31 @@ def shop_type():
         logger.exception(traceback.format_exc())
         return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
+@clmlisttbp.route("dianpu/type",methods=["GET"])
+def dianpu_type():
+    try:
+
+        try:
+
+            token = request.headers["Token"]
+            user_id = request.args.get("user_id")
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+        except:
+            return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+        shop_type = [{"id":1,"name":"个人店铺"},{"id":2,"name":"企业店铺"}]
+
+        return {"code":"0000","status":"success","msg":shop_type}
+
+    except Exception as e:
+        logger.exception(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
 
 
 @clmlisttbp.route("wx/status",methods=["GET"])

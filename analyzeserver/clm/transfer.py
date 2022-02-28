@@ -51,8 +51,11 @@ def clg_tran_shop_all():
         page = request.json.get("page")
         size = request.json.get("size")
         keyword = request.json.get("keyword")
+        # 商家名称
         shop_id = request.json.get("shop_id")
+        # 经营分类
         cate_id = request.json.get("cate_id")
+        # 商家类型
         shop_type = request.json.get("shop_type")
         start_time = request.json.get("start_time")
         end_time = request.json.get("end_time")
@@ -60,18 +63,29 @@ def clg_tran_shop_all():
         zfb_status = request.json.get("zfb_status")
         shop_status = request.json.get("shop_status")
 
+        # 店铺类型
+        dianpu_type = request.json.get("dianpu_type")
+
+
+
         #店铺信息
         shop_sql = '''select shop.id shop_id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status,if(user.capacity = 1,1,2) capacity,alipaystatus,wechatstatus from luke_marketing.shop shop
             left join luke_lukebus.user user on shop.phone = user.phone
             left join luke_marketing.shop_category sc on shop.cate_id = sc.cate_id'''
         logger.info(shop_id)
         condition = []
+        # 店铺id
         if str(shop_id) and str(shop_id)!="None":
             condition.append(''' shop.id = %s ''' %shop_id)
+        # 经营id
         if str(cate_id) and str(cate_id)!="None":
             condition.append(''' sc.cate_id = %s ''' %cate_id)
+        # 店铺类型
         if str(shop_type) and str(shop_type)!="None":
             condition.append(''' shop.types = %s ''' %shop_type)
+        # 商家类型 运营 普通
+        if str(dianpu_type) and str(dianpu_type)!="None":
+            condition.append(''' capacity = %s ''' %dianpu_type)
         if str(wx_status) and str(wx_status)!="None":
             condition.append(''' wechatstatus = %s ''' %wx_status)
         if str(zfb_status) and str(zfb_status)!="None":
@@ -87,6 +101,7 @@ def clg_tran_shop_all():
                     shop_sql = shop_sql + " and " + condition[i]
         logger.info(shop_sql)
         shop_data = pd.read_sql(shop_sql, conn_clm)
+        logger.info(shop_data)
         logger.info("店铺数据读取完成")
 
         serach_phone = list(set(shop_data["phone"].to_list()))
@@ -102,6 +117,8 @@ def clg_tran_shop_all():
             crm_data = pd.DataFrame(crm_data)
 
         user_data = shop_data.merge(crm_data,on="phone",how="left")
+        if user_data is None:
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
         #订单情况
         order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
@@ -153,9 +170,15 @@ def clg_tran_shop_all():
         user_data.fillna("",inplace=True)
         form_data = user_data.merge(form_order_data,how="left",on="shop_id")
         form_data.fillna(0, inplace=True)
+
+        # logger.info(form_data["name"])
+        # logger.info(form_data["phone"])
+        # logger.info(form_data["unionid"])
+        form_data["unionid"] = form_data["unionid"].astype(str)
         #关键词
         if keyword:
-            form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword)) | (form_data["unionid"].str.contains(keyword)) ]
+            form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword)) | (form_data["unionid"].str.contains(keyword))]
+            # form_data = form_data[(form_data["name"].str.contains(keyword)) | (form_data["phone"].str.contains(keyword))]
 
         count = form_data.shape[0]
 
