@@ -216,7 +216,7 @@ def clg_tran_shop_all():
             last_data = last_data[code_page:code_size]
         else:
             last_data = last_data.copy()
-        logger.info(last_data.iloc[0])
+        # logger.info(last_data.iloc[0])
         last_data.fillna("", inplace=True)
         for i in [column for column in last_data.columns if 'pay' in column or 'voucher' in column]:
             last_data[i] = last_data[i].round(2)
