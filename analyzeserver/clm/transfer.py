@@ -72,7 +72,7 @@ def clg_tran_shop_all():
         shop_sql = '''select shop.id shop_id,shop.`name`,shop.phone,shop.types,sc.cate_name,shop.status,if(user.capacity = 1,1,2) capacity,alipaystatus,wechatstatus from luke_marketing.shop shop
             left join luke_lukebus.user user on shop.phone = user.phone
             left join luke_marketing.shop_category sc on shop.cate_id = sc.cate_id'''
-        logger.info(shop_id)
+        # logger.info(shop_id)
         condition = []
         # 店铺id
         if str(shop_id) and str(shop_id)!="None":
@@ -85,7 +85,7 @@ def clg_tran_shop_all():
             condition.append(''' shop.types = %s ''' %shop_type)
         # 商家类型 运营 普通
         if str(dianpu_type) and str(dianpu_type)!="None":
-            if dianpu_type == 1:
+            if str(dianpu_type) == 1:
                 condition.append(''' capacity = %s ''' %dianpu_type)
             else:
                 condition.append(''' capacity != 1 ''')
