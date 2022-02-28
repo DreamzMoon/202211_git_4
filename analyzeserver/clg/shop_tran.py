@@ -73,6 +73,8 @@ def clg_tran_shop_all():
         serach_phone = list(set(shop_data["phone"].to_list()))
         if '___________' in serach_phone:
             serach_phone.remove("___________")
+        if len(serach_phone) == 0:
+            return {"code": "0000", "status": "success", "msg": [], "count": 0}
         # crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != ""'''
         crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
         logger.info(crm_sql)
