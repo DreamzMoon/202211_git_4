@@ -85,7 +85,8 @@ def clg_tran_shop_all():
             condition.append(''' shop.types = %s ''' %shop_type)
         # 商家类型 运营 普通
         if str(dianpu_type) and str(dianpu_type)!="None":
-            if str(dianpu_type) == 1:
+            logger.info(dianpu_type)
+            if str(dianpu_type) == "1":
                 condition.append(''' capacity = %s ''' %dianpu_type)
             else:
                 condition.append(''' capacity != 1 ''')
@@ -110,7 +111,7 @@ def clg_tran_shop_all():
         serach_phone = list(set(shop_data["phone"].to_list()))
         if "" in serach_phone:
             serach_phone.remove("")
-        logger.info(serach_phone)
+        # logger.info(serach_phone)
         if serach_phone:
             crm_sql = '''select unionid,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname,phone from crm_user where del_flag = 0 and phone is not null and phone != "" and phone in (%s)''' % ",".join(serach_phone)
             crm_data = pd.read_sql(crm_sql, conn_analyze)
