@@ -640,7 +640,7 @@ def update_user_ascriptions():
         #上级修改传手机号码
         parent_phone = request.json.get("parent_phone")
         if not parent_phone:
-            return {"code":""}
+            return {"code":"11033","msg":message["11033"],"status":"failed"}
 
         unionid_lists = request.json.get("unionid_lists")
 
