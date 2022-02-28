@@ -94,7 +94,7 @@ def clg_tran_shop_all():
         if str(zfb_status) and str(zfb_status)!="None":
             condition.append(''' alipaystatus = %s ''' %zfb_status)
         if str(shop_status) and str(shop_status)!="None":
-            condition.append(''' shop_status = %s ''' %shop_status)
+            condition.append(''' shop.status = %s ''' %shop_status)
 
         if condition:
             for i in range(0,len(condition)):
