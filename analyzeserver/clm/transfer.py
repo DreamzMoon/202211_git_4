@@ -127,6 +127,8 @@ def clg_tran_shop_all():
         order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
         if start_time and end_time:
             order_sql = order_sql + ''' and FROM_UNIXTIME(addtime,"%Y-%m-%d %H:%i:%s") >= "{}" and FROM_UNIXTIME(addtime,"%Y-%m-%d %H:%i:%s")<="{}"'''.format(start_time,end_time)
+        if shop_id:
+            order_sql = order_sql + ''' and shop_id = %s ''' %shop_id
         logger.info(order_sql)
         order_data = pd.read_sql(order_sql,conn_clm)
 
