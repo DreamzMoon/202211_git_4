@@ -192,7 +192,7 @@ def clg_tran_shop_all():
         all_data["ok_count"] = int(form_data["ok_count"].sum())
         all_data["ok_pay_money"] = round(float(form_data["ok_pay_money"].sum()),2)
         all_data["refund_count"] = int(form_data["refund_count"].sum())
-        all_data["refund_money"] = int(form_data["refund_pay_money"].sum())
+        all_data["refund_money"] = round(float(form_data["refund_pay_money"].sum()),2)
         all_data["nopay_count"] = int(form_data["nopay_count"].sum())
         all_data["no_pay_money"] = round(float(form_data["no_pay_money"].sum()),2)
 
