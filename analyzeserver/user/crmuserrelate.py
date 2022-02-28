@@ -744,8 +744,8 @@ def update_user_ascriptions():
                         old_operate_operatena = operatena[0][0]
                         operate_operatena = operatena[1][0]
                         logger.info(operate_operatena)
-                        compare.append("本级和下级部分用户 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (old_operate_operatena, operate_operatena))
-                        # compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
+                        # compare.append("本级和下级部分用户 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (old_operate_operatena, operate_operatena))
+                        compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], old_operate_operatena, operate_operatena))
                         update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and operate_id = %s''' % (
                         bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],
                         bus_data["leader_unionid"], bus_data["operate_id"],",".join(all_below_unionid[i]), old_operate_id)
@@ -763,9 +763,9 @@ def update_user_ascriptions():
                         operatena = cursor.fetchall()
                         operate_operatena = operatena[0][0]
 
-                        # compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], "-", operate_operatena))
+                        compare.append("以下用户:%s 支持crm运营中心由原先的运营中心： %s 变更为： %s" % (str(update_unionid)[1:-1], "-", operate_operatena))
 
-                        compare.append("本级和下级部分用户支持crm运营中心由原先的运营中心： %s 变更为： %s" % ( "-", operate_operatena))
+                        # compare.append("本级和下级部分用户支持crm运营中心由原先的运营中心： %s 变更为： %s" % ( "-", operate_operatena))
                         update_operate_sql = '''update crm_user set operatename = "%s",bus_phone= "%s",leader = "%s",leader_unionid = "%s",operate_id = %s  where unionid in (%s) and (operate_id is null or operate_id = "")''' % (
                         bus_data["operatename"], bus_data["bus_phone"], bus_data["leader"],
                         bus_data["leader_unionid"], bus_data["operate_id"], ",".join(all_below_unionid[i]))
@@ -921,23 +921,44 @@ def update_user_ascriptions():
                 compare.insert(0,"该用户的unionid为:%s" %unionid)
                 all_compare.append(compare)
 
-
         logger.info(all_compare)
-        if all_compare:
-            last_compare = []
-            for c in all_compare:
-                last_compare.append("<br>".join(c))
-            insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
-            params = []
-            params.append(user_id)
-            params.append("/user/relate/update/user/ascription")
-            params.append(json.dumps(request.json))
-            params.append("修改用户数据")
-            params.append("<br>".join(last_compare))
-            logger.info(params)
-            cursor.execute(insert_sql, params)
+        try:
 
-            conn.commit()
+            logger.info("try记录")
+            if all_compare:
+                last_compare = []
+                for c in all_compare:
+                    last_compare.append("<br>".join(c))
+                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+                params = []
+                params.append(user_id)
+                params.append("/user/relate/update/user/ascription")
+                params.append(json.dumps(request.json))
+                params.append("修改用户数据")
+                params.append("<br>".join(last_compare))
+                logger.info(params)
+                cursor.execute(insert_sql, params)
+        except:
+            logger.info("exceptjjilu")
+
+            if all_compare:
+                last_compare = []
+                for c in all_compare:
+                    if c.find(u"支持crm运营中心由原先的运营中心")>-1:
+                        start = c.find(u"支持crm运营中心由原先的运营中心")
+                        c = "由于用户数量较大暂不显示,只显示运营中心修改关系哦 "+c[start:]
+                    last_compare.append("<br>".join(c))
+
+                insert_sql = '''insert into sys_log (user_id,log_url,log_req,log_action,remark) values (%s,%s,%s,%s,%s)'''
+                params = []
+                params.append(user_id)
+                params.append("/user/relate/update/user/ascription")
+                params.append(json.dumps(request.json))
+                params.append("修改用户数据")
+                params.append("<br>".join(last_compare))
+                logger.info(params)
+                cursor.execute(insert_sql, params)
+        conn.commit()
 
         return {"code": "0000", "msg": "更新成功", "status": "success"}
     except Exception as e:
