@@ -639,6 +639,8 @@ def update_user_ascriptions():
 
         #上级修改传手机号码
         parent_phone = request.json.get("parent_phone")
+        if not parent_phone:
+            return {"code":""}
 
         unionid_lists = request.json.get("unionid_lists")
 
@@ -689,6 +691,8 @@ def update_user_ascriptions():
                 if str(parent_unionid) in below_unionid:
                     return {"code": "11028", "msg": "用户："+str(unionid)+":"+message["11028"], "status": "failed"}
                 all_below_unionid.append(below_unionid)
+        elif str(parent_phone) == "":
+            parent_phone = 0
 
 
         all_compare = []
@@ -771,7 +775,6 @@ def update_user_ascriptions():
 
 
             #统计表的运营关系修改
-
             if parent_phone and not flag:
                 # 把被改的unionid列出来
                 if old_operate_id:
