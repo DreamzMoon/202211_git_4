@@ -94,7 +94,7 @@ def clg_user_tran():
         }
         return_null_data = {
             "data": [],
-            "summary": null_summary_data
+            "summary_data": null_summary_data
         }
 
         if keyword != "":
@@ -104,8 +104,8 @@ def clg_user_tran():
                 ,phone,unionid from crm_user where phone like "%{keyword}%" or unionid like "%{keyword}%" or `name` like "%{keyword}%" or nickname like "%{keyword}%") t 
                 where t.name like "%{keyword}%" or phone like "%{keyword}%" or unionid like "%{keyword}%"
             '''.format(keyword=keyword)
-            logger.info(keyword_sql)
             user_info_df = pd.read_sql(keyword_sql, conn_analyze)
+            logger.info(user_info_df)
             if user_info_df.shape[0] == 0:
                 return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
             else:
@@ -129,12 +129,6 @@ def clg_user_tran():
         goods_num_sql += ''' group by t1.unionid'''
         pay_money_sql += status_group
         voucher_pay_sql += status_group
-        logger.info(goods_num_sql)
-        logger.info('-' * 50)
-        logger.info(pay_money_sql)
-        logger.info('-' * 50)
-        logger.info(voucher_pay_sql)
-        logger.info('-' * 50)
 
         # 读取数据
         goods_num = pd.read_sql(goods_num_sql, conn_clg)
@@ -143,8 +137,8 @@ def clg_user_tran():
 
         merge_df = pay_money_df.merge(voucher_pay_df, how='outer', on=['unionid', 'order_status'])
         merge_df.fillna(0, inplace=True)
-        if merge_df.shape[0] == 0:
-            return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
+        # if merge_df.shape[0] == 0:
+        #     return {"code": "0000", "status": "success", "msg": return_null_data, "count": 0}
 
         merge_df['order_count'] = merge_df['pay_order_count'] + merge_df['voucher_order_count']
         merge_df['total_money'] = merge_df['pay_money'] + merge_df['voucher_pay_money']
@@ -158,7 +152,7 @@ def clg_user_tran():
         df_list.append(union_unionid_df)
 
         # 交易订单
-        all_df = merge_df.groupby('unionid')['order_count', 'total_money', 'voucher_money'].sum().reset_index()
+        all_df = merge_df.groupby('unionid').agg({'order_count': "sum", 'total_money': "sum", 'voucher_money': "sum"}).reset_index()
         all_df = all_df.merge(goods_num, how='left', on='unionid')
         df_list.append(all_df)
 
@@ -207,8 +201,6 @@ def clg_user_tran():
         fina_df.fillna(0, inplace=True)
         for i in [column for column in fina_df.columns if 'money' in column]:
             fina_df[i] = fina_df[i].round(2)
-        logger.info(fina_df.info())
-        logger.info(user_info_df.info())
         fina_df = user_info_df.merge(fina_df, how='left', on='unionid')
 
         fina_df["unionid"].fillna("",inplace=True)
@@ -216,6 +208,8 @@ def clg_user_tran():
         fina_df["phone"].fillna("",inplace=True)
         fina_df.fillna(0, inplace=True)
         summary_data['user_count'] = fina_df.shape[0]
+        logger.info(fina_df)
+        logger.info(fina_df.columns)
         fina_df.sort_values('order_count', ascending=False, inplace=True)
 
         if start_index != '' and end_index != '':
