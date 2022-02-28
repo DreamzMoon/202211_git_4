@@ -182,7 +182,8 @@ def clg_tran_shop_all():
 
         count = form_data.shape[0]
 
-        all_data = {}
+        all_data = {"shop_count":0,"ok_wechatstatus":0,"ok_alipaystatus":0,"count":0,"pay_money":0,"ok_count":0,"ok_pay_money":0,
+                    "refund_count":0,"nopay_count":0,"no_pay_money":0}
         all_data["shop_count"] = int(form_data["shop_id"].count())
         all_data["ok_wechatstatus"] = form_data[form_data["wechatstatus"] == 6].shape[0]
         all_data["ok_alipaystatus"] = form_data[form_data["alipaystatus"] == 6].shape[0]
@@ -191,9 +192,8 @@ def clg_tran_shop_all():
         all_data["ok_count"] = int(form_data["ok_count"].sum())
         all_data["ok_pay_money"] = round(float(form_data["ok_pay_money"].sum()),2)
         all_data["refund_count"] = int(form_data["refund_count"].sum())
-        all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
         all_data["nopay_count"] = int(form_data["nopay_count"].sum())
-        all_data["pay_money"] = round(float(form_data["pay_money"].sum()),2)
+        all_data["no_pay_money"] = round(float(form_data["no_pay_money"].sum()),2)
 
         form_data.sort_values('count', ascending=False, inplace=True)
         if page and size:
