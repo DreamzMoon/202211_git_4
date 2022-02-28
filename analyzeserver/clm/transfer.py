@@ -460,10 +460,11 @@ def clm_orderflow_all():
                         select * from (
                         select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname
                          from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t 
-                        where t.phone is not null and (t.nickname like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
+                        where  (t.nickname like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
                         ''' % (buyer_info, buyer_info, buyer_info, buyer_info, buyer_info, buyer_info, buyer_info)
 
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
+
             unionid_list = [str(unionid) for unionid in user_info_df['unionid'].tolist()]
             base_order_sql += ''' and unionid in (%s)''' % ','.join(unionid_list)
             user_order_df = pd.read_sql(base_order_sql,conn_crm)
