@@ -477,23 +477,6 @@ def clm_orderflow_all():
             user_info_sql += ''' and unionid in (%s)''' % ','.join(unionid_list)
             user_info_df = pd.read_sql(user_info_sql, conn_analyze)
 
-        #  购买人
-        # if buyer_info:
-        #     user_info_sql = '''
-        #     select * from (
-        #     select unionid,phone,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) nickname
-        #      from crm_user where phone like "%%%s%%" or unionid like "%%%s%%" or `name` like "%%%s%%" or nickname like "%%%s%%") t
-        #     where t.phone is not null and (t.nickname like "%%%s%%" or phone like "%%%s%%" or unionid like "%%%s%%")
-        #     ''' %(buyer_info,buyer_info,buyer_info,buyer_info,buyer_info,buyer_info,buyer_info)
-        #     logger.info(user_info_sql)
-        # user_order_df = pd.read_sql(base_order_sql, conn_crm)
-        # unionid_list = [str(unionid) for unionid in set(user_order_df['unionid'].tolist())]
-        # if len(unionid_list) == 0:
-        #     return {"code": "0000", "status": "success", "msg": [], "count": 0}
-        # user_info_sql += ''' and unionid in (%s)''' % ','.join(unionid_list)
-        # user_info_df = pd.read_sql(user_info_sql, conn_analyze)
-
-
         # 合并用户信息与订单信息
         fina_df = user_order_df.merge(user_info_df, how='left', on='unionid')
         fina_df.fillna('', inplace=True)
