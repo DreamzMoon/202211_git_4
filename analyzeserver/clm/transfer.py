@@ -348,7 +348,7 @@ def clm_tran_user_all():
         df_list.append(wait_order_df)
 
         # 合并所有订单
-        fina_df = reduce(lambda left, right: pd.merge(left, right, on='unionid', how='outer'), df_list)
+        fina_df = reduce(lambda left, right: pd.merge(left, right, on='unionid', how='left'), df_list)
         # logger.info(fina_df.info())
         # logger.info(fina_df)
         # fina_df.to_csv("e:/123321.csv")
