@@ -478,6 +478,7 @@ def clm_orderflow_all():
              from crm_user where phone like "%buyer_info%" or unionid like "%buyer_info%" or `name` like "%buyer_info%" or nickname like "%buyer_info%") t 
             where t.phone is not null and (t.nickname like "%buyer_info%" or phone like "%buyer_info%" or unionid like "%buyer_info%")
             '''.format(buyer_info)
+            logger.info(user_info_sql)
         user_order_df = pd.read_sql(base_order_sql, conn_crm)
         unionid_list = [str(unionid) for unionid in set(user_order_df['unionid'].tolist())]
         if len(unionid_list) == 0:
