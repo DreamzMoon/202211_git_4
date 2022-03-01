@@ -124,6 +124,8 @@ def clg_tran_shop_all():
         if user_data is None:
             return {"code": "0000", "status": "success", "msg": [], "count": 0}
 
+        logger.info("用户数据读取完成")
+
         #订单情况
         order_sql = '''select id,shop_id,pay_money,pay_status,pay_types from luke_marketing.orders where is_del = 0'''
         if start_time and end_time:
@@ -133,7 +135,7 @@ def clg_tran_shop_all():
         logger.info(order_sql)
         order_data = pd.read_sql(order_sql,conn_clm)
 
-        logger.info(order_data)
+        logger.info("订单数据读取完成")
 
         #交易金额 交易数量
         tran_all_data = order_data.groupby(["shop_id"]).agg({"id":"count","pay_money":"sum"}).rename(columns={"id": "count", "pay_money": "pay_money"}).reset_index()
