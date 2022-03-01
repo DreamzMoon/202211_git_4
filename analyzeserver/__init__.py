@@ -58,6 +58,8 @@ from analyzeserver.home.clm_home import clmhomebp
 from analyzeserver.clm.transfer import clmtranbp
 from analyzeserver.clm.clm_list import clmlisttbp
 
+from analyzeserver.lianghao.data_board_settings import boardbp
+from analyzeserver.lianghao.tran_summary import transummarybp
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
 
@@ -66,6 +68,8 @@ CORS(app, supports_credentials=True)
 def hello():
     return 'Hello, World!'
 
+# 靓号数据看板配置
+app.register_blueprint(boardbp)
 
 # 7位
 app.register_blueprint(userbp)
@@ -79,6 +83,7 @@ app.register_blueprint(homebp)
 app.register_blueprint(userrelatebp)
 app.register_blueprint(ppbp)
 app.register_blueprint(dailybp)
+app.register_blueprint(transummarybp)
 
 #8位类型列表
 app.register_blueprint(letypebp)

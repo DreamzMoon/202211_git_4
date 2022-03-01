@@ -1,0 +1,14 @@
+CREATE TABLE `data_board_settings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `market_type` int(1) DEFAULT '0' COMMENT '市场类型:1个人转让市场2商业二手市场',
+  `status` int(1) DEFAULT '0' COMMENT '看板状态:0关闭1开启',
+  `time_type` int(1) DEFAULT '0' COMMENT '时间段设置:0默认当前时间1自定义时间',
+  `start_time` timestamp NULL DEFAULT NULL COMMENT '自定义开始时间',
+  `end_time` timestamp NULL DEFAULT NULL COMMENT '自定义结束时间',
+  `inside_publish_phone` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '内部上架号码',
+  `inside_recovery_phone` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '内部回收号码',
+  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` int(1) DEFAULT '0' COMMENT '1:删除0未删除',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据看板配置表';
