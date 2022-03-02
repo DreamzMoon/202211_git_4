@@ -517,11 +517,14 @@ def operate():
         page = request.json.get("page")
         size = request.json.get("size")
 
-
-
-        #系统用户
         crm_user_sql = '''select phone,operate_id from lh_analyze.crm_user where phone is not null and phone !=""'''
+        #系统用户
+        if operate_id:
+            crm_user_sql = crm_user_sql + ''' and operate_id = %s''' %operate_id
+
         crm_user_data = pd.read_sql(crm_user_sql,conn_analyze)
+        phone_list = crm_user_data["phone"].to_list()
+
 
         #查询那些事官方号码
         official_upload_phone = ""
@@ -546,6 +549,8 @@ def operate():
 
         #订单数据
         order_sql = '''select phone,count,total_price,pay_type,create_time,sell_phone from lh_order where status = 1 and type in (1,4) and del_flag =0 '''
+        if phone_list:
+            order_sql = order_sql + ''' and phone in (%s)''' %(",".join(phone_list))
         order_data = pd.read_sql(order_sql,conn_read)
         logger.info("订单数据ok")
 
@@ -606,8 +611,7 @@ def operate():
         # 官方
         officical_data = order_data[order_data["sell_phone"].isin(official_upload_phone)]
         officical_data = officical_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
-        officical_data.rename(
-            columns={"phone": "phone", "total_price": "official_total_price", "count": "official_count"}, inplace=True)
+        officical_data.rename(columns={"phone": "phone", "total_price": "official_total_price", "count": "official_count"}, inplace=True)
 
         # 市场
         market_data = order_data[~order_data["sell_phone"].isin(official_upload_phone)]
@@ -617,7 +621,8 @@ def operate():
 
         #上架数据
         sell_sql = '''select sell_phone phone,count,total_price,if(up_time is not null,up_time,create_time) up_time from lh_sell where del_flag = 0 and status != 1 '''
-
+        if phone_list:
+            sell_sql = sell_sql + ''' and sell_phone in (%s)''' %(",".join(phone_list))
         sell_data = pd.read_sql(sell_sql,conn_read)
         logger.info("sell ok")
 
