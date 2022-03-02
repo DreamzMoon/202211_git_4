@@ -58,7 +58,7 @@ from analyzeserver.home.clm_home import clmhomebp
 from analyzeserver.clm.transfer import clmtranbp
 from analyzeserver.clm.clm_list import clmlisttbp
 
-from analyzeserver.lianghao.data_board_settings import boardbp
+from analyzeserver.data_board.data_board_settings import boardbp
 from analyzeserver.lianghao.tran_summary import transummarybp
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
