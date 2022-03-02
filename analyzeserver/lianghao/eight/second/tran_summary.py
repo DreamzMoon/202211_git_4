@@ -282,9 +282,9 @@ def plat_summary():
             if check_token_result["code"] != "0000":
                 return check_token_result
 
-            unionid_lists = [x.strip() for x in request.json["unionid_lists"]]
+            unionid_lists = [str(x).strip() for x in request.json["unionid_lists"]]
             phone_lists = [x.strip() for x in request.json["phone_lists"]]
-            bus_lists = [x.strip() for x in request.json["bus_lists"]]
+            bus_lists = [str(x).strip() for x in request.json["bus_lists"]]
 
             start_time = request.json["start_time"]
             end_time = request.json["end_time"]
