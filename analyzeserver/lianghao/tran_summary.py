@@ -614,7 +614,7 @@ def operate():
 
         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list)
         logger.info("合并完成")
-        df_merged["caigoujin"] = ""
+
         df_merged.fillna(0,inplace=True)
         # df_merged.sort_values(by=["sum_count"],ascending=False,inplace=True)
         # count = df_merged.shape[0]
@@ -657,6 +657,7 @@ def operate():
         count = df_merged2.shape[0]
 
         df_merged2.fillna("",inplace=True)
+        df_merged2["caigoujin"] = ""
         code_page = ""
         code_size = ""
         if page and size:
