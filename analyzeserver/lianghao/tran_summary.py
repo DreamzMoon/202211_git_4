@@ -71,7 +71,7 @@ def user_summary():
         '''
         # 发布数据
         publish_sql = '''
-            select sell_phone phone, count publish_count, total_price publish_total_price, create_time from lh_sell where del_flag=0 and status !=1 and sell_phone is not null and sell_phone != ''
+            select sell_phone phone, count publish_count, total_price publish_total_price, up_time from lh_sell where del_flag=0 and status !=1 and sell_phone is not null and sell_phone != ''
         '''
         # 查询官方
         inside_recovery_phone_sql = '''
@@ -162,35 +162,25 @@ def user_summary():
             'create_time'].last().reset_index().rename(columns={"create_time": "last_buy_time"})
         df_list.append(last_buy_df)
         # 最早上架
-        first_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("phone")[
+        first_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
             'create_time'].first().reset_index().rename(columns={"create_time": "first_publish_time"})
         df_list.append(first_publish_df)
         # 最近上架
-        last_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("phone")[
+        last_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
             'create_time'].last().reset_index().rename(columns={"create_time": "last_publish_time"})
         df_list.append(last_publish_df)
         #  时间选择
         to_day = datetime.date.today()  # 当前时间
         if time_type == 1:  # 今日
             buy_df = buy_df.loc[buy_df['create_time'].dt.date == to_day, :]
-            publish_df = publish_df.loc[publish_df['create_time'].dt.date == to_day, :]
         elif time_type == 2:  # 周
             to_week = to_day + timedelta(days=-6)
-            buy_df = buy_df.loc[(buy_df['create_time'].dt.date >= to_week) & (
-                    buy_df['create_time'].dt.date <= to_day), :]
-            publish_df = publish_df.loc[(publish_df['create_time'].dt.date >= to_week) & (
-                    publish_df['create_time'].dt.date <= to_day), :]
+            buy_df = buy_df.loc[(buy_df['create_time'].dt.date >= to_week) & (buy_df['create_time'].dt.date <= to_day), :]
         elif time_type == 3:  # 月
             to_month = to_day + timedelta(days=-29)
-            buy_df = buy_df.loc[(buy_df['create_time'].dt.date >= to_month) & (
-                    buy_df['create_time'].dt.date <= to_day), :]
-            publish_df = publish_df.loc[(publish_df['create_time'].dt.date >= to_month) & (
-                    publish_df['create_time'].dt.date <= to_day), :]
+            buy_df = buy_df.loc[(buy_df['create_time'].dt.date >= to_month) & (buy_df['create_time'].dt.date <= to_day), :]
         else:  # 自定义时间
-            buy_df = buy_df.loc[(buy_df['create_time'] >= start_time) & (
-                    buy_df['create_time'] <= end_time), :]
-            publish_df = publish_df.loc[(publish_df['create_time'] >= start_time) & (
-                    publish_df['create_time'] <= end_time), :]
+            buy_df = buy_df.loc[(buy_df['create_time'] >= start_time) & (buy_df['create_time'] <= end_time), :]
 
         # 采购总数量
         buy_count_df = buy_df.groupby('phone').agg({"count": "sum", "total_price": "sum"}).rename(
@@ -531,14 +521,6 @@ def operate():
 
         #订单数据
         order_sql = '''select phone,count,total_price,pay_type,create_time,sell_phone from lh_order where status = 1 and type in (1,4) and del_flag =0 '''
-        # if order_start_time and order_end_time and time_type == 4:
-        #     order_sql = order_sql + ''' and create_time >= "%s" and create_time <= "%s" ''' %(order_start_time,order_end_time)
-        # elif time_type == 1:
-        #     order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d") = CURRENT_DATE() '''
-        # elif time_type == 2:
-        #     order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 day) '''
-        # elif time_type == 3:
-        #     order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 29 day) '''
         order_data = pd.read_sql(order_sql,conn_read)
         logger.info("订单数据ok")
 
@@ -554,18 +536,32 @@ def operate():
         last_data.rename(columns={"phone": "phone", "create_time": "last_time"}, inplace=True)
         last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
 
+        dt = datetime.datetime.now()
         if order_start_time and order_end_time and time_type == 4:
-            order_sql = order_sql + ''' and create_time >= "%s" and create_time <= "%s" ''' %(order_start_time,order_end_time)
-            order_data = pd.read_sql(order_sql, conn_read)
+            order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+            # order_sql = order_sql + ''' and create_time >= "%s" and create_time <= "%s" ''' %(order_start_time,order_end_time)
+            # order_data = pd.read_sql(order_sql, conn_read)
         elif time_type == 1:
-            order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d") = CURRENT_DATE() '''
-            order_data = pd.read_sql(order_sql, conn_read)
+            order_start_time = dt.strftime('%Y-%m-%d') + " 00:00:00"
+            order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+            logger.info(order_start_time)
+            logger.info(order_end_time)
+            order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+            # order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d") = CURRENT_DATE() '''
+            # order_data = pd.read_sql(order_sql, conn_read)
         elif time_type == 2:
-            order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 day) '''
-            order_data = pd.read_sql(order_sql, conn_read)
+            order_start_time = (dt - datetime.timedelta(days=6)).strftime("%Y-%m-%d") + " 00:00:00"
+            order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+            order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+            # order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 6 day) '''
+            # order_data = pd.read_sql(order_sql, conn_read)
         elif time_type == 3:
-            order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 29 day) '''
-            order_data = pd.read_sql(order_sql, conn_read)
+            order_start_time = (dt - datetime.timedelta(days=29)).strftime("%Y-%m-%d") + " 00:00:00"
+            order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+            order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+
+            # order_sql = order_sql + ''' and date_format(create_time, "%Y-%m-%d")>=date_sub(curdate(), interval 29 day) '''
+            # order_data = pd.read_sql(order_sql, conn_read)
 
 
         # 采购数量 采购价值
