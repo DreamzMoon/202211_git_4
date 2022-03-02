@@ -451,7 +451,7 @@ def plat_summary():
         df_list.append(official_publish_surplus_count_df)
         fina_df = reduce(lambda left, right: pd.merge(left, right, how='outer', on='day_time'), df_list)
         fina_df['buy_count'].fillna(0, inplace=True)
-        fina_df.sort_values('buy_count', ascending=False, inplace=True)
+        fina_df.sort_values('day_time', ascending=False, inplace=True)
         if page and size:
             start_index = (page - 1) * size
             end_index = page * size
