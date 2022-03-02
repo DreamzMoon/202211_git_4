@@ -16,7 +16,7 @@ import pandas as pd
 import datetime
 from analyzeserver.user.sysuser import check_token
 
-boardbp = Blueprint("board", __name__, url_prefix='/lh/board')
+boardbp = Blueprint("board", __name__, url_prefix='/board')
 
 # 看板配置查看
 @boardbp.route('/settings/check', methods=["GET"])
