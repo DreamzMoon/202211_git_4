@@ -528,7 +528,7 @@ def operate():
         if operate_id:
             crm_user_sql = crm_user_sql + ''' and operate_id = %s''' % operate_id
         crm_user_data = pd.read_sql(crm_user_sql,conn_analyze)
-        phone_list = crm_user_data["phone"].to_list()
+        phone_list = crm_user_data["phone"].tolist()
         #查询那些事官方号码
         official_upload_phone = ""
         official_sql = '''select * from data_board_settings where market_type = 1'''
