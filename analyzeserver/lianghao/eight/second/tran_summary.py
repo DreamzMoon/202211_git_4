@@ -172,11 +172,11 @@ def user_summary():
         df_list.append(last_buy_df)
         # 最早上架
         first_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
-            'create_time'].first().reset_index().rename(columns={"create_time": "first_publish_time"})
+            'up_time'].first().reset_index().rename(columns={"up_time": "first_publish_time"})
         df_list.append(first_publish_df)
         # 最近上架
         last_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
-            'create_time'].last().reset_index().rename(columns={"create_time": "last_publish_time"})
+            'up_time'].last().reset_index().rename(columns={"up_time": "last_publish_time"})
         df_list.append(last_publish_df)
         #  时间选择
         to_day = datetime.date.today()  # 当前时间
@@ -489,3 +489,209 @@ def operate():
     finally:
         conn_read.close()
         conn_analyze.close()
+
+
+
+
+# @sectransumbp.route("plat",methods=["POST"])
+# def operate():
+#     try:
+#         conn_read = direct_get_conn(lianghao_mysql_conf)
+#         conn_analyze = direct_get_conn(analyze_mysql_conf)
+#         logger.info(request.json)
+#         token = request.headers["Token"]
+#         user_id = request.json["user_id"]
+#
+#         if not user_id and not token:
+#             return {"code": "10001", "status": "failed", "msg": message["10001"]}
+#
+#         check_token_result = check_token(token, user_id)
+#         if check_token_result["code"] != "0000":
+#             return check_token_result
+#
+#         keyword = request.json.get("keyword")
+#
+#         # 时间类型 1今天 2本周 3本月 4自定义
+#         time_type = request.json.get("time_type")
+#         order_start_time = request.json.get("order_start_time")
+#         order_end_time = request.json.get("order_end_time")
+#
+#         page = request.json.get("page")
+#         size = request.json.get("size")
+#
+#
+#
+#         #系统用户
+#         crm_user_sql = '''select phone,operate_id from lh_analyze.crm_user where phone is not null and phone !=""'''
+#         crm_user_data = pd.read_sql(crm_user_sql,conn_analyze)
+#
+#         #查询那些事官方号码
+#         official_upload_phone = ""
+#         official_sql = '''select * from data_board_settings where market_type = 1'''
+#         setting_data = pd.read_sql(official_sql,conn_analyze).to_dict("records")[0]
+#
+#         logger.info(setting_data)
+#         if setting_data["inside_publish_phone"]:
+#             official_upload_phone = json.loads(setting_data["inside_publish_phone"])
+#         logger.info(official_upload_phone)
+#
+#
+#
+#         #订单数据
+#         order_sql = '''select phone,count,total_price,pay_type,create_time,sell_phone from le_order where status = 1 and type = 4 and del_flag =0 '''
+#         order_data = pd.read_sql(order_sql,conn_read)
+#         logger.info("订单数据ok")
+#
+#
+#         # 排序取出按时间第一条和最后一条的 最早采购时间  最近采购时间
+#         first_data = order_data.sort_values("create_time", ascending=True).groupby("phone").first().reset_index()
+#         first_data.drop(["count", "total_price","pay_type","sell_phone"], axis=1, inplace=True)
+#         first_data.rename(columns={"phone": "phone", "create_time": "first_time"}, inplace=True)
+#         first_data["first_time"] = first_data['first_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#
+#         last_data = order_data.sort_values("create_time", ascending=True).groupby("phone").last().reset_index()
+#         last_data.drop(["count", "total_price", "pay_type","sell_phone"], axis=1, inplace=True)
+#         last_data.rename(columns={"phone": "phone", "create_time": "last_time"}, inplace=True)
+#         last_data["last_time"] = last_data['last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#
+#         dt = datetime.datetime.now()
+#         if order_start_time and order_end_time and time_type == 4:
+#             order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+#
+#         elif time_type == 1:
+#             order_start_time = dt.strftime('%Y-%m-%d') + " 00:00:00"
+#             order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+#             logger.info(order_start_time)
+#             logger.info(order_end_time)
+#             order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+#
+#         elif time_type == 2:
+#             order_start_time = (dt - datetime.timedelta(days=6)).strftime("%Y-%m-%d") + " 00:00:00"
+#             order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+#             order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+#
+#         elif time_type == 3:
+#             order_start_time = (dt - datetime.timedelta(days=29)).strftime("%Y-%m-%d") + " 00:00:00"
+#             order_end_time = dt.strftime('%Y-%m-%d') + " 23:59:59"
+#             order_data = order_data[(order_data["create_time"] >= order_start_time) & (order_data["create_time"] <= order_end_time)]
+#
+#         #总采购采购数量 采购价值
+#         sum_order_data = order_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
+#         sum_order_data.rename(columns={"phone": "phone", "total_price": "sum_total_price", "count": "sum_count"},inplace=True)
+#
+#         # 现金采购 微信+支付宝
+#         xianjin = order_data[(order_data["pay_type"] == 3) | (order_data["pay_type"] == 4)]
+#         xianjin_data = xianjin.groupby("phone").agg({"total_price": "sum"}).reset_index()
+#         xianjin_data.rename(columns={"phone": "phone", "total_price": "xianjin_total_price"}, inplace=True)
+#
+#         # 诚聊通采购
+#         clt = order_data[order_data["pay_type"] == 2]
+#         clt_data = clt.groupby("phone").agg({"total_price": "sum"}).reset_index()
+#         clt_data.rename(columns={"phone": "phone", "total_price": "clt_total_price"}, inplace=True)
+#
+#         # 官方
+#         officical_data = order_data[order_data["sell_phone"].isin(official_upload_phone)]
+#         officical_data = officical_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
+#         officical_data.rename(
+#             columns={"phone": "phone", "total_price": "official_total_price", "count": "official_count"}, inplace=True)
+#
+#         # 市场
+#         market_data = order_data[~order_data["sell_phone"].isin(official_upload_phone)]
+#         market_data = market_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
+#         market_data.rename(columns={"phone": "phone", "total_price": "market_total_price", "count": "market_count"},
+#                            inplace=True)
+#
+#         #上架数据
+#         sell_sql = '''select sell_phone phone,count,total_price,up_time from lh_sell where del_flag = 0 and status != 1 '''
+#
+#         sell_data = pd.read_sql(sell_sql,conn_read)
+#         logger.info("sell ok")
+#
+#         #上架数量
+#         sum_sell_data = sell_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
+#         sum_sell_data.rename(columns={"phone": "phone", "total_price": "sum_sell_total_price", "count": "sum_sell_count"},inplace=True)
+#
+#         # 上架排序取出按时间第一条和最后一条的 最早采购时间  最近采购时间
+#         sell_first_data = sell_data.sort_values("up_time", ascending=True).groupby("phone").first().reset_index()
+#         sell_first_data.drop(["count", "total_price"], axis=1, inplace=True)
+#         sell_first_data.rename(columns={"phone": "phone", "up_time": "sell_first_time"}, inplace=True)
+#         sell_first_data["sell_first_time"] = sell_first_data['sell_first_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#
+#         sell_last_data = sell_data.sort_values("up_time", ascending=True).groupby("phone").last().reset_index()
+#         sell_last_data.drop(["count","total_price"],axis=1,inplace=True)
+#         sell_last_data.rename(columns={"phone": "phone", "up_time": "sell_last_time"}, inplace=True)
+#         sell_last_data["sell_last_time"] = sell_last_data['sell_last_time'].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+#
+#         logger.info("准备合并")
+#         df_list = []
+#         df_list.append(sum_order_data)
+#         df_list.append(xianjin_data)
+#         df_list.append(clt_data)
+#         df_list.append(officical_data)
+#         df_list.append(market_data)
+#         df_list.append(sum_sell_data)
+#
+#
+#         df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list)
+#         logger.info("合并完成")
+#
+#         df_merged.fillna(0,inplace=True)
+#         # df_merged.sort_values(by=["sum_count"],ascending=False,inplace=True)
+#         # count = df_merged.shape[0]
+#
+#         user_message = df_merged.merge(crm_user_data,how="left",on="phone")
+#         user_message.fillna("", inplace=True)
+#
+#
+#
+#         user_message = user_message.groupby(["operate_id"]).agg({"clt_total_price":"sum","market_count":"sum",
+#                                                                                           "market_total_price":"sum","official_count":"sum",
+#                                                                                           "official_total_price":"sum","sum_count":"sum",
+#                                                                                           "sum_sell_count":"sum","sum_sell_total_price":"sum",
+#                                                                                           "sum_total_price":"sum","xianjin_total_price":"sum"}).reset_index()
+#
+#         user_message = user_message[user_message["operate_id"]!=""]
+#         #用运营中心作为主表合并用户数据
+#         operate_sql = '''select id operate_id,operatename,if(`name` is not null and `name`!='',`name`,if(nickname is not null,nickname,"")) username,unionid,telephone phone from operationcenter where status = 1 and crm = 1'''
+#
+#         if operate_id:
+#             operate_sql = operate_sql + ''' and id = %s''' %operate_id
+#
+#         operate_data = pd.read_sql(operate_sql,conn_analyze)
+#         operate_data["unionid"] = operate_data["unionid"].astype(str)
+#         if keyword:
+#
+#             operate_data = operate_data[(operate_data["username"].str.contains(keyword))|(operate_data["unionid"].str.contains(keyword))|(operate_data["phone"].str.contains(keyword))]
+#         logger.info(operate_data["operate_id"])
+#         operate_data = operate_data.merge(user_message,how="left",on="operate_id")
+#
+#         df_list2 = []
+#         df_list2.append(operate_data)
+#         # df_list2.append(user_data)
+#         df_list2.append(first_data)
+#         df_list2.append(last_data)
+#         df_list2.append(sell_first_data)
+#         df_list2.append(sell_last_data)
+#
+#         df_merged2 = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list2)
+#         count = df_merged2.shape[0]
+#
+#         df_merged2.fillna("",inplace=True)
+#         df_merged2["caigoujin"] = ""
+#         code_page = ""
+#         code_size = ""
+#         if page and size:
+#             code_page = (page - 1) * size
+#             code_size = page * size
+#
+#         return_data = df_merged2[code_page:code_size] if page and size else df_merged2.copy()
+#         return_data = return_data.to_dict("records")
+#
+#         return {"code":"0000","status":"success","msg":return_data,"count":count}
+#     except Exception as e:
+#         logger.error(e)
+#         logger.exception(traceback.format_exc())
+#         return {"code": "10000", "status": "failed", "msg": message["10000"]}
+#     finally:
+#         conn_read.close()
+#         conn_analyze.close()

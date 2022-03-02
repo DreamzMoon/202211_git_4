@@ -163,11 +163,11 @@ def user_summary():
         df_list.append(last_buy_df)
         # 最早上架
         first_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
-            'create_time'].first().reset_index().rename(columns={"create_time": "first_publish_time"})
+            'up_time'].first().reset_index().rename(columns={"up_time": "first_publish_time"})
         df_list.append(first_publish_df)
         # 最近上架
         last_publish_df = publish_df.sort_values("up_time", ascending=True).groupby("phone")[
-            'create_time'].last().reset_index().rename(columns={"create_time": "last_publish_time"})
+            'up_time'].last().reset_index().rename(columns={"up_time": "last_publish_time"})
         df_list.append(last_publish_df)
         #  时间选择
         to_day = datetime.date.today()  # 当前时间
