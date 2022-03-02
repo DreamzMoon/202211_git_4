@@ -71,7 +71,7 @@ def user_summary():
         '''
         # 发布数据
         publish_sql = '''
-            select sell_phone phone, count publish_count, total_price publish_total_price, up_time from lh_sell where del_flag=0 and status !=1 and sell_phone is not null and sell_phone != ''
+            select sell_phone phone, count publish_count, total_price publish_total_price, if(up_time is not null,up_time,create_time) create_time from lh_sell where del_flag=0 and status !=1 and sell_phone is not null and sell_phone != ''
         '''
         # 查询官方
         inside_recovery_phone_sql = '''
