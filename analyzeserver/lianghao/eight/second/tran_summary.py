@@ -25,8 +25,6 @@ from functools import reduce
 
 sectransumbp = Blueprint('sectransum', __name__, url_prefix='/le/second/transum')
 
-
-
 @sectransumbp.route('/user', methods=["POST"])
 def user_summary():
     try:
@@ -75,9 +73,6 @@ def user_summary():
             select phone, sell_phone, count,total_price, create_time, pay_type from le_order where del_flag=0 and status=1 and type in (4) and phone is not null and phone != ''
         '''
         # 发布数据
-        publish_sql = '''
-            select sell_phone phone, count publish_count, total_price publish_total_price, create_time from lh_sell where del_flag=0 and sell_phone is not null and sell_phone != ''
-        '''
         publish_sql = '''
                     select sell_phone phone, count publish_count, total_price publish_total_price, up_time from le_second_hand_sell where del_flag=0  and `status` != 1 and sell_phone is not null and sell_phone != ''
                 '''
@@ -267,6 +262,234 @@ def user_summary():
         except:
             pass
 
+@sectransumbp.route('/plat', methods=["POST"])
+def plat_summary():
+    try:
+        try:
+            logger.info(request.json)
+            # 参数个数错误
+            if len(request.json) != 9:
+                return {"code": "10004", "status": "failed", "msg": message["10004"]}
+
+            # token校验
+            token = request.headers["Token"]
+            user_id = request.json["user_id"]
+
+            if not user_id and not token:
+                return {"code": "10001", "status": "failed", "msg": message["10001"]}
+
+            check_token_result = check_token(token, user_id)
+            if check_token_result["code"] != "0000":
+                return check_token_result
+
+            unionid_lists = [x.strip() for x in request.json["unionid_lists"]]
+            phone_lists = [x.strip() for x in request.json["phone_lists"]]
+            bus_lists = [x.strip() for x in request.json["bus_lists"]]
+
+            start_time = request.json["start_time"]
+            end_time = request.json["end_time"]
+            tag_id = request.json["tag_id"]
+            page = request.json['page']
+            size = request.json['size']
+        except Exception as e:
+            # 参数名错误
+            logger.error(traceback.format_exc())
+            return {"code": "10009", "status": "failed", "msg": message["10009"]}
+
+        # 数据库连接
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        if not conn_analyze or not conn_lh:
+            return {"code": "10002", "status": "failed", "msg": message["10002"]}
+        cursor_analyze = conn_analyze.cursor()
+
+        # 采购订单
+        buy_sql = '''
+            select phone, sell_phone, count,total_price, date_format(create_time, "%Y-%m-%d %H:%i:%S") create_time, date_format(create_time, "%Y-%m-%d") day_time, pay_type
+            from le_order where del_flag=0 and status=1 and type in (4) and phone is not null and phone != ''
+        '''
+        # 发布数据
+        publish_sql = '''
+            select sell_phone phone, status, count publish_count, total_price publish_total_price, date_format(if(up_time is not null, up_time, create_time), "%Y-%m-%d %H:%i:%S") create_time, date_format(up_time, "%Y-%m-%d") day_time
+            from le_second_hand_sell where del_flag=0 and status != 1 and sell_phone is not null and sell_phone != ''
+        '''
+        # 查询官方
+        inside_recovery_phone_sql = '''
+            select inside_recovery_phone, inside_publish_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=1
+        '''
+        # 条件筛选
+        args_phone_lists = []
+        if phone_lists:
+            args_phone_lists = phone_lists.copy()
+        elif unionid_lists:
+            try:
+                unionid_sql = '''select phone from crm_user where find_in_set (unionid, %s)'''
+                ags_list = ",".join(unionid_lists)
+                cursor_analyze.execute(unionid_sql, ags_list)
+                phone_lists = cursor_analyze.fetchall()
+                for phone in phone_lists:
+                    args_phone_lists.append(phone[0])
+            except Exception as e:
+                logger.exception(e)
+                return {"code": "10006", "status": "failed", "msg": message["10006"]}
+        elif bus_lists:
+            str_bus_lists = ",".join(bus_lists)
+            bus_sql = '''select not_contains from operate_relationship_crm where find_in_set (id, %s) and crm = 1 and del_flag = 0'''
+            cursor_analyze.execute(bus_sql, str_bus_lists)
+            phone_lists = cursor_analyze.fetchall()
+            for phone in phone_lists:
+                args_phone_lists.extend(eval(phone[0]))
+
+        tag_phone_list = []
+        tag_id_flag = False
+        if tag_id:
+            tag_id_flag = True
+            phone_result = find_tag_user_phone(tag_id)
+            if phone_result[0]:
+                tag_phone_list = phone_result[1]
+            else:
+                return {"code": phone_result[1], "status": "failed", "message": message[phone_result[1]]}
+
+        # 1.如果有进行标签查找,不存在
+        if len(tag_phone_list) == 0 and tag_id_flag:
+            return {"code": "0000", "status": "success", "msg": [], "counts": 0}
+        # 2.如果有进行标签查找，存在
+        if len(tag_phone_list) > 0:
+            # 剔除过滤的手机号
+            condition_phone_list = [phone for phone in tag_phone_list if phone not in args_phone_lists]
+            # 如果剔除后没有手机号 返回空
+            if len(condition_phone_list) == 0:
+                return {"code": "0000", "status": "success", "msg": [], "count": 0}
+            buy_sql += ''' and phone in (%s)''' % ','.join(condition_phone_list)
+            publish_sql += ''' and sell_phone in (%s)''' % ','.join(condition_phone_list)
+        else:  # 未进行标签查找
+            # 如果存在过滤
+            if len(args_phone_lists) > 0:
+                buy_sql += ''' and phone not in (%s)''' % ','.join(args_phone_lists)
+                publish_sql += ''' and sell_phone not in (%s)''' % ','.join(args_phone_lists)
+            else:  # 不存在过滤
+                pass
+        # 采购数据
+        buy_df = pd.read_sql(buy_sql, conn_lh)
+        # 发布数据
+        publish_df = pd.read_sql(publish_sql, conn_lh)
+        # 官方上架与回收
+        with conn_analyze.cursor() as cursor:
+            cursor.execute(inside_recovery_phone_sql)
+            official_data = cursor.fetchone()
+            inside_recovery_phone = json.loads(official_data[0]) if official_data[0] else []
+            inside_publish_phone = json.loads(official_data[1]) if official_data[1] else []
+
+        df_list = []
+        # # 最早采购
+        # first_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("day_time")[
+        #     'create_time'].first().reset_index().rename(columns={"create_time": "first_buy_time"})
+        # df_list.append(first_buy_df)
+        # # 最近采购
+        # last_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("day_time")[
+        #     'create_time'].last().reset_index().rename(columns={"create_time": "last_buy_time"})
+        # df_list.append(last_buy_df)
+        # 最早上架
+        first_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("day_time")[
+            'create_time'].first().reset_index().rename(columns={"create_time": "first_publish_time"})
+        df_list.append(first_publish_df)
+        # 最近上架
+        last_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("day_time")[
+            'create_time'].last().reset_index().rename(columns={"create_time": "last_publish_time"})
+        df_list.append(last_publish_df)
+        if start_time and end_time:
+            buy_df = buy_df[(buy_df['create_time'] >= start_time) & (buy_df['create_time'] <= end_time)]
+            publish_df = publish_df[(publish_df['create_time'] >= start_time) & (publish_df['create_time'] <= end_time)]
+
+        # 采购总数量
+        buy_count_df = buy_df.groupby('day_time').agg({"count": "sum", "total_price": "sum"}).rename(
+            columns={"count": "buy_count", "total_price": "buy_total_price"}).reset_index()
+        df_list.append(buy_count_df)
+        # 用户采购 采购手机号不在渠道手机列表里
+        user_buy_df = buy_df[~buy_df['phone'].isin(inside_recovery_phone)].groupby('day_time').agg(
+                {"count": "sum", "total_price": "sum"}).reset_index().rename(columns={"count": "user_buy_count", "total_price": "user_buy_total_price"})
+        df_list.append(user_buy_df)
+        # 支付宝采购
+        alipay_buy_df = buy_df[buy_df['pay_type'] == 4].groupby('day_time')[
+            'total_price'].sum().reset_index().rename(columns={"total_price": "alipay_total_price"})
+        df_list.append(alipay_buy_df)
+        # 微信采购
+        alipay_buy_df = buy_df[buy_df['pay_type'] == 3].groupby('day_time')[
+            'total_price'].sum().reset_index().rename(columns={"total_price": "wechat_total_price"})
+        df_list.append(alipay_buy_df)
+        # 诚聊通余额
+        surplus_buy_df = buy_df[buy_df['pay_type'].isin([1, 2])].groupby('day_time')[
+            'total_price'].sum().reset_index().rename(columns={"total_price": "surplus_total_price"})
+        df_list.append(surplus_buy_df)
+        # 渠道回收
+        official_buy_df = buy_df[buy_df['phone'].isin(inside_recovery_phone)].groupby('day_time').agg(
+            {"count": "sum", "total_price": "sum"}).reset_index().rename(
+            columns={"count": "official_buy_count", "total_price": "official_buy_total_price"})
+        df_list.append(official_buy_df)
+        # 渠道上架
+        official_publish_df = buy_df[buy_df['phone'].isin(inside_publish_phone)].groupby('day_time').agg(
+            {"count": "sum", "total_price": "sum"}).reset_index().rename(
+            columns={"count": "official_publish_count", "total_price": "official_publish_total_price"})
+        df_list.append(official_publish_df)
+        # 用户上架
+        user_publish_df = publish_df[~publish_df['phone'].isin(inside_publish_phone)].groupby('day_time').agg(
+            {"publish_count": "sum", "publish_total_price": "sum"}).reset_index().rename(
+            columns={"publish_count": "user_publish_count", "publish_total_price": "user_publish_total_price"})
+        df_list.append(user_publish_df)
+        # 上架剩余数量
+        publish_surplus_count_df = publish_df[publish_df['status'] == 0].groupby('day_time').agg(
+            {"publish_count": "sum", "publish_total_price": "sum"}).reset_index().rename(
+            columns={"publish_count": "publish_surplus_count", "publish_total_price": "publish_surplus_total_price"})
+        df_list.append(publish_surplus_count_df)
+        # 用户上架剩余数量
+        user_publish_surplus_count_df = publish_df[
+            (publish_df['status'] == 0) & ~(publish_df['phone'].isin(inside_publish_phone))].groupby('day_time').agg(
+            {"publish_count": "sum", "publish_total_price": "sum"}).reset_index().rename(
+            columns={"publish_count": "user_publish_surplus_count",
+                     "publish_total_price": "user_publish_surplus_total_price"})
+        df_list.append(user_publish_surplus_count_df)
+        # 渠道上架剩余数量
+        official_publish_surplus_count_df = publish_df[
+            (publish_df['status'] == 0) & (publish_df['phone'].isin(inside_publish_phone))].groupby('day_time').agg(
+            {"publish_count": "sum", "publish_total_price": "sum"}).reset_index().rename(
+            columns={"publish_count": "official_publish_surplus_count",
+                     "publish_total_price": "official_publish_surplus_total_price"})
+        df_list.append(official_publish_surplus_count_df)
+        fina_df = reduce(lambda left, right: pd.merge(left, right, how='outer', on='day_time'), df_list)
+        fina_df['buy_count'].fillna(0, inplace=True)
+        fina_df.sort_values('buy_count', ascending=False, inplace=True)
+        if page and size:
+            start_index = (page - 1) * size
+            end_index = page * size
+            cut_df = fina_df[start_index:end_index]
+        else:
+            cut_df = fina_df.copy()
+        # 时间格式化
+        # for column in [columns for columns in cut_df.columns if 'time' in columns and columns != 'day_time']:
+        #     # cut_df[column] = cut_df[column].apply(lambda x:str(x))
+        #     cut_df[column] = cut_df[column].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S") if str(x) != "NaT" and str(x) != "nan" else '')
+
+        # 数据圆整
+        for column in [columns for columns in cut_df.columns if 'price' in columns ]:
+            cut_df[column].fillna(0, inplace=True)
+            cut_df[column] = cut_df[column].round(2)
+        # 统计填充0
+        for column in [columns for columns in cut_df.columns if 'count' in columns ]:
+            cut_df[column].fillna(0, inplace=True)
+        cut_df.fillna('', inplace=True)
+        # 采购金 默认为空
+        cut_df['purchase_money'] = 0
+
+        return {"code": "0000", "status": "success", "msg": cut_df.to_dict("records"), "count": fina_df.shape[0]}
+    except:
+        logger.info(traceback.format_exc())
+        return {"code": "10000", "status": "failed", "msg": message["10000"]}
+    finally:
+        try:
+            conn_lh.close()
+            conn_analyze.close()
+        except:
+            pass
 
 @sectransumbp.route("operate",methods=["POST"])
 def operate():
