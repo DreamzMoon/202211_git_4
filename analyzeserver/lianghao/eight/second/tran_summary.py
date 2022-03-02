@@ -79,7 +79,7 @@ def user_summary():
 
         # 查询官方
         inside_recovery_phone_sql = '''
-            select inside_recovery_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=1
+            select inside_recovery_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=2
         '''
         # 靓号用户数据
         lh_user_sql = '''
@@ -315,7 +315,7 @@ def plat_summary():
         '''
         # 查询官方
         inside_recovery_phone_sql = '''
-            select inside_recovery_phone, inside_publish_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=1
+            select inside_recovery_phone, inside_publish_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=2
         '''
         # 条件筛选
         args_phone_lists = []
@@ -531,7 +531,7 @@ def operate():
         phone_list = crm_user_data["phone"].tolist()
         #查询那些事官方号码
         official_upload_phone = ""
-        official_sql = '''select * from data_board_settings where market_type = 1'''
+        official_sql = '''select * from data_board_settings where market_type = 2'''
         setting_data = pd.read_sql(official_sql,conn_analyze).to_dict("records")[0]
 
         logger.info(setting_data)
