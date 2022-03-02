@@ -79,7 +79,7 @@ def user_summary():
 
         # 查询官方
         inside_recovery_phone_sql = '''
-            select inside_recovery_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=2
+            select inside_publish_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=2
         '''
         # 靓号用户数据
         lh_user_sql = '''
