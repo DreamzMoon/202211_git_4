@@ -591,7 +591,7 @@ def operate():
                            inplace=True)
 
         #上架数据
-        sell_sql = '''select sell_phone phone,count,total_price,up_time from lh_sell where del_flag = 0 and status != 1 '''
+        sell_sql = '''select sell_phone phone,count,total_price,if(up_time is not null,up_time,create_time) up_time from lh_sell where del_flag = 0 and status != 1 '''
 
         sell_data = pd.read_sql(sell_sql,conn_read)
         logger.info("sell ok")
