@@ -421,9 +421,9 @@ def plat_summary():
             columns={"count": "official_buy_count", "total_price": "official_buy_total_price"})
         df_list.append(official_buy_df)
         # 渠道上架
-        official_publish_df = buy_df[buy_df['phone'].isin(inside_publish_phone)].groupby('day_time').agg(
-            {"count": "sum", "total_price": "sum"}).reset_index().rename(
-            columns={"count": "official_publish_count", "total_price": "official_publish_total_price"})
+        official_publish_df = publish_df[publish_df['phone'].isin(inside_publish_phone)].groupby('day_time').agg(
+            {"publish_count": "sum", "publish_total_price": "sum"}).reset_index().rename(
+            columns={"publish_count": "official_publish_count", "publish_total_price": "official_publish_total_price"})
         df_list.append(official_publish_df)
         # 用户上架
         user_publish_df = publish_df[~publish_df['phone'].isin(inside_publish_phone)].groupby('day_time').agg(
