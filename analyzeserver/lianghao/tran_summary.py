@@ -517,14 +517,15 @@ def operate():
         page = request.json.get("page")
         size = request.json.get("size")
 
+        logger.info(operate_id)
         crm_user_sql = '''select phone,operate_id from lh_analyze.crm_user where phone is not null and phone !=""'''
         #系统用户
         if operate_id:
             crm_user_sql = crm_user_sql + ''' and operate_id = %s''' %operate_id
-
+        logger.info(crm_user_sql)
         crm_user_data = pd.read_sql(crm_user_sql,conn_analyze)
         phone_list = crm_user_data["phone"].tolist()
-
+        logger.info(phone_list)
 
         #查询那些事官方号码
         official_upload_phone = ""
@@ -619,16 +620,20 @@ def operate():
         market_data.rename(columns={"phone": "phone", "total_price": "market_total_price", "count": "market_count"},
                            inplace=True)
 
+        logger.info(phone_list)
         #上架数据
         sell_sql = '''select sell_phone phone,count,total_price,if(up_time is not null,up_time,create_time) up_time from lh_sell where del_flag = 0 and status != 1 '''
         if phone_list:
             sell_sql = sell_sql + ''' and sell_phone in (%s)''' %(",".join(phone_list))
+        logger.info(sell_sql)
         sell_data = pd.read_sql(sell_sql,conn_read)
         logger.info("sell ok")
 
         #上架数量
         sum_sell_data = sell_data.groupby("phone").agg({"total_price": "sum", "count": "sum"}).reset_index()
         sum_sell_data.rename(columns={"phone": "phone", "total_price": "sum_sell_total_price", "count": "sum_sell_count"},inplace=True)
+
+        logger.info(sum_sell_data[sum_sell_data["phone"]=="15960081959"])
 
         # 上架排序取出按时间第一条和最后一条的 最早采购时间  最近采购时间
         sell_first_data = sell_data.sort_values("up_time", ascending=True).groupby("phone").first().reset_index()
@@ -651,8 +656,9 @@ def operate():
         df_list.append(sum_sell_data)
 
 
-        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
         logger.info("合并完成")
+        logger.info(df_merged[df_merged["phone"]=="15960081959"])
 
         df_merged.fillna(0,inplace=True)
         # df_merged.sort_values(by=["sum_count"],ascending=False,inplace=True)
@@ -660,7 +666,7 @@ def operate():
 
         user_message = df_merged.merge(crm_user_data,how="left",on="phone")
         user_message.fillna("", inplace=True)
-
+        logger.info(user_message)
 
 
         user_message = user_message.groupby(["operate_id"]).agg({"clt_total_price":"sum","market_count":"sum",
@@ -683,6 +689,8 @@ def operate():
             operate_data = operate_data[(operate_data["username"].str.contains(keyword))|(operate_data["unionid"].str.contains(keyword))|(operate_data["phone"].str.contains(keyword))]
         logger.info(operate_data["operate_id"])
         operate_data = operate_data.merge(user_message,how="left",on="operate_id")
+
+        logger.info(operate_data)
 
         df_list2 = []
         df_list2.append(operate_data)

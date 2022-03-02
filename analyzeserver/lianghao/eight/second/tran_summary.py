@@ -656,7 +656,7 @@ def operate():
         df_list.append(sum_sell_data)
 
 
-        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='left'), df_list)
+        df_merged = reduce(lambda left, right: pd.merge(left, right, on=['phone'], how='outer'), df_list)
         logger.info("合并完成")
 
         df_merged.fillna(0,inplace=True)
