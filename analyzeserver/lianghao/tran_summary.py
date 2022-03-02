@@ -272,6 +272,7 @@ def plat_summary():
                 return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
             check_token_result = check_token(token, user_id)
+            logger.info(check_token_result)
             if check_token_result["code"] != "0000":
                 return check_token_result
 
@@ -498,9 +499,11 @@ def operate():
             return {"code": "10001", "status": "failed", "msg": message["10001"]}
 
         check_token_result = check_token(token, user_id)
+        logger.info(check_token_result)
         if check_token_result["code"] != "0000":
             return check_token_result
 
+        logger.info("args:%s" %request.json)
         keyword = request.json.get("keyword")
         operate_id = request.json.get("operate_id")
         login_start_time = request.json.get("login_start_time")

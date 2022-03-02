@@ -54,7 +54,8 @@ def check_token(token,user_id):
       if str(user_id) != str(redis_user_id):
         return {"code": "11024", "msg": message["11024"], "status": "failed"}
 
-      logger.info("用户令牌正确")
+      # logger.info("用户令牌正确")
+
       return {"code":"0000","msg":"用户令牌正常","status":"success"}
   except Exception as e:
     logger.exception(traceback.format_exc())
