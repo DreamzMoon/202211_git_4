@@ -232,7 +232,7 @@ def user_summary():
         # 时间格式化
         for column in [columns for columns in cut_df.columns if 'time' in columns]:
             # cut_df[column] = cut_df[column].apply(lambda x:str(x))
-            cut_df[column] = cut_df[column].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S") if str(x) != "NaT" and str(x) != "nan" else '')
+            cut_df[column] = cut_df[column].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S") if str(x) not in ("NaT", "nan", "None") else '')
 
         # 数据圆整
         for column in [columns for columns in cut_df.columns if 'price' in columns ]:
