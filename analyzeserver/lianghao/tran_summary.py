@@ -71,7 +71,7 @@ def user_summary():
         '''
         # 发布数据
         publish_sql = '''
-            select sell_phone phone, count publish_count, total_price publish_total_price, create_time from lh_sell where del_flag=0 and sell_phone is not null and sell_phone != ''
+            select sell_phone phone, count publish_count, total_price publish_total_price, create_time from lh_sell where del_flag=0 and status !=1 and sell_phone is not null and sell_phone != ''
         '''
         # 查询官方
         inside_recovery_phone_sql = '''
@@ -308,15 +308,15 @@ def plat_summary():
 
         # 采购订单
         buy_sql = '''
-            select phone, sell_phone, count,total_price, create_time, pay_type from lh_order where del_flag=0 and status=1 and type in (1,4) and phone is not null and phone != ''
+            select phone, sell_phone, count,total_price, date_format(create_time, "%Y-%m-%d %H:%i:%S") create_time, date_format(create_time, "%Y-%m-%d %H:%i:%S") day_time, pay_type from lh_order where del_flag=0 and status=1 and type in (1,4) and phone is not null and phone != ''
         '''
         # 发布数据
         publish_sql = '''
-            select sell_phone phone, count publish_count, total_price publish_total_price, create_time from lh_sell where del_flag=0 and sell_phone is not null and sell_phone != ''
+            select sell_phone phone, status, count publish_count, total_price publish_total_price, date_format(create_time, "%Y-%m-%d %H:%i:%S") create_time, date_format(create_time, "%Y-%m-%d %H:%i:%S") day_time from lh_sell where del_flag=0 and sell_phone is not null and sell_phone != ''
         '''
         # 查询官方
         inside_recovery_phone_sql = '''
-            select inside_recovery_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=1
+            select inside_recovery_phone, inside_publish_phone from lh_analyze.data_board_settings where del_flag=0 and market_type=1
         '''
         # 靓号用户数据
         lh_user_sql = '''
@@ -379,34 +379,47 @@ def plat_summary():
         publish_df = pd.read_sql(publish_sql, conn_lh)
         # 读取靓号用户数据
         lh_user_df = pd.read_sql(lh_user_sql, conn_lh)
+        # 官方上架与回收
+        with conn_analyze.cursor() as cursor:
+            cursor.execute(inside_recovery_phone_sql)
+            official_data = cursor.fetchone()
+            inside_recovery_phone = json.loads(official_data[0]) if official_data[0] else []
+            inside_publish_phone = json.loads(official_data[1]) if official_data[1] else []
 
         df_list = []
         df_list.append(lh_user_df)
         # 最早采购
-        first_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("create_time")[
+        first_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("day_time")[
             'create_time'].first().reset_index().rename(columns={"create_time": "first_buy_time"})
         df_list.append(first_buy_df)
         # 最近采购
-        last_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("phone")[
+        last_buy_df = buy_df.sort_values("create_time", ascending=True).groupby("day_time")[
             'create_time'].last().reset_index().rename(columns={"create_time": "last_buy_time"})
         df_list.append(last_buy_df)
         # 最早上架
-        first_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("phone")[
+        first_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("day_time")[
             'create_time'].first().reset_index().rename(columns={"create_time": "first_publish_time"})
         df_list.append(first_publish_df)
         # 最近上架
-        last_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("phone")[
+        last_publish_df = publish_df.sort_values("create_time", ascending=True).groupby("day_time")[
             'create_time'].last().reset_index().rename(columns={"create_time": "last_publish_time"})
         df_list.append(last_publish_df)
 
         # 采购总数量
-        buy_count_df = buy_df.groupby('phone').agg({"count": "sum", "total_price": "sum"}).rename(
+        buy_count_df = buy_df.groupby('day_time').agg({"count": "sum", "total_price": "sum"}).rename(
             columns={"count": "buy_count", "total_price": "buy_total_price"}).reset_index()
         df_list.append(buy_count_df)
-        # 现金采购 (微信、支付宝)
-        cache_buy_df = buy_df[buy_df['pay_type'].isin([3, 4])].groupby('phone')[
-            'total_price'].sum().reset_index().rename(columns={"total_price": "cache_total_price"})
-        df_list.append(cache_buy_df)
+        # 用户采购
+        user_buy_df = buy_df[buy_df['phone'].isin()]
+
+        # 支付宝采购
+        alipay_buy_df = buy_df[buy_df['pay_type'] == 4].groupby('day_time')[
+            'total_price'].sum().reset_index().rename(columns={"total_price": "alipay_total_price"})
+        df_list.append(alipay_buy_df)
+        # 微信采购
+        alipay_buy_df = buy_df[buy_df['pay_type'] == 3].groupby('day_time')[
+            'total_price'].sum().reset_index().rename(columns={"total_price": "wechat_total_price"})
+        df_list.append(alipay_buy_df)
         # 诚聊通余额
         surplus_buy_df = buy_df[buy_df['pay_type'].isin([1, 2])].groupby('phone')[
             'total_price'].sum().reset_index().rename(columns={"total_price": "surplus_total_price"})
