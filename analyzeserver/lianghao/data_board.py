@@ -89,11 +89,11 @@ def lh_personboard_sell():
         user_sell_total_price = sell_total_price - inside_sell_total_price
 
         # 上架采购总数 上架采购总数价值 内部渠道上架回收 内部渠道上架回收 用户上架采购 用户上架采购价值
-        order_sum_count_sql = '''select sum(count) order_sum_count from lh_order where del_flag = 0 and type = 4 and status = 1'''
-        order_sum_price_sql = '''select sum(total_price) order_sum_price from lh_order where del_flag = 0 and type = 4 and status = 1'''
-        inside_order_count_sql = '''select sum(count) inside_order_count from lh_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (
+        order_sum_count_sql = '''select sum(count) order_sum_count from lh_order where del_flag = 0 and type in (1,4) and status = 1'''
+        order_sum_price_sql = '''select sum(total_price) order_sum_price from lh_order where del_flag = 0 and type in (1,4) and status = 1'''
+        inside_order_count_sql = '''select sum(count) inside_order_count from lh_order where del_flag = 0 and type in (1,4) and status = 1 and phone in (%s)''' % (
         kanban_data[0]["inside_publish_phone"][1:-1])
-        inside_order_price_sql = '''select sum(total_price) inside_order_price from lh_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (
+        inside_order_price_sql = '''select sum(total_price) inside_order_price from lh_order where del_flag = 0 and type in (1,4) and status = 1 and phone in (%s)''' % (
         kanban_data[0]["inside_publish_phone"][1:-1])
 
         # 判断是否有官方号
