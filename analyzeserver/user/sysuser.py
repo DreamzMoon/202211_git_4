@@ -150,6 +150,13 @@ def login():
                     r.set(token, json.dumps({"user_id": user_id, "username": username}),ex=2592000)
                     return_data = {"user_id": user_id, "token": token}
                     logger.info("return_data:%s" %return_data)
+
+                    #返回的时候 返回数据分析平台数据看板是否可见 1个人  2商业
+                    kanban_sql = '''select market_type,status from data_board_settings where del_flag = 0'''
+                    kanban_data = pd.read_sql(kanban_sql,conn).to_dict("records")
+                    return_data["kanban_status"] = kanban_data
+
+
                     return {"code": "0000", "status": "success", "msg": return_data}
                 else:
                     return {"code": "11027", "status": "failed", "msg": message["11027"]}
