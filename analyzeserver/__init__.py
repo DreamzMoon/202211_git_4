@@ -63,6 +63,7 @@ from analyzeserver.lianghao.tran_summary import transummarybp
 from analyzeserver.lianghao.eight.second.tran_summary import sectransumbp
 
 from analyzeserver.lianghao.eight.second.data_board import boardsecondbp
+from analyzeserver.lianghao.data_board import lhpersonboardbp
 
 app = Flask(__name__,instance_relative_config=True)
 CORS(app, supports_credentials=True)
@@ -88,6 +89,7 @@ app.register_blueprint(userrelatebp)
 app.register_blueprint(ppbp)
 app.register_blueprint(dailybp)
 app.register_blueprint(transummarybp)
+app.register_blueprint(lhpersonboardbp)
 
 #8位类型列表
 app.register_blueprint(letypebp)

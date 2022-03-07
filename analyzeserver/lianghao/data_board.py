@@ -21,7 +21,7 @@ from analyzeserver.user.sysuser import check_token
 from functools import reduce
 import json
 
-lhpersonboardbp = Blueprint('daily', __name__, url_prefix='')
+lhpersonboardbp = Blueprint('lhpersonboard', __name__, url_prefix='')
 
 @lhpersonboardbp.route("lh/personboard/sell",methods=["GET"])
 def lh_personboard_sell():
@@ -81,10 +81,11 @@ def lh_personboard_sell():
             sell_sum_price_sql = sell_sum_price_sql + ''' and up_time>= "{}" and up_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             inside_sell_count_sql = inside_sell_count_sql + ''' and up_time>= "{}" and up_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             inside_sell_price_sql = inside_sell_price_sql + ''' and up_time>= "{}" and up_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
-
+        logger.info("准备开始")
+        logger.info(sell_sum_count_sql)
         sell_count = pd.read_sql(sell_sum_count_sql,conn_lh).to_dict("records")[0]["sell_count"]
         sell_count = 0 if sell_count is None else sell_count
-
+        logger.info("结束")
         sell_total_price = pd.read_sql(sell_sum_price_sql,conn_lh).to_dict("records")[0]["sell_total_price"]
         sell_total_price = 0 if sell_total_price is None else sell_total_price
 
