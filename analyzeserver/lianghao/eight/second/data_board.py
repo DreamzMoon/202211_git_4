@@ -190,7 +190,7 @@ def le_secboard_sell():
         surplus_sell_price = 0 if surplus_sell_price is None else surplus_sell_price
         surplus_inside_sell_count = 0 if surplus_inside_sell_count is None else surplus_inside_sell_count
         surplus_inside_sell_price = 0 if surplus_inside_sell_price is None else surplus_inside_sell_price
-        surplus_user_sell_count = surplus_sell_count - surplus_sell_price
+        surplus_user_sell_count = surplus_sell_count - surplus_inside_sell_count
         surplus_user_sell_price = surplus_sell_price - surplus_inside_sell_price
 
 
