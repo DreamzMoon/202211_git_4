@@ -44,7 +44,7 @@ def lh_personboard_sell():
             return check_token_result
 
         # 先查询看板时间
-        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
+        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 1'''
         kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
         logger.info(kanban_data)
         if kanban_data[0]["status"] == 0:
