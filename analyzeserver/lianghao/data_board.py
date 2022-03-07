@@ -247,8 +247,10 @@ def lh_personboard_sell():
                "time_type": kanban_data[0]["time_type"], "start_time": kanban_data[0]["start_time"],
                "end_time": kanban_data[0]["end_time"]
                }
-        msg["start_time"] = datetime.datetime.strftime(msg["start_time"], '%Y-%m-%d %H:%M:%S')
-        msg["end_time"] = datetime.datetime.strftime(msg["end_time"], '%Y-%m-%d %H:%M:%S')
+        if msg["start_time"]:
+            msg["start_time"] = datetime.datetime.strftime(msg["start_time"], '%Y-%m-%d %H:%M:%S')
+        if msg["end_time"]:
+            msg["end_time"] = datetime.datetime.strftime(msg["end_time"], '%Y-%m-%d %H:%M:%S')
         logger.info(msg)
         return {"code": "0000", "status": "success", "msg": msg}
     except:
