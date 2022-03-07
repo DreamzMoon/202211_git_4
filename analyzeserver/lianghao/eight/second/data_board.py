@@ -69,16 +69,23 @@ def le_secboard_sell():
             return {"code": "11036", "status": "failed", "msg": message["11036"]}
 
         #上架总数
-        sell_sum_count_sql = '''select count(*) sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0'''
+        sell_sum_count_sql = '''select sum(count) sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0'''
 
         #上架价值
         sell_sum_price_sql = '''select sum(total_price) sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0'''
 
         #内部渠道上架总数
-        inside_sell_count_sql = '''select count(*) inside_sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' %(kanban_data[0]["inside_publish_phone"][1:-1])
-
-        #内部渠道商家价值
+        inside_sell_count_sql = '''select sum(count) inside_sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+        # 内部渠道商家价值
         inside_sell_price_sql = '''select sum(total_price) inside_sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+
+        #判断是否有官方号
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            inside_sell_count_sql = inside_sell_count_sql
+            inside_sell_price_sql = inside_sell_price_sql
+        else:
+            inside_sell_count = 0
+            inside_sell_total_price = 0
 
         # 0是当前时间 1是开始和结束时间
         if kanban_data[0]["time_type"] == 0:
@@ -93,20 +100,113 @@ def le_secboard_sell():
             inside_sell_price_sql = inside_sell_price_sql + ''' and up_time>= "{}" and up_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
 
         sell_count = pd.read_sql(sell_sum_count_sql,conn_lh).to_dict("records")[0]["sell_count"]
+        sell_count = 0 if sell_count is None else sell_count
+
         sell_total_price = pd.read_sql(sell_sum_price_sql,conn_lh).to_dict("records")[0]["sell_total_price"]
         sell_total_price = 0 if sell_total_price is None else sell_total_price
-        inside_sell_count = pd.read_sql(inside_sell_count_sql,conn_lh).to_dict("records")[0]["inside_sell_count"]
-        inside_sell_total_price = pd.read_sql(inside_sell_price_sql,conn_lh).to_dict("records")[0]["inside_sell_total_price"]
-        inside_sell_total_price = 0 if inside_sell_total_price is None else inside_sell_total_price
+
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            inside_sell_count = pd.read_sql(inside_sell_count_sql,conn_lh).to_dict("records")[0]["inside_sell_count"]
+            inside_sell_count = 0 if inside_sell_count is None else inside_sell_count
+
+            inside_sell_total_price = pd.read_sql(inside_sell_price_sql,conn_lh).to_dict("records")[0]["inside_sell_total_price"]
+            inside_sell_total_price = 0 if inside_sell_total_price is None else inside_sell_total_price
+
+
         user_sell_count = sell_count - inside_sell_count
         user_sell_total_price = sell_total_price - inside_sell_total_price
 
-        #采购的
+
+        #上架采购总数 上架采购总数价值 内部渠道上架回收 内部渠道上架回收 用户上架采购 用户上架采购价值
+        order_sum_count_sql = '''select sum(count) order_sum_count from le_order where del_flag = 0 and type = 4 and status = 1'''
+        order_sum_price_sql = '''select sum(total_price) order_sum_price from le_order where del_flag = 0 and type = 4 and status = 1'''
+        inside_order_count_sql = '''select sum(count) inside_order_count from le_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        inside_order_price_sql = '''select sum(total_price) inside_order_price from le_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+
+        # 判断是否有官方号
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            inside_order_count_sql = inside_order_count_sql
+            inside_order_price_sql = inside_order_price_sql
+        else:
+            inside_order_count = 0
+            inside_order_price = 0
+
+        if kanban_data[0]["time_type"] == 0:
+            order_sum_count_sql = order_sum_count_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            order_sum_price_sql = order_sum_price_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            inside_order_count_sql = inside_order_count_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            inside_order_price_sql = inside_order_price_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+        else:
+            order_sum_count_sql = order_sum_count_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            order_sum_price_sql = order_sum_price_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            inside_order_count_sql = inside_order_count_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            inside_order_price_sql = inside_order_price_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+
+        order_sum_count = pd.read_sql(order_sum_count_sql,conn_lh).to_dict("records")[0]["order_sum_count"]
+        order_sum_price = pd.read_sql(order_sum_price_sql,conn_lh).to_dict("records")[0]["order_sum_price"]
+
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            inside_order_count = pd.read_sql(inside_order_count_sql,conn_lh).to_dict("records")[0]["inside_order_count"]
+            inside_order_price = pd.read_sql(inside_order_price_sql,conn_lh).to_dict("records")[0]["inside_order_price"]
+
+        order_sum_count = 0 if order_sum_count is None else order_sum_count
+        order_sum_price = 0 if order_sum_price is None else order_sum_price
+        inside_order_count = 0 if inside_order_count is None else inside_order_count
+        inside_order_price = 0 if inside_order_price is None else inside_order_price
+        user_order_count = order_sum_count - inside_order_count
+        user_order_price = order_sum_price - inside_order_price
+
+        #剩余 上架剩余总数 上架剩余总数价值 内部渠道上架剩余总数 背部渠道上架剩余价值 用户上架剩余总数 用户上架剩余价值
+        surplus_sell_count = sell_count - order_sum_count
+        surplus_sell_price = sell_total_price - order_sum_price
+        surplus_inside_sell_count = inside_sell_count - inside_order_count
+        surplus_inside_sell_price = inside_sell_total_price - inside_order_price
+        surplus_user_sell_count = user_sell_count - user_order_count
+        surplus_user_sell_price = user_sell_total_price - user_order_price
 
 
+        #最早上架时间
+        early_sql = '''select create_time from le_second_hand_sell where `status` != 1 and del_flag = 0 '''
+        zfb_sql = '''select sum(total_price) zfb_total_price from le_order where pay_type = 3 and type in (1,4) and del_flag = 0 and `status` =1 '''
+        wx_sql = '''select sum(total_price) wx_total_price from le_order where pay_type = 4 and type in (1,4) and del_flag = 0 and `status` =1 '''
+        clt_sql = '''select sum(total_price) clt_total_price from le_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  '''
+        cgj_sql = '''select sum(purchase_money) total_purchase_money from le_user_purchase where del_flag = 0 '''
+        sell_fee_sql = '''select sum(sell_fee) total_sell_fee from le_order where  type in (1,4) and del_flag = 0 and `status` =1 '''
 
-        msg={"sell_count":sell_count,"sell_total_price":sell_total_price,"inside_sell_count":inside_sell_count,"inside_sell_total_price":inside_sell_total_price,
-             "user_sell_count":user_sell_count,"user_sell_total_price":user_sell_total_price}
+
+        if kanban_data[0]["time_type"] == 0:
+            early_sql = early_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            zfb_sql = zfb_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            wx_sql = wx_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            clt_sql = clt_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            sell_fee_sql = sell_fee_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+        else:
+            early_sql = early_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            zfb_sql = zfb_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            wx_sql = wx_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            clt_sql = clt_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            cgj_sql = cgj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+        early_sql = early_sql + " order by create_time asc limit 1"
+        logger.info(early_sql)
+        early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["create_time"]
+        early_time = datetime.datetime.strftime(early_time, "%Y-%m-%d %H:%M:%S")
+        zfb_total_price = pd.read_sql(zfb_sql,conn_lh).to_dict("records")[0]["zfb_total_price"]
+        wx_total_price = pd.read_sql(wx_sql,conn_lh).to_dict("records")[0]["wx_total_price"]
+        clt_total_price = pd.read_sql(clt_sql,conn_lh).to_dict("records")[0]["clt_total_price"]
+        total_purchase_money = pd.read_sql(cgj_sql,conn_lh).to_dict("records")[0]["total_purchase_money"]
+        total_sell_fee = pd.read_sql(sell_fee_sql,conn_lh).to_dict("records")[0]["total_sell_fee"]
+
+        msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
+               "inside_sell_total_price": inside_sell_total_price,"user_sell_count": user_sell_count, "user_sell_total_price": user_sell_total_price,
+               "order_sum_count":order_sum_count,"order_sum_price":order_sum_price,"inside_order_count":inside_order_count,
+               "inside_order_price":inside_order_price,"user_order_count":user_order_count,"user_order_price":user_order_price,
+               "surplus_sell_count":surplus_sell_count,"surplus_sell_price":surplus_sell_price,"surplus_inside_sell_count":surplus_inside_sell_count,
+               "surplus_inside_sell_price":surplus_inside_sell_price,"surplus_user_sell_count":surplus_user_sell_count,"surplus_user_sell_price":surplus_user_sell_price,
+               "early_time":early_time,"zfb_total_price":zfb_total_price,"wx_total_price":wx_total_price,
+               "clt_total_price":clt_total_price,"total_purchase_money":total_purchase_money,"total_sell_fee":total_sell_fee
+               }
         logger.info(msg)
         return {"code":"0000","status":"success","msg":msg}
     except:
