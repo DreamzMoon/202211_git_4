@@ -138,16 +138,16 @@ def lh_personboard_sell():
         # 在售 在售剩余总数 在售剩余总数价值 内部渠道在售剩余总数 内部渠道在售剩余价值 用户在售剩余总数 用户在售剩余价值
 
         # 上架总数
-        surplus_sell_count_sql = '''select sum(count) on_sell_count from lh_sell where `status` != 1 and del_flag = 0'''
+        surplus_sell_count_sql = '''select sum(count) on_sell_count from lh_sell where `status` = 0 and del_flag = 0'''
 
         # 上架价值
-        surplus_sell_price_sql = '''select sum(total_price) on_sell_total_price from lh_sell where `status` != 1 and del_flag = 0'''
+        surplus_sell_price_sql = '''select sum(total_price) on_sell_total_price from lh_sell where `status` = 0 and del_flag = 0'''
 
         # 内部渠道上架总数
-        surplus_inside_sell_count_sql = '''select sum(count) on_inside_sell_count from lh_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (
+        surplus_inside_sell_count_sql = '''select sum(count) on_inside_sell_count from lh_sell where `status` = 0 and del_flag = 0 and sell_phone in (%s)''' % (
         kanban_data[0]["inside_publish_phone"][1:-1])
         # 内部渠道商家价值
-        surplus_inside_sell_price_sql = '''select sum(total_price) on_inside_sell_total_price from lh_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (
+        surplus_inside_sell_price_sql = '''select sum(total_price) on_inside_sell_total_price from lh_sell where `status` = 0 and del_flag = 0 and sell_phone in (%s)''' % (
         kanban_data[0]["inside_publish_phone"][1:-1])
 
         # 判断是否有官方号

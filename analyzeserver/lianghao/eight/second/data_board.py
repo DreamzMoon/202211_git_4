@@ -103,6 +103,8 @@ def le_secboard_sell():
 
 
         user_sell_count = sell_count - inside_sell_count
+        logger.info(sell_total_price)
+        logger.info(inside_sell_total_price)
         user_sell_total_price = sell_total_price - inside_sell_total_price
 
 
@@ -149,15 +151,15 @@ def le_secboard_sell():
 
 
         # 上架总数
-        surplus_sell_count_sql = '''select sum(count) on_sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0'''
+        surplus_sell_count_sql = '''select sum(count) on_sell_count from le_second_hand_sell where `status` = 0 and del_flag = 0'''
 
         # 上架价值
-        surplus_sell_price_sql = '''select sum(total_price) on_sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0'''
+        surplus_sell_price_sql = '''select sum(total_price) on_sell_total_price from le_second_hand_sell where `status` = 0 and del_flag = 0'''
 
         # 内部渠道上架总数
-        surplus_inside_sell_count_sql = '''select sum(count) on_inside_sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        surplus_inside_sell_count_sql = '''select sum(count) on_inside_sell_count from le_second_hand_sell where `status` = 0 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         # 内部渠道商家价值
-        surplus_inside_sell_price_sql = '''select sum(total_price) on_inside_sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        surplus_inside_sell_price_sql = '''select sum(total_price) on_inside_sell_total_price from le_second_hand_sell where `status` = 0 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
 
         # 判断是否有官方号
         if kanban_data[0]["inside_publish_phone"][1:-1]:
