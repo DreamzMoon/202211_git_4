@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022/3/7 10:01
+# @Time : 2022/3/7 17:19
 
 # @Author : xiaowangwang
 # @Email : www@qq.com
 # @File : data_board.py
+
 
 import sys
 sys.path.append("..")
@@ -18,29 +19,12 @@ import datetime
 from analyzeserver.common import *
 from analyzeserver.user.sysuser import check_token
 from functools import reduce
+import json
 
-boardsecondbp = Blueprint('boardsecond', __name__, url_prefix='')
+lhpersonboardbp = Blueprint('daily', __name__, url_prefix='')
 
-@boardsecondbp.route("board/see",methods=["GET"])
-def board_see():
-
-    try:
-        conn_analyze = direct_get_conn(analyze_mysql_conf)
-        if not conn_analyze:
-            return {"code": 10001, "status": "failed", "msg": message["10001"]}
-        kanban_sql = '''select market_type,status from data_board_settings where del_flag = 0'''
-        kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
-        return_data = {}
-        return_data["kanban_status"] = kanban_data
-        return {"code": "0000", "status": "success", "msg": return_data}
-    except:
-        logger.info(traceback.format_exc())
-        return {"code": "10000", "status": "failed", "msg": message["10000"]}
-    finally:
-        conn_analyze.close()
-
-@boardsecondbp.route("le/secboard/sell",methods=["GET"])
-def le_secboard_sell():
+@lhpersonboardbp.route("lh/personboard/sell",methods=["GET"])
+def lh_personboard_sell():
     try:
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         conn_lh = direct_get_conn(lianghao_mysql_conf)
@@ -61,22 +45,22 @@ def le_secboard_sell():
             return check_token_result
 
         #先查询看板时间
-        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
+        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 1'''
         kanban_data = pd.read_sql(kanban_sql,conn_analyze).to_dict("records")
         logger.info(kanban_data)
         if kanban_data[0]["status"] == 0:
             return {"code": "11036", "status": "failed", "msg": message["11036"]}
 
         #上架总数
-        sell_sum_count_sql = '''select sum(count) sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0'''
+        sell_sum_count_sql = '''select sum(count) sell_count from lh_sell where `status` != 1 and del_flag = 0'''
 
         #上架价值
-        sell_sum_price_sql = '''select sum(total_price) sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0'''
+        sell_sum_price_sql = '''select sum(total_price) sell_total_price from lh_sell where `status` != 1 and del_flag = 0'''
 
         #内部渠道上架总数
-        inside_sell_count_sql = '''select sum(count) inside_sell_count from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+        inside_sell_count_sql = '''select sum(count) inside_sell_count from lh_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' %(kanban_data[0]["inside_publish_phone"][1:-1])
         # 内部渠道商家价值
-        inside_sell_price_sql = '''select sum(total_price) inside_sell_total_price from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        inside_sell_price_sql = '''select sum(total_price) inside_sell_total_price from lh_sell where `status` != 1 and del_flag = 0 and sell_phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
 
         #判断是否有官方号
         if kanban_data[0]["inside_publish_phone"][1:-1]:
@@ -117,10 +101,10 @@ def le_secboard_sell():
 
 
         #上架采购总数 上架采购总数价值 内部渠道上架回收 内部渠道上架回收 用户上架采购 用户上架采购价值
-        order_sum_count_sql = '''select sum(count) order_sum_count from le_order where del_flag = 0 and type = 4 and status = 1'''
-        order_sum_price_sql = '''select sum(total_price) order_sum_price from le_order where del_flag = 0 and type = 4 and status = 1'''
-        inside_order_count_sql = '''select sum(count) inside_order_count from le_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
-        inside_order_price_sql = '''select sum(total_price) inside_order_price from le_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        order_sum_count_sql = '''select sum(count) order_sum_count from lh_order where del_flag = 0 and type = 4 and status = 1'''
+        order_sum_price_sql = '''select sum(total_price) order_sum_price from lh_order where del_flag = 0 and type = 4 and status = 1'''
+        inside_order_count_sql = '''select sum(count) inside_order_count from lh_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        inside_order_price_sql = '''select sum(total_price) inside_order_price from lh_order where del_flag = 0 and type = 4 and status = 1 and phone in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
 
         # 判断是否有官方号
         if kanban_data[0]["inside_publish_phone"][1:-1]:
@@ -165,12 +149,11 @@ def le_secboard_sell():
 
 
         #最早上架时间
-        early_sql = '''select create_time from le_second_hand_sell where `status` != 1 and del_flag = 0 '''
-        zfb_sql = '''select sum(total_price) zfb_total_price from le_order where pay_type = 3 and type in (1,4) and del_flag = 0 and `status` =1 '''
-        wx_sql = '''select sum(total_price) wx_total_price from le_order where pay_type = 4 and type in (1,4) and del_flag = 0 and `status` =1 '''
-        clt_sql = '''select sum(total_price) clt_total_price from le_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  '''
-        cgj_sql = '''select sum(purchase_money) total_purchase_money from le_user_purchase where del_flag = 0 '''
-        sell_fee_sql = '''select sum(sell_fee) total_sell_fee from le_order where  type in (1,4) and del_flag = 0 and `status` =1 '''
+        early_sql = '''select create_time from lh_sell where `status` != 1 and del_flag = 0 '''
+        zfb_sql = '''select sum(total_price) zfb_total_price from lh_order where pay_type = 3 and type in (1,4) and del_flag = 0 and `status` =1 '''
+        wx_sql = '''select sum(total_price) wx_total_price from lh_order where pay_type = 4 and type in (1,4) and del_flag = 0 and `status` =1 '''
+        clt_sql = '''select sum(total_price) clt_total_price from lh_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  '''
+        sell_fee_sql = '''select sum(sell_fee) total_sell_fee from lh_order where  type in (1,4) and del_flag = 0 and `status` =1 '''
 
 
         if kanban_data[0]["time_type"] == 0:
@@ -178,14 +161,12 @@ def le_secboard_sell():
             zfb_sql = zfb_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             wx_sql = wx_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             clt_sql = clt_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
-            cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             sell_fee_sql = sell_fee_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
         else:
             early_sql = early_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             zfb_sql = zfb_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             wx_sql = wx_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             clt_sql = clt_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
-            cgj_sql = cgj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
         early_sql = early_sql + " order by create_time asc limit 1"
         logger.info(early_sql)
@@ -194,7 +175,7 @@ def le_secboard_sell():
         zfb_total_price = pd.read_sql(zfb_sql,conn_lh).to_dict("records")[0]["zfb_total_price"]
         wx_total_price = pd.read_sql(wx_sql,conn_lh).to_dict("records")[0]["wx_total_price"]
         clt_total_price = pd.read_sql(clt_sql,conn_lh).to_dict("records")[0]["clt_total_price"]
-        total_purchase_money = pd.read_sql(cgj_sql,conn_lh).to_dict("records")[0]["total_purchase_money"]
+        total_purchase_money = 0
         total_sell_fee = pd.read_sql(sell_fee_sql,conn_lh).to_dict("records")[0]["total_sell_fee"]
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,

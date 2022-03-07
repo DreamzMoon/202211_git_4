@@ -108,14 +108,18 @@ def official_buy():
 
         kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
         kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
-        sql = '''SELECT phone,sum(total_price) official_total_money FROM le_order WHERE del_flag = 0 AND type = 0  AND STATUS = 1 '''
+        sql = '''SELECT phone,sum(total_price) official_buy_money FROM le_order WHERE del_flag = 0 AND type = 4  AND STATUS = 1 '''
         group_sql = ''' group by phone'''
+        logger.info(kanban_data)
         if kanban_data[0]["inside_publish_phone"][1:-1]:
-            sql = sql + ''' sell_phone in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+            sql = sql + ''' and sell_phone in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
             sql = sql + group_sql
+            logger.info(sql)
             official_buy_data = pd.read_sql(sql, conn_lh)
+            logger.info(official_buy_data)
         else:
-            official_buy_data = pd.DataFrame([{"phone":"","official_total_money":""}])
+            official_buy_data = pd.DataFrame([{"phone":"","official_buy_money":0}])
+        logger.info(official_buy_data)
         return True, official_buy_data
 
     except Exception as e:
@@ -131,17 +135,42 @@ def tran_buy():
         conn_analyze = direct_get_conn(analyze_mysql_conf)
         kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
         kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
-        sql = '''SELECT phone,sum(total_price) official_total_money FROM le_order WHERE del_flag = 0 AND type = 0  AND STATUS = 1 '''
         group_sql = ''' group by phone'''
 
-        sql = '''SELECT phone,sum(total_price) tran_money FROM le_order WHERE del_flag = 0 AND type = 4  AND STATUS = 1 group by phone'''
+        sql = '''SELECT phone,sum(total_price) tran_buy_money FROM le_order WHERE del_flag = 0 AND type = 4  AND STATUS = 1 group by phone'''
 
         if kanban_data[0]["inside_publish_phone"][1:-1]:
+            sql = sql + ''' and sell_phone not in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+            sql = sql + group_sql
+            tran_buy_data = pd.read_sql(sql, conn_analyze)
+        else:
+            tran_buy_data = pd.DataFrame([{"phone":"","tran_buy_money":0}])
+        return True,tran_buy_data
+
+    except Exception as e:
+        logger.info(traceback.format_exc())
+        return False, e
+    finally:
+        conn_lh.close()
+
+# 转让市场出售金额
+def tran_sell():
+    try:
+        conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
+        kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
+        group_sql = ''' group by phone'''
+
+        sql = '''SELECT sell_phone phone,sum(total_price) tran_money FROM le_order WHERE del_flag = 0 AND type = 4  AND STATUS = 1 group by phone'''
+
+        if kanban_data[0]["inside_recovery_phone"][1:-1]:
             sql = sql + ''' sell_phone not in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
             sql = sql + group_sql
+            tran_sell_data = pd.read_sql(sql, conn_analyze)
         else:
-            pass
-        return True,
+            tran_sell_data = pd.DataFrame([{"phone":"","tran_sell_price":0}])
+        return True,tran_sell_data
 
     except Exception as e:
         logger.info(traceback.format_exc())
@@ -167,26 +196,33 @@ if __name__ == "__main__":
 
     user_data["buy_limit"].fillna(0,inplace=True)
     logger.info(user_data)
-    # user_data.to_csv("e:/123321456.csv")
     user_data["limits"] = user_data["limits"].astype(int)
     user_data["current_limit"] = user_data["limits"] - user_data["buy_limit"]
 
 
-    # official_buy_result = official_buy()
-    # if official_buy_result[0]:
-    #     user_data.merge(official_buy_result[1],on="phone",how="left")
-    # else:
-    #     logger.info("官方采购金额查询失败了")
-    #
-    # user_data["official_money"].fillna(0,inplace=True)
-    #
-    # tran_buy_result = tran_buy()
-    # if tran_buy_result[0]:
-    #     user_data.merge(tran_buy_result[1],on="phone",how="left")
-    # else:
-    #     logger.info("转让市场采购金额查询失败了")
-    #
-    # user_data["tran_money"].fillna(0,inplace=True)
+    official_buy_result = official_buy()
+    if official_buy_result[0]:
+        user_data.merge(official_buy_result[1],on="phone",how="left")
+    else:
+        logger.info("官方采购金额查询失败了")
 
-    logger.info("run ok")
-    user_data.to_csv("e:/8282.csv")
+    user_data.to_csv("e:/ijko.csv")
+    user_data["official_buy_money"].fillna(0,inplace=True)
+
+    tran_buy_result = tran_buy()
+    if tran_buy_result[0]:
+        user_data.merge(tran_buy_result[1],on="phone",how="left")
+    else:
+        logger.info("转让市场采购金额查询失败了")
+
+    user_data["tran_buy_price"].fillna(0,inplace=True)
+
+    tran_sell_result = tran_sell()
+    if tran_sell_result[0]:
+        user_data.merge(tran_sell_result[1], on="phone", how="left")
+    else:
+        logger.info("转让市场出售金额查询失败了")
+
+    user_data["tran_sell_price"].fillna(0, inplace=True)
+
+    user_data.to_csv("e:/huuh.csv")
