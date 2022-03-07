@@ -69,42 +69,53 @@ def buy_limit():
         conn_lh.close()
 
 #二手市场回复额度
-def recovery_limit():
-    try:
-        conn_lh = direct_get_conn(lianghao_mysql_conf)
-        df_list = []
-
-        tables = ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"]
-        for t in tables:
-            logger.info("table:%s" %t)
-            sql = '''select hold_phone phone,sell_order_sn order_sn from le_pretty_hold_%s where del_flag = 0 and status = 3 group by phone,order_sn''' %t
-            # sql = '''select hold_phone phone,sell_order_sn order_sn,update_time from le_pretty_hold_%s where del_flag = 0 and status = 3 ''' %t
-            data = pd.read_sql(sql,conn_lh)
-            df_list.append(data)
-        hold_data = pd.concat(df_list,axis=0)
-
-        order_sql = '''select order_sn,total_price recovery_limit from le_order where del_flag = 0 and type = 4 and status = 1'''
-        order_data = pd.read_sql(order_sql,conn_lh)
-        recv_data = hold_data.merge(order_data,how="left",on="order_sn")
-        recv_data.drop(["order_sn"],axis=1,inplace=True)
-
-        # recv_limit_data = pd.read_sql(sql, conn_lh)
-        return True, recv_data
-
-    except Exception as e:
-        logger.info(traceback.format_exc())
-        return False, e
-    finally:
-        conn_lh.close()
+# def recovery_limit():
+#     try:
+#         conn_lh = direct_get_conn(lianghao_mysql_conf)
+#         df_list = []
+#
+#         tables = ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"]
+#         for t in tables:
+#             logger.info("table:%s" %t)
+#             sql = '''select hold_phone phone,sell_order_sn order_sn from le_pretty_hold_%s where del_flag = 0 and status = 3 group by phone,order_sn''' %t
+#             # sql = '''select hold_phone phone,sell_order_sn order_sn,update_time from le_pretty_hold_%s where del_flag = 0 and status = 3 ''' %t
+#             data = pd.read_sql(sql,conn_lh)
+#             df_list.append(data)
+#         hold_data = pd.concat(df_list,axis=0)
+#
+#         order_sql = '''select order_sn,total_price recovery_limit from le_order where del_flag = 0 and type = 4 and status = 1'''
+#         order_data = pd.read_sql(order_sql,conn_lh)
+#         recv_data = hold_data.merge(order_data,how="left",on="order_sn")
+#         recv_data.drop(["order_sn"],axis=1,inplace=True)
+#
+#         # recv_limit_data = pd.read_sql(sql, conn_lh)
+#         return True, recv_data
+#
+#     except Exception as e:
+#         logger.info(traceback.format_exc())
+#         return False, e
+#     finally:
+#         conn_lh.close()
 
 
 
 # 官方采购金额
+
 def official_buy():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
-        sql = '''SELECT phone,sum(total_price) official_money FROM le_order WHERE del_flag = 0 AND type = 0  AND STATUS = 1 group by phone'''
-        official_buy_data = pd.read_sql(sql, conn_lh)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+
+        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
+        kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
+        sql = '''SELECT phone,sum(total_price) official_total_money FROM le_order WHERE del_flag = 0 AND type = 0  AND STATUS = 1 '''
+        group_sql = ''' group by phone'''
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            sql = sql + ''' sell_phone in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+            sql = sql + group_sql
+            official_buy_data = pd.read_sql(sql, conn_lh)
+        else:
+            official_buy_data = pd.DataFrame([{"phone":"","official_total_money":""}])
         return True, official_buy_data
 
     except Exception as e:
@@ -117,9 +128,20 @@ def official_buy():
 def tran_buy():
     try:
         conn_lh = direct_get_conn(lianghao_mysql_conf)
+        conn_analyze = direct_get_conn(analyze_mysql_conf)
+        kanban_sql = '''select status,time_type,start_time,end_time,inside_publish_phone,inside_recovery_phone from data_board_settings where del_flag = 0 and market_type = 2'''
+        kanban_data = pd.read_sql(kanban_sql, conn_analyze).to_dict("records")
+        sql = '''SELECT phone,sum(total_price) official_total_money FROM le_order WHERE del_flag = 0 AND type = 0  AND STATUS = 1 '''
+        group_sql = ''' group by phone'''
+
         sql = '''SELECT phone,sum(total_price) tran_money FROM le_order WHERE del_flag = 0 AND type = 4  AND STATUS = 1 group by phone'''
-        official_limit_data = pd.read_sql(sql, conn_lh)
-        return True, official_limit_data
+
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            sql = sql + ''' sell_phone not in (%s) ''' %(kanban_data[0]["inside_publish_phone"][1:-1])
+            sql = sql + group_sql
+        else:
+            pass
+        return True,
 
     except Exception as e:
         logger.info(traceback.format_exc())
@@ -149,14 +171,6 @@ if __name__ == "__main__":
     user_data["limits"] = user_data["limits"].astype(int)
     user_data["current_limit"] = user_data["limits"] - user_data["buy_limit"]
 
-    recovery_limit_result = recovery_limit()
-    if recovery_limit_result[0]:
-        user_data = user_data.merge(recovery_limit_result[1],on="phone",how="left")
-    else:
-        logger.info("二手市场恢复额度查询失败了")
-        exit()
-
-    user_data["recovery_limit"].fillna(0,inplace=True)
 
     # official_buy_result = official_buy()
     # if official_buy_result[0]:

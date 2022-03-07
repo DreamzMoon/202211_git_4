@@ -205,7 +205,8 @@ def le_secboard_sell():
                "surplus_sell_count":surplus_sell_count,"surplus_sell_price":surplus_sell_price,"surplus_inside_sell_count":surplus_inside_sell_count,
                "surplus_inside_sell_price":surplus_inside_sell_price,"surplus_user_sell_count":surplus_user_sell_count,"surplus_user_sell_price":surplus_user_sell_price,
                "early_time":early_time,"zfb_total_price":zfb_total_price,"wx_total_price":wx_total_price,
-               "clt_total_price":clt_total_price,"total_purchase_money":total_purchase_money,"total_sell_fee":total_sell_fee
+               "clt_total_price":clt_total_price,"total_purchase_money":total_purchase_money,"total_sell_fee":total_sell_fee,
+               "time_type":kanban_data[0]["time_type"],"start_time":kanban_data[0]["start_time"],"end_time":kanban_data[0]["end_time"]
                }
         logger.info(msg)
         return {"code":"0000","status":"success","msg":msg}
