@@ -224,7 +224,7 @@ def le_secboard_sell():
         total_purchase_money = pd.read_sql(cgj_sql,conn_lh).to_dict("records")[0]["total_purchase_money"]
         total_sell_fee = pd.read_sql(sell_fee_sql,conn_lh).to_dict("records")[0]["total_sell_fee"]
 
-        pure_money = order_sum_price - sell_total_price
+        pure_money = sell_total_price - order_sum_price
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price,"user_sell_count": user_sell_count, "user_sell_total_price": user_sell_total_price,
