@@ -228,7 +228,7 @@ def lh_personboard_sell():
             total_sell_fee = pd.read_sql(sell_fee_sql, conn_lh).to_dict("records")[0]["total_sell_fee"]
 
         total_purchase_money = 0
-        pure_money = sell_total_price - order_sum_price
+        pure_money = user_sell_total_price + inside_sell_total_price - user_order_price - inside_order_price
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price, "user_sell_count": user_sell_count,
