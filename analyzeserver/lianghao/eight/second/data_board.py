@@ -195,12 +195,21 @@ def le_secboard_sell():
 
 
         #最早上架时间
-        early_sql = '''select create_time from le_second_hand_sell where `status` != 1 and del_flag = 0 '''
-        xj_sql = '''select sum(total_price) xj_total_price from le_order where pay_type in (3,4) and type in (1,4) and del_flag = 0 and `status` =1 '''
-        clt_sql = '''select sum(total_price) clt_total_price from le_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  '''
-        cgj_sql = '''select sum(purchase_money) total_purchase_money from le_user_purchase where del_flag = 0 '''
-        sell_fee_sql = '''select sum(sell_fee) total_sell_fee from le_order where  type in (1,4) and del_flag = 0 and `status` =1 '''
+        early_sql = '''select create_time from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        xj_sql = '''select sum(total_price) xj_total_price from le_order where pay_type in (3,4) and type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        clt_sql = '''select sum(total_price) clt_total_price from le_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        cgj_sql = '''select sum(purchase_money) total_purchase_money from le_user_purchase where del_flag = 0 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        sell_fee_sql = '''select sum(sell_fee) total_sell_fee from le_order where  type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
 
+        # 判断是否有官方号
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            pass
+        else:
+            early_time = 0
+            xj_total_price = 0
+            clt_total_price = 0
+            total_purchase_money = 0
+            total_sell_fee = 0
 
 
         if kanban_data[0]["time_type"] == 0:
@@ -216,15 +225,16 @@ def le_secboard_sell():
             cgj_sql = cgj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
         early_sql = early_sql + " order by create_time asc limit 1"
-        logger.info(early_sql)
-        early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["create_time"]
-        early_time = datetime.datetime.strftime(early_time, "%Y-%m-%d %H:%M:%S")
-        xj_total_price = pd.read_sql(xj_sql,conn_lh).to_dict("records")[0]["xj_total_price"]
-        clt_total_price = pd.read_sql(clt_sql,conn_lh).to_dict("records")[0]["clt_total_price"]
-        total_purchase_money = pd.read_sql(cgj_sql,conn_lh).to_dict("records")[0]["total_purchase_money"]
-        total_sell_fee = pd.read_sql(sell_fee_sql,conn_lh).to_dict("records")[0]["total_sell_fee"]
 
-        pure_money = sell_total_price - order_sum_price
+        if kanban_data[0]["inside_publish_phone"][1:-1]:
+            early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["create_time"]
+            early_time = datetime.datetime.strftime(early_time, "%Y-%m-%d %H:%M:%S")
+            xj_total_price = pd.read_sql(xj_sql,conn_lh).to_dict("records")[0]["xj_total_price"]
+            clt_total_price = pd.read_sql(clt_sql,conn_lh).to_dict("records")[0]["clt_total_price"]
+            total_purchase_money = pd.read_sql(cgj_sql,conn_lh).to_dict("records")[0]["total_purchase_money"]
+            total_sell_fee = pd.read_sql(sell_fee_sql,conn_lh).to_dict("records")[0]["total_sell_fee"]
+
+        pure_money = user_sell_total_price - user_order_price
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price,"user_sell_count": user_sell_count, "user_sell_total_price": user_sell_total_price,
