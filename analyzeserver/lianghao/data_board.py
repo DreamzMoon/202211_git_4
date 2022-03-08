@@ -204,7 +204,6 @@ def lh_personboard_sell():
             early_time = 0
             xj_total_price = 0
             clt_total_price = 0
-            total_purchase_money = 0
             total_sell_fee = 0
             total_purchase_money = 0
 
@@ -219,7 +218,7 @@ def lh_personboard_sell():
             xj_sql = xj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
             clt_sql = clt_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format( kanban_data[0]["start_time"], kanban_data[0]["end_time"])
             sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
-            cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            cgj_sql = cgj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
         early_sql = early_sql + " order by create_time asc limit 1"
         logger.info(early_sql)
 
@@ -230,6 +229,7 @@ def lh_personboard_sell():
             clt_total_price = pd.read_sql(clt_sql, conn_lh).to_dict("records")[0]["clt_total_price"]
 
             total_sell_fee = pd.read_sql(sell_fee_sql, conn_lh).to_dict("records")[0]["total_sell_fee"]
+            logger.info(cgj_sql)
             total_purchase_money = pd.read_sql(cgj_sql, conn_lh).to_dict("records")[0]["total_purchase_money"]
 
         # pure_money = user_sell_total_price + inside_sell_total_price - user_order_price - inside_order_price
