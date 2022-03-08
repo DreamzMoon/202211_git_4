@@ -215,18 +215,18 @@ def le_secboard_sell():
 
 
         if kanban_data[0]["time_type"] == 0:
-            early_sql = early_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            # early_sql = early_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             xj_sql = xj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             clt_sql = clt_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             sell_fee_sql = sell_fee_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
         else:
-            early_sql = early_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
+            # early_sql = early_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             xj_sql = xj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             clt_sql = clt_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             cgj_sql = cgj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
             sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"],kanban_data[0]["end_time"])
-        early_sql = early_sql + " order by create_time asc limit 1"
+        early_sql = early_sql + " order by up_time asc limit 1"
 
         if kanban_data[0]["inside_publish_phone"][1:-1]:
             early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["up_time"]
