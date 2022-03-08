@@ -241,7 +241,7 @@ def le_secboard_sell():
         # pure_money = user_sell_total_price - user_order_price
 
         # 净营收
-        pure_money = order_sum_price - sell_total_price
+        pure_money = order_sum_price - surplus_sell_price
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price,"user_sell_count": user_sell_count, "user_sell_total_price": user_sell_total_price,

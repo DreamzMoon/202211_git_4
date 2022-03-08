@@ -236,8 +236,10 @@ def lh_personboard_sell():
         # pure_money = user_sell_total_price - user_order_price
 
         #净营收
-        pure_money = order_sum_price - sell_total_price
-
+        logger.info(order_sum_price)
+        logger.info(sell_total_price)
+        pure_money = order_sum_price - surplus_sell_price
+        logger.info(pure_money)
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price, "user_sell_count": user_sell_count,
                "user_sell_total_price": user_sell_total_price,
