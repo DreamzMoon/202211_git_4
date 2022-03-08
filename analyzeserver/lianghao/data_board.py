@@ -191,7 +191,7 @@ def lh_personboard_sell():
         surplus_user_sell_price = surplus_sell_price - surplus_inside_sell_price
 
         # 最早上架时间
-        early_sql = '''select up_time from lh_sell where `status` != 1 and del_flag = 0 and sell_phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        early_sql = '''select up_time from lh_sell where `status` = 0 and del_flag = 0 and sell_phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         xj_sql = '''select sum(total_price) xj_total_price from lh_order where pay_type in (3,4) and type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         clt_sql = '''select sum(total_price) clt_total_price from lh_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         sell_fee_sql = '''select sum(sell_fee) total_sell_fee from lh_order where  type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
