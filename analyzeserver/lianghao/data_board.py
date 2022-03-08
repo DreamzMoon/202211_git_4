@@ -195,7 +195,7 @@ def lh_personboard_sell():
         xj_sql = '''select sum(total_price) xj_total_price from lh_order where pay_type in (3,4) and type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         clt_sql = '''select sum(total_price) clt_total_price from lh_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         sell_fee_sql = '''select sum(sell_fee) total_sell_fee from lh_order where  type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
-        cgj_sql = '''select sum(total_price) total_purchase_money from lh_order where pay_type = 0 and del_flag = 0 and type in (4) and phone not in (%s)''' % (
+        cgj_sql = '''select sum(total_price) total_purchase_money from lh_order where pay_type = 0 and del_flag = 0 and type in (1,4) and phone not in (%s)''' % (
         kanban_data[0]["inside_publish_phone"][1:-1])
         # 判断是否有官方号
         if kanban_data[0]["inside_publish_phone"][1:-1]:
