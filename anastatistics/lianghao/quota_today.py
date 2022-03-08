@@ -25,16 +25,6 @@ def quota_data(mode="today"):
             return False, '数据库连接错误'
         cursor = conn_analyze.cursor()
 
-        # 当前时间年月
-        year_month_time = datetime.datetime.now().strftime("%Y%m")
-
-        show_tables = '''show tables'''
-        tables_df = pd.read_sql(show_tables, conn_analyze)
-        tables_df.columns = ['table_name']
-        table_name = 'quota_' + year_month_time
-        exists_table = tables_df[tables_df['table_name'] == table_name].shape[0]
-        logger.info(table_name)
-
         # 转让市场额度
         tran_market_sql = '''
             select t1.phone, t1.create_time, t1.last_login_time, if(t1.is_shop_label=0, 0, if(t1.is_market=1, t1.market_buy_limit, t2.market_buy_limit)) market_buy_limit from lh_pretty_client.lh_user t1
@@ -135,33 +125,22 @@ def quota_data(mode="today"):
         df_list.append(market_publish_df)
 
         fina_df = reduce(lambda left, right: pd.merge(left, right, how='left', on=['phone']), df_list)
-        fina_df['day_time'] = (datetime.datetime.now() + timedelta(days=-1)).strftime("%Y-%m-%d")
+        fina_df['day_time'] = datetime.datetime.now().strftime("%Y-%m-%d")
         for column in [columns for columns in fina_df.columns if 'money' in columns]:
             fina_df[column].fillna(0, inplace=True)
 
         conn_an = pd_conn(analyze_mysql_conf)
+        # 当前时间年月
+        year_month_time = datetime.datetime.now().strftime("%Y-%m-%d")
 
-
-        if exists_table == 0: # 创建表格
-            logger.info('创建表格')
-            create_table_sql = '''
-                CREATE TABLE `%s` (
-                `day_time` date DEFAULT NULL COMMENT '统计时间',
-                `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '手机号',
-                `create_time` timestamp NULL DEFAULT NULL COMMENT '注册时间',
-                `last_login_time` timestamp NULL DEFAULT NULL COMMENT '最后登录时间',
-                `market_buy_limit` decimal(20,2) DEFAULT '0.00' COMMENT '转让市场额度(-1为无限额度)',
-                `use_money` decimal(20,2) DEFAULT '0.00' COMMENT '已使用额度',
-                `surplus_money` decimal(20,2) DEFAULT '0.00' COMMENT '当前额度',
-                `official_buy_money` decimal(20,2) DEFAULT '0.00' COMMENT '渠道采购额度',
-                `market_buy_money` decimal(20,2) DEFAULT '0.00' COMMENT '市场采购金额',
-                `market_publish_money` decimal(20,2) DEFAULT '0.00' COMMENT '市场出售金额',
-                `addtime` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入库时间'
-            ''' % table_name
-            cursor.execute(create_table_sql)
-            conn_analyze.commit()
+        # 删除今日数据
+        del_sql = '''
+            delete from quota_today where day_time!=%s
+        ''' % year_month_time
+        cursor.execute(del_sql)
+        conn_analyze.commit()
         logger.info('插入数据')
-        fina_df.to_sql(table_name, con=conn_an, if_exists="append", index=False)
+        fina_df.to_sql('quota_today', con=conn_an, if_exists="append", index=False)
         return True, '插入成功'
     except Exception as e:
         logger.error(traceback.format_exc())
