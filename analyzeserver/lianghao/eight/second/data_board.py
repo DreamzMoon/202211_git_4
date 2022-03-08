@@ -197,7 +197,7 @@ def le_secboard_sell():
 
 
         #最早上架时间
-        early_sql = '''select create_time from le_second_hand_sell where `status` != 1 and del_flag = 0 and sell_phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
+        early_sql = '''select up_time from le_second_hand_sell where `status` = 0 and del_flag = 0 and sell_phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         xj_sql = '''select sum(total_price) xj_total_price from le_order where pay_type in (3,4) and type in (4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         clt_sql = '''select sum(total_price) clt_total_price from le_order where pay_type = 2 and type in (4) and del_flag = 0 and `status` =1  and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         cgj_sql = '''select sum(total_price) total_purchase_money from le_order where pay_type = 0 and del_flag = 0 and type in (4) and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
@@ -229,7 +229,7 @@ def le_secboard_sell():
         early_sql = early_sql + " order by create_time asc limit 1"
 
         if kanban_data[0]["inside_publish_phone"][1:-1]:
-            early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["create_time"]
+            early_time = pd.read_sql(early_sql,conn_lh).to_dict("records")[0]["up_time"]
             early_time = datetime.datetime.strftime(early_time, "%Y-%m-%d %H:%M:%S")
             xj_total_price = pd.read_sql(xj_sql,conn_lh).to_dict("records")[0]["xj_total_price"]
             clt_total_price = pd.read_sql(clt_sql,conn_lh).to_dict("records")[0]["clt_total_price"]
@@ -241,7 +241,7 @@ def le_secboard_sell():
         # pure_money = user_sell_total_price - user_order_price
 
         # 净营收
-        pure_money = user_order_price - inside_order_price
+        pure_money = order_sum_price - sell_total_price
 
         msg = {"sell_count": sell_count, "sell_total_price": sell_total_price, "inside_sell_count": inside_sell_count,
                "inside_sell_total_price": inside_sell_total_price,"user_sell_count": user_sell_count, "user_sell_total_price": user_sell_total_price,
