@@ -195,7 +195,8 @@ def lh_personboard_sell():
         xj_sql = '''select sum(total_price) xj_total_price from lh_order where pay_type in (3,4) and type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         clt_sql = '''select sum(total_price) clt_total_price from lh_order where pay_type = 2 and type in (1,4) and del_flag = 0 and `status` =1  and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
         sell_fee_sql = '''select sum(sell_fee) total_sell_fee from lh_order where  type in (1,4) and del_flag = 0 and `status` =1 and phone not in (%s)''' % (kanban_data[0]["inside_publish_phone"][1:-1])
-
+        cgj_sql = '''select sum(total_price) total_purchase_money from lh_order where pay_type = 0 and del_flag = 0 and type in (4) and phone not in (%s)''' % (
+        kanban_data[0]["inside_publish_phone"][1:-1])
         # 判断是否有官方号
         if kanban_data[0]["inside_publish_phone"][1:-1]:
             pass
@@ -205,17 +206,20 @@ def lh_personboard_sell():
             clt_total_price = 0
             total_purchase_money = 0
             total_sell_fee = 0
+            total_purchase_money = 0
 
         if kanban_data[0]["time_type"] == 0:
             early_sql = early_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             xj_sql = xj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             clt_sql = clt_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
             sell_fee_sql = sell_fee_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
+            cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
         else:
             early_sql = early_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
             xj_sql = xj_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
             clt_sql = clt_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format( kanban_data[0]["start_time"], kanban_data[0]["end_time"])
             sell_fee_sql = sell_fee_sql + ''' and create_time>= "{}" and create_time <= "{}" '''.format(kanban_data[0]["start_time"], kanban_data[0]["end_time"])
+            cgj_sql = cgj_sql + ''' and DATE_FORMAT(create_time,"%Y-%m-%d") =  CURRENT_DATE() '''
         early_sql = early_sql + " order by create_time asc limit 1"
         logger.info(early_sql)
 
@@ -226,8 +230,8 @@ def lh_personboard_sell():
             clt_total_price = pd.read_sql(clt_sql, conn_lh).to_dict("records")[0]["clt_total_price"]
 
             total_sell_fee = pd.read_sql(sell_fee_sql, conn_lh).to_dict("records")[0]["total_sell_fee"]
+            total_purchase_money = pd.read_sql(cgj_sql, conn_lh).to_dict("records")[0]["total_purchase_money"]
 
-        total_purchase_money = 0
         # pure_money = user_sell_total_price + inside_sell_total_price - user_order_price - inside_order_price
         # pure_money = user_sell_total_price - user_order_price
 
